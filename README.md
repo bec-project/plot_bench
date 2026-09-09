@@ -6,11 +6,19 @@ frontends decode and render the same protocol. Backend results remain separate.
 
 ## Quick start
 
+**Plotbench runs from a git clone — there is no PyPI package.** It builds and
+drives independent Rust, Qt and npm components through repo-local tooling
+(`./scripts/setup`), so every command runs from the checkout rather than a
+`pip install`. Clone the repository and work inside it.
+
 Install [uv](https://docs.astral.sh/uv/) (minimum version in [.uv-version](.uv-version))
-and [Rust/Cargo](https://rustup.rs/) and follow
-the [platform setup guide](docs/setup.md) for your desktop. Run from the repository root:
+and [Rust/Cargo](https://rustup.rs/), then follow the
+[platform setup guide](docs/setup.md) for your desktop. Run every command from the
+repository root:
 
 ```sh
+git clone <repository-url> plotbench
+cd plotbench
 ./scripts/setup rust pyqtgraph
 ./scripts/plotbench doctor --frontends pyqtgraph
 ./scripts/plotbench demo pyqtgraph
@@ -35,6 +43,24 @@ The runner prints the result directory. Open its **report.html** for compact cha
 or **report-extended.html** for complete evidence. Both work offline. Raw samples,
 logs, the selected suite and JSON/CSV summaries remain under `results/`.
 Short smoke runs verify operation; they do not establish stable performance rankings.
+
+## Documentation
+
+New here? Read [setup](docs/setup.md), then follow the Quick start above. This page
+is the tour; the guides below go deeper.
+
+- **Get running** — [Installation & platform setup](docs/setup.md) ·
+  [Rust and Python sources](docs/backends.md)
+- **Build & run benchmarks** — [Configure a benchmark matrix](docs/suites.md) ·
+  [Reports & retained evidence](docs/reports.md)
+- **How it works** — [Measurement & interpretation](docs/methodology.md) ·
+  [Protocol v1](docs/protocol.md) · [Validation & supported environments](docs/validation.md)
+- **Extend & contribute** — [Contributing](CONTRIBUTING.md) ·
+  [Adding a frontend](docs/frontends.md) · [Agent guide](AGENTS.md) ·
+  [Web UI: matrix editor & source controls](core/webui/README.md)
+- **Reference** — [Core package](core/README.md) ·
+  [Licenses & third-party notices](docs/licenses.md) ·
+  [Presentation style](docs/presentation.md) · [Demo gallery](docs/demo-gallery.html)
 
 ## Create your own matrix
 
@@ -80,6 +106,10 @@ Explicit suite backend choices remain in effect unless overridden on the CLI.
 A default demo requires a Rust source and refuses to attach to an existing Python source;
 select `--backend python` to use that source.
 
+Run `./scripts/plotbench serve` to start just a source and open its URL
+(`http://127.0.0.1:8765`) for a live browser control panel that adjusts the rate,
+waveform and image workload while demos stream from it.
+
 For a Python-only source, install just the chosen frontend (for example,
 `./scripts/setup pyqtgraph`) and select `--backend python` for `serve`/`demo` or
 `--backends python` for `run`/`probe`/`doctor`. This needs no Rust toolchain unless
@@ -121,9 +151,9 @@ Agents should start with [AGENTS.md](AGENTS.md). Example requests:
 > Regenerate the reports in results/my-comparison and explain which runs are
 > comparable without treating submitted update rates as displayed FPS.
 
-See [contributing](CONTRIBUTING.md), [adding a frontend](docs/frontends.md),
-[development checks](docs/validation.md), and the [demo gallery](docs/demo-gallery.html).
-The repository retains separate frontend packages and one shared measurement contract.
+See the [Documentation](#documentation) index above for contributing, adding a
+frontend, and development checks. The repository retains separate frontend packages
+and one shared measurement contract.
 
 ## License
 
