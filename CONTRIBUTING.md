@@ -7,6 +7,8 @@ what an existing benchmark measures.
 Start with [setup](docs/setup.md) and [validation](docs/validation.md). Each frontend
 is independently packaged; install only the components involved in your change,
 using `./scripts/setup COMPONENT --dev`. Use Python 3.13 and retain lockfiles.
+Include `rust` in setup when using the default source; Python source workflows
+must select `--backend python` or `--backends python` explicitly.
 
 Before submitting a change:
 

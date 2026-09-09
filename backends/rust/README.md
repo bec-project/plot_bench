@@ -4,6 +4,10 @@ Independent native source for the plotting benchmark: Axum **0.8.9**, Tokio
 **1.53.1**, and Rust 2024. `Cargo.lock` pins every dependency. Python, NumPy,
 Qt, Node, and plotting packages are not runtime dependencies.
 
+Rust is Plotbench's default source. For the root CLI workflow, install Rust/Cargo
+and run `./scripts/setup rust` from the repository root before `./scripts/plotbench serve`.
+The Python source remains available through an explicit `--backend python` choice.
+
 Build from this directory:
 
 ```sh

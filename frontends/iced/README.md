@@ -5,7 +5,18 @@ released **Iced 0.14.0**, with the wgpu renderer, a custom
 Canvas waveform and Iced's image widget. `Cargo.lock` fixes the complete dependency
 resolution. Python and Node dependencies are not required by this frontend.
 
-From this directory, with a Rust toolchain installed:
+From the repository root, install the frontend and default Rust source:
+
+```sh
+./scripts/setup rust iced
+./scripts/plotbench demo iced
+```
+
+To use Python input, install just `iced` and select
+`./scripts/plotbench demo iced --backend python`.
+Rust/Cargo is still required to build the Iced frontend.
+
+For a direct build and launch from this directory, with a Rust toolchain installed:
 
 ```bash
 CARGO_HOME="$PWD/.cargo-cache" cargo build --locked --release
@@ -13,7 +24,8 @@ CARGO_HOME="$PWD/.cargo-cache" cargo build --locked --release
 ./target/release/plotbench-iced --mode replay --run-id iced-replay --duration 35
 ```
 
-Start the shared Python or Rust source first, using the root project's instructions.
+Start the shared source first for a direct launch, using the root project's
+instructions. `serve` defaults to Rust; use `serve --backend python` for Python.
 All frame generation and workload configuration belong to that source. Change its
 configuration through the shared controller or `POST /api/config`. Stream mode
 adopts the next frame's configuration. The **1D** and **2D** buttons under **PLOTS**
@@ -197,5 +209,5 @@ a metric card for the interpretation.
 
 Linux builds enable native Wayland. See [platform setup](../../docs/setup.md)
 and [validation](../../docs/validation.md); offscreen/container checks do not
-qualify GPU performance. From the repository root use `./scripts/setup iced` and
+qualify GPU performance. From the repository root use `./scripts/setup rust iced` and
 `./scripts/plotbench demo iced`.

@@ -7,7 +7,7 @@ import random
 from copy import deepcopy
 from dataclasses import dataclass
 
-from .backends import BACKENDS
+from .backends import BACKENDS, DEFAULT_BACKEND
 from .config import Config
 
 FRONTENDS = (
@@ -237,9 +237,7 @@ def prepare_suite(suite, *, kind="run", overrides=None, limit=None):
         else _selection(effective.get("frontends", list(FRONTENDS)), "frontends", FRONTENDS)
     )
     modes = [] if probe else _selection(effective.get("modes", list(MODES)), "modes", MODES)
-    backends = _selection(
-        effective.get("backends", ["python", "rust"] if probe else ["python"]), "backends", BACKENDS
-    )
+    backends = _selection(effective.get("backends", [DEFAULT_BACKEND]), "backends", BACKENDS)
     repetitions = _integer(effective.get("repetitions", 3), "repetitions", 1)
     seed = _integer(effective.get("order_seed", 42), "order_seed")
     warmup = _timing(effective.get("warmup_seconds", 2 if probe else 5), "warmup_seconds")

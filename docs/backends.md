@@ -1,19 +1,26 @@
-# Python and Rust sources
+# Rust and Python sources
 
 Backend selection is independent of stream/replay mode. Every frontend receives
 the same binary protocol and centrally generated workload; backend identity is
-recorded and kept separate in comparisons.
+recorded and kept separate in comparisons. Rust is the default for `serve`, `demo`,
+`run`, `probe` and `doctor`. Install Rust/Cargo and include the source in setup:
 
 ```sh
-./scripts/setup rust
-./scripts/plotbench serve --backend rust --hz 60
-./scripts/plotbench demo pyqtgraph --backend rust
+./scripts/setup rust pyqtgraph
+./scripts/plotbench doctor --frontends pyqtgraph
+./scripts/plotbench demo pyqtgraph
 ./scripts/plotbench run --suite scenarios/isolated-smoke.json \
   --frontends pyqtgraph --backends python rust --dry-run
 ```
 
-Python is the default. An explicit demo backend refuses to attach to a different
-source already running at the URL. Use another port to run a separate source:
+`demo` starts Rust when no source is running and requires the Rust backend when
+attaching to an existing source. If a Python source is already running, select
+`--backend python` explicitly; the default demo reports the mismatch. Explicit
+suite `backends` choices remain honored, and CLI `--backends` overrides them.
+
+To run Python without installing the Rust source, use `./scripts/setup core` or
+install the chosen frontend, then select Python explicitly. For example, start a
+Python source in one terminal and attach the demo from another:
 
 ```sh
 ./scripts/plotbench serve --backend python --port 8766
@@ -27,12 +34,16 @@ creates a separate source per run.
 
 ## Receiver-only probes
 
+The default probe measures Rust only. Select both sources explicitly to compare them:
+
 ```sh
-./scripts/plotbench probe --suite scenarios/backend-probe.json --dry-run
+./scripts/plotbench probe --suite scenarios/backend-probe.json --backends python rust --dry-run
 ./scripts/plotbench probe --suite scenarios/backend-probe.json \
   --backends python rust --duration 10 --repetitions 1 --output results/source-probe
 ./scripts/plotbench report results/source-probe --probe
 ```
+
+Use `--backends python` for a Python-only probe or doctor check.
 
 A common receiver decodes and acknowledges packets without plotting. Its report
 shows source generation and decoded delivery capacity, missed deadlines, receive

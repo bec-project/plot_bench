@@ -1,6 +1,6 @@
 {
   "name": "Source and WebSocket capacity without plotting",
-  "backends": ["python", "rust"],
+  "backends": ["rust"],
   "warmup_seconds": 2,
   "measurement_seconds": 10,
   "repetitions": 3,

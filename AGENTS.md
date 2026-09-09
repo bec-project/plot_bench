@@ -7,9 +7,8 @@ environments; never modify a user's shared Python environment.
 ## Setup and checks
 
 ```sh
-./scripts/setup core --dev
-./scripts/setup pyqtgraph --dev
-./scripts/plotbench doctor --frontends pyqtgraph --backends python
+./scripts/setup rust pyqtgraph --dev
+./scripts/plotbench doctor --frontends pyqtgraph
 .envs/plotting-benchmark/bin/python -m pytest core/tests
 QT_QPA_PLATFORM=offscreen .envs/plotting-benchmark-pyqtgraph/bin/python -m pytest frontends/pyqtgraph/tests
 ```
@@ -19,6 +18,14 @@ Install the selected components, not every frontend by default. See
 README for platform requirements and additional tests. Preserve dependency locks.
 Use `qtpy` for shared Qt APIs; direct PySide6 access is appropriate for Qt Graphs
 APIs that qtpy does not expose.
+
+Rust is the default source; install Rust/Cargo and explicitly include `rust` in
+setup for that workflow. Preserve any backend selected by the user or suite.
+For a Python-only source, setup can install just `core` or the selected frontend;
+use `--backend python` for `serve`/`demo` and `--backends python` for
+`run`/`probe`/`doctor`. A default demo requires Rust even if a Python source is
+already running; it must not silently attach to that source. Comparing both
+backends requires an explicit `--backends python rust` selection.
 
 ## Running a requested benchmark
 

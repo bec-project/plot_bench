@@ -1,17 +1,17 @@
 # Plotbench
 
 Compare streaming waveform and image rendering across independently packaged
-plotting frontends. Python/NumPy and Rust/Tokio sources generate the shared input;
+plotting frontends. Rust/Tokio and Python/NumPy sources generate the shared input;
 frontends decode and render the same protocol. Backend results remain separate.
 
 ## Quick start
 
-Install [uv](https://docs.astral.sh/uv/) and follow the
-[platform setup guide](docs/setup.md) for your desktop, then run from the repository root:
+Install [uv](https://docs.astral.sh/uv/) and [Rust/Cargo](https://rustup.rs/) and follow
+the [platform setup guide](docs/setup.md) for your desktop. Run from the repository root:
 
 ```sh
-./scripts/setup pyqtgraph
-./scripts/plotbench doctor --frontends pyqtgraph --backends python
+./scripts/setup rust pyqtgraph
+./scripts/plotbench doctor --frontends pyqtgraph
 ./scripts/plotbench demo pyqtgraph
 ```
 
@@ -56,14 +56,23 @@ CLI filters and timing overrides remain available. See the
 | [Iced](frontends/iced/README.md) | Rust/wgpu with a custom waveform Canvas and image widget |
 | [Plotly/React](frontends/plotly/README.md) | Production TypeScript bundle; scattergl, heatmap and image |
 
-Install only selected components with `./scripts/setup COMPONENT`. Rust/Cargo, npm
-and the C++ Qt SDK are required only for their respective components. Local Python
-environments are isolated; no BEC, Redis, credentials or shared conda setup is needed.
+Install only selected components with `./scripts/setup COMPONENT`. Include `rust`
+to build the default source. npm and the C++ Qt SDK are required only for their
+respective frontends. Local Python environments are isolated; no BEC, Redis,
+credentials or shared conda setup is needed.
 See the [core](core/README.md) and [Rust source](backends/rust/README.md).
 
-Python is the default source. After `./scripts/setup rust`, choose `--backend rust`
-for a demo or `--backends python rust` for a suite. Use `plotbench probe` to measure
-source and decoded-delivery capacity without plotting. See [backends](docs/backends.md).
+Rust is the default source for `serve`, `demo`, `run`, `probe` and `doctor`.
+Explicit suite backend choices remain in effect unless overridden on the CLI.
+A default demo requires a Rust source and refuses to attach to an existing Python source;
+select `--backend python` to use that source.
+
+For a Python-only source, install just the chosen frontend (for example,
+`./scripts/setup pyqtgraph`) and select `--backend python` for `serve`/`demo` or
+`--backends python` for `run`/`probe`/`doctor`. This needs no Rust toolchain unless
+the frontend itself uses Rust. To compare both sources, select `--backends python rust`
+explicitly. Use `plotbench probe` to measure source and decoded-delivery capacity
+without plotting. See [backends](docs/backends.md).
 
 ## Understand the measurements
 
@@ -89,7 +98,7 @@ are outside the initial release.
 
 Agents should start with [AGENTS.md](AGENTS.md). Example requests:
 
-> Preview a matrix comparing PyQtGraph and Matplotlib with the Python source,
+> Preview a matrix comparing PyQtGraph and Matplotlib with the Rust source,
 > 10k and 100k waveform points at 60 Hz, streaming, three 30-second repetitions.
 > Tell me the run count and estimated duration before measuring.
 

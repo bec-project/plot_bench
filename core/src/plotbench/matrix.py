@@ -9,7 +9,7 @@ from urllib.parse import urlsplit
 
 from aiohttp import web
 
-from .backends import BACKENDS
+from .backends import BACKENDS, DEFAULT_BACKEND
 from .config import Config
 from .suites import FRONTENDS, MODES, load_suite, prepare_suite
 
@@ -67,6 +67,7 @@ def create_app(suite):
                 suite=suite,
                 frontends=FRONTENDS,
                 backends=BACKENDS,
+                default_backend=DEFAULT_BACKEND,
                 modes=MODES,
                 config=Config().to_dict(),
             )

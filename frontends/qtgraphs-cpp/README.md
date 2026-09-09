@@ -11,9 +11,13 @@ or an explicit `PLOTBENCH_QT_PREFIX`. See [platform setup](../../docs/setup.md).
 The build lands in `build/` and setup records its identity for provenance.
 
 ```sh
-./scripts/setup qtgraphs-cpp
+./scripts/setup rust qtgraphs-cpp
 ./scripts/plotbench demo qtgraphs-cpp
 ```
+
+The default Rust source requires Rust/Cargo in addition to the C++ toolchain.
+For Python input, install just `qtgraphs-cpp` and use
+`./scripts/plotbench demo qtgraphs-cpp --backend python`.
 
 For a direct adapter launch, start `./scripts/plotbench serve` in another terminal:
 

@@ -32,7 +32,7 @@ def test_receiver_summary_distinguishes_generation_from_delivery():
 def test_common_receiver_decodes_and_acknowledges_real_python_source(tmp_path):
     config = Config(hz=60, points=32, append_count=4, width=8, height=8, view="image")
     folder = tmp_path / "source"
-    with source_process(folder, config) as url:
+    with source_process(folder, config, backend="python") as url:
         samples, start = receive_probe(url, config, 0.05, 0.2)
     result = summarize_probe(samples, read_jsonl(folder / "source.jsonl"), start, 0.2, 60)
     assert result["received_frames"] > 0

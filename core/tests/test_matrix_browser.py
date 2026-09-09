@@ -97,6 +97,53 @@ def test_matrix_forms_validation_preview_export_and_mobile_layout(tmp_path):
 @pytest.mark.skipif(
     not os.environ.get("PLOTBENCH_TEST_BROWSER"), reason="explicit QA browser required"
 )
+def test_editor_defaults_to_rust_for_run_and_probe_and_preserves_python_selection():
+    from playwright.async_api import async_playwright, expect
+
+    async def exercise():
+        suite = dict(
+            cases=[dict(name="wave", config={"view": "waveform"})],
+            frontends=["pyqtgraph"],
+            modes=["stream"],
+            repetitions=1,
+        )
+        async with TestServer(create_app(suite)) as server:
+            async with async_playwright() as playwright:
+                browser = await playwright.chromium.launch(
+                    headless=True, executable_path=os.environ["PLOTBENCH_TEST_BROWSER"]
+                )
+                page = await browser.new_page()
+                await page.goto(str(server.make_url("/")))
+                source_cell = page.locator("#jobs tr").first.locator("td").nth(3)
+                await expect(page.locator("#export")).to_be_enabled()
+                for kind in ("run", "probe"):
+                    await page.locator("#kind").select_option(kind)
+                    await expect(page.locator("#export")).to_be_enabled()
+                    await expect(page.get_by_label("rust", exact=True)).to_be_checked()
+                    await expect(page.get_by_label("python", exact=True)).not_to_be_checked()
+                    await expect(page.locator("#jobs tr")).to_have_count(1)
+                    await expect(source_cell).to_have_text("rust")
+                    await expect(page.locator("#command")).to_contain_text(f"{kind} --suite")
+                    assert json.loads(await page.locator("#raw").input_value()) == suite
+
+                await page.get_by_label("python", exact=True).check()
+                await page.get_by_label("rust", exact=True).uncheck()
+                await expect(page.locator("#export")).to_be_enabled()
+                await expect(page.locator("#jobs tr")).to_have_count(1)
+                await expect(source_cell).to_have_text("python")
+                async with page.expect_download() as download_info:
+                    await page.get_by_role("button", name="Export suite JSON", exact=True).click()
+                download = await download_info.value
+                exported = json.loads(Path(await download.path()).read_text())
+                assert exported == dict(suite, backends=["python"])
+                await browser.close()
+
+    asyncio.run(exercise())
+
+
+@pytest.mark.skipif(
+    not os.environ.get("PLOTBENCH_TEST_BROWSER"), reason="explicit QA browser required"
+)
 def test_editor_rejects_seed_rounding_and_recovers_probe_with_no_frontends():
     from playwright.async_api import async_playwright, expect
 

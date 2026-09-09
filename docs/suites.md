@@ -14,6 +14,12 @@ expanded matrix and downloads validated JSON. It does not execute benchmarks or
 generate input data. `--no-open` prints its URL without opening a browser. Stop it
 with Ctrl+C before formal measurements.
 
+When `backends` is omitted, both `run` and `probe` select Rust only. Explicit
+backend lists in imported or existing suite files remain honored; CLI `--backends`
+overrides that list. Install the selected source with `./scripts/setup rust` for
+Rust, or use the core's Python source with `--backends python`. To compare sources,
+select `"backends": ["python", "rust"]` or `--backends python rust` explicitly.
+
 ## A small suite
 
 ```json

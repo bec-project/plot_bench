@@ -222,7 +222,7 @@ function renderSetup() {
   $("selections").replaceChildren();
   const probe = $("kind").value === "probe";
   for (const [key, labelText, defaults] of [
-    ["frontends", "Frontends", options.frontends], ["backends", "Source backends", probe ? options.backends : ["python"]],
+    ["frontends", "Frontends", options.frontends], ["backends", "Source backends", [options.default_backend]],
     ["modes", "Delivery modes", options.modes],
   ]) {
     const fieldset = node("fieldset");

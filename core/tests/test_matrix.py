@@ -31,7 +31,9 @@ def test_editor_load_preview_export_round_trip_and_static_assets():
                 assert "script-src 'self'" in response.headers["Content-Security-Policy"]
                 assert "<script>alert(1)</script>" not in await response.text()
             response = await client.get("/api/initial")
-            assert (await response.json())["suite"] == original
+            initial = await response.json()
+            assert initial["suite"] == original
+            assert initial["default_backend"] == "rust"
             for kind in ("run", "probe"):
                 response = await client.post("/api/preview", json={"suite": original, "kind": kind})
                 assert response.status == 200

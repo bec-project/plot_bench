@@ -1,7 +1,7 @@
 # Plotbench protocol v1
 
 All frontends use this contract. A run selects one source implementation:
-Python/NumPy (the default) or native Rust/Tokio. The selected source owns generation;
+native Rust/Tokio (the default) or Python/NumPy. The selected source owns generation;
 frontends do not synthesize data. Reports retain the source backend as a separate
 comparison dimension. See [backend comparison](backends.md).
 

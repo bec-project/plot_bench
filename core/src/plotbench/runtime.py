@@ -11,6 +11,7 @@ import sys
 import tomllib
 from pathlib import Path
 
+from .backends import DEFAULT_BACKEND
 from .provenance import file_hash, require_current_artifact
 from .suites import FRONTENDS
 
@@ -309,7 +310,7 @@ def require_preflight(**options):
 def doctor(args):
     result = preflight(
         frontends=getattr(args, "frontends", None) or (),
-        backends=getattr(args, "backends", None) or ("python",),
+        backends=getattr(args, "backends", None) or (DEFAULT_BACKEND,),
         browser_executable=getattr(args, "browser_executable", None),
         headless=getattr(args, "headless", False),
     )

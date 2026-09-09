@@ -14,7 +14,7 @@ from urllib.parse import urlparse
 
 import psutil
 
-from .backends import backend_from_health, validate_backend
+from .backends import DEFAULT_BACKEND, backend_from_health, validate_backend
 from .campaign import finalize_campaign_manifest, write_campaign_manifest
 from .client import request
 from .config import Config
@@ -89,7 +89,7 @@ def wait_health(url, process, timeout=20, backend=None):
 
 
 @contextmanager
-def source_process(output, config=None, port=None, backend="python"):
+def source_process(output, config=None, port=None, backend=DEFAULT_BACKEND):
     validate_backend(backend)
     port = port or free_port()
     url = f"http://127.0.0.1:{port}"
@@ -335,12 +335,12 @@ def run_suite(args):
 def launch_demo(args):
     owned_source = None
     source_port = None
-    requested_backend = getattr(args, "backend", None)
+    requested_backend = getattr(args, "backend", None) or DEFAULT_BACKEND
     try:
         try:
             health = json.loads(request(args.url + "/api/health", timeout=1))
             actual_backend = backend_from_health(health)
-            if requested_backend is not None and requested_backend != actual_backend:
+            if requested_backend != actual_backend:
                 raise RuntimeError(
                     f"{args.url} is running {actual_backend}, but {requested_backend} was requested. "
                     "Use a different --url port or stop that source first."
@@ -349,7 +349,7 @@ def launch_demo(args):
             parsed = urlparse(args.url)
             if parsed.hostname not in ("127.0.0.1", "localhost"):
                 raise RuntimeError("remote source unavailable") from None
-            actual_backend = requested_backend or "python"
+            actual_backend = requested_backend
             source_port = parsed.port or 8765
         require_preflight(
             frontends=[args.frontend],

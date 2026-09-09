@@ -8,10 +8,13 @@ imported from PySide6 because qtpy does not wrap this module.
 From the repository root:
 
 ```sh
-./scripts/setup qtgraphs
+./scripts/setup rust qtgraphs
 ./scripts/plotbench demo qtgraphs
 ./scripts/plotbench demo qtgraphs --mode replay
 ```
+
+These commands use the default Rust source and require Rust/Cargo. For Python
+input, install just `qtgraphs` and use `./scripts/plotbench demo qtgraphs --backend python`.
 
 See [platform setup](../../docs/setup.md) for system requirements and
 [validation](../../docs/validation.md) for test coverage.

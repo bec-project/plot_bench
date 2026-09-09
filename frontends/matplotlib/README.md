@@ -6,10 +6,13 @@ Independent Python 3.13 environment using QtAgg, with reusable `Line2D` and
 From the repository root:
 
 ```sh
-./scripts/setup matplotlib
+./scripts/setup rust matplotlib
 ./scripts/plotbench demo matplotlib
 ./scripts/plotbench demo matplotlib --mode replay
 ```
+
+These commands use the default Rust source and require Rust/Cargo. For Python
+input, install just `matplotlib` and use `./scripts/plotbench demo matplotlib --backend python`.
 
 See [platform setup](../../docs/setup.md) for system requirements and
 [validation](../../docs/validation.md) for test coverage.

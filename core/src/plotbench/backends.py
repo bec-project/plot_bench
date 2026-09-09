@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 
 BACKENDS = ("python", "rust")
+DEFAULT_BACKEND = "rust"
 ROOT = Path(__file__).resolve().parents[3]
 
 

@@ -1,19 +1,21 @@
 # Installation and platform setup
 
-Run commands from the repository root. Install [uv](https://docs.astral.sh/uv/) and
-select the components you need:
+Run commands from the repository root. The default Rust source requires
+[uv](https://docs.astral.sh/uv/) and [Rust/Cargo](https://rustup.rs/).
+Select the source and frontend you need:
 
 ```sh
-./scripts/setup pyqtgraph
-./scripts/plotbench doctor --frontends pyqtgraph --backends python
+./scripts/setup rust pyqtgraph
+./scripts/plotbench doctor --frontends pyqtgraph
 ./scripts/plotbench demo pyqtgraph
 ```
 
 Setup creates independent environments under `.envs/`, caches under `.cache/`,
 and release build outputs inside the relevant components. It does not change a
 shared Python environment or install privileged system packages. Without component
-arguments, setup installs the core. `all` explicitly selects every component;
-the C++ frontend needs its separate Qt SDK.
+arguments, setup installs the core. Setup never adds the Rust source unless `rust`
+or `all` is selected. `all` explicitly selects every component; the C++ frontend
+needs its separate Qt SDK.
 
 ## Components and toolchains
 
@@ -31,10 +33,26 @@ and `rust-toolchain.toml`. Python packages currently support Python 3.13. Locks
 describe tested dependency resolutions; update manifests and locks together when
 changing a supported version. Record actual tool versions in benchmark provenance.
 
+Rust is the default for `serve`, `demo`, `run`, `probe` and `doctor`; an explicit
+suite backend selection takes precedence over the default. A default demo refuses
+an existing Python source. To use Python without installing the Rust source:
+
+```sh
+./scripts/setup pyqtgraph
+./scripts/plotbench doctor --frontends pyqtgraph --backends python
+./scripts/plotbench demo pyqtgraph --backend python
+./scripts/plotbench run --suite scenarios/smoke.json --frontends pyqtgraph --backends python --dry-run
+```
+
+For source-only use, `./scripts/setup core` and
+`./scripts/plotbench serve --backend python` need no Rust toolchain. Choose
+`--backends python` for Python-only receiver probes. Iced still needs Rust/Cargo
+to build its frontend, independently of the selected source.
+
 For development tools and tests:
 
 ```sh
-./scripts/setup core pyqtgraph --dev
+./scripts/setup rust pyqtgraph --dev
 ```
 
 Setup is repeatable. Re-run it for changed compiled/bundled components before
@@ -63,7 +81,7 @@ sudo apt-get install build-essential pkg-config cmake ninja-build \
 For the bundled browser, install its distribution dependencies after setup:
 
 ```sh
-./scripts/setup plotly
+./scripts/setup rust plotly
 .envs/plotting-benchmark/bin/python -m playwright install-deps chromium
 ```
 
@@ -92,7 +110,7 @@ install an appropriate native Chromium/Chrome through your administrator's norma
 package source and explicitly select its executable:
 
 ```sh
-./scripts/setup plotly --browser system
+./scripts/setup rust plotly --browser system
 ./scripts/plotbench doctor --frontends plotly --browser-executable /usr/bin/chromium
 ./scripts/plotbench demo plotly --browser-executable /usr/bin/chromium
 ```

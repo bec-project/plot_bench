@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from .backends import BACKENDS
+from .backends import BACKENDS, DEFAULT_BACKEND
 from .config import Config
 from .suites import FRONTENDS
 
@@ -30,7 +30,7 @@ def main():
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8765)
     serve.add_argument("--config", type=Path)
-    serve.add_argument("--backend", choices=BACKENDS, default="python")
+    serve.add_argument("--backend", choices=BACKENDS, default=DEFAULT_BACKEND)
     serve.add_argument(
         "--output",
         type=Path,
@@ -78,7 +78,8 @@ def main():
     demo.add_argument(
         "--backend",
         choices=BACKENDS,
-        help="source to start; when connecting, require this backend (default: use existing or Python)",
+        default=DEFAULT_BACKEND,
+        help="source to start or require when connecting (default: rust)",
     )
     probe = sub.add_parser("probe", help="measure source and WebSocket delivery without plotting")
     probe.add_argument("--suite", type=Path, default=Path("scenarios/backend-probe.json"))

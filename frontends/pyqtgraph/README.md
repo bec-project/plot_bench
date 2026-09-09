@@ -6,10 +6,13 @@ the source/telemetry client comes from the sibling `core` package.
 From the repository root:
 
 ```sh
-./scripts/setup pyqtgraph
+./scripts/setup rust pyqtgraph
 ./scripts/plotbench demo pyqtgraph
 ./scripts/plotbench demo pyqtgraph --mode replay
 ```
+
+These commands use the default Rust source and require Rust/Cargo. For Python
+input, install just `pyqtgraph` and use `./scripts/plotbench demo pyqtgraph --backend python`.
 
 See [platform setup](../../docs/setup.md) for system requirements and
 [validation](../../docs/validation.md) for test coverage.

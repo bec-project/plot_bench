@@ -6,8 +6,22 @@ in this frontend.
 
 ## Run
 
-Use Node.js 22.12 or later (Node 24 LTS recommended) and npm. Start the core source using the
-monorepo instructions, then run these commands from this directory:
+From the repository root, install Rust/Cargo and npm, then build the default
+source and browser frontend:
+
+```sh
+./scripts/setup rust plotly
+./scripts/plotbench demo plotly
+```
+
+For Python input, install just `plotly` and select
+`./scripts/plotbench demo plotly --backend python`;
+this does not require Rust/Cargo. See [platform setup](../../docs/setup.md) for
+browser prerequisites and explicit browser selection.
+
+For a direct browser launch, use Node.js 22.12 or later (Node 24 LTS recommended)
+and npm. Start the shared source using the monorepo instructions (`serve` defaults
+to Rust; use `serve --backend python` for Python), then run from this directory:
 
 ```sh
 npm ci
