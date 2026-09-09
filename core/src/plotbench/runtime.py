@@ -23,6 +23,11 @@ QT_FRONTENDS = (*PYTHON_FRONTENDS, "pyqtgraph-gl", "qtgraphs-cpp")
 FRONTEND_IMPORT_TIMEOUT_SECONDS = 120
 
 
+def _python_series(version):
+    """Major.minor of a version string, so a 3.13 pin accepts any 3.13.x patch."""
+    return ".".join(version.split(".")[:2])
+
+
 def display_session():
     """Record session type without recording user names or local socket paths."""
     session = os.environ.get("XDG_SESSION_TYPE")
@@ -170,9 +175,10 @@ def preflight(*, frontends=(), backends=(), browser_executable=None, headless=Fa
 
     def core_available():
         expected = (ROOT / ".python-version").read_text().strip()
-        if platform.python_version() != expected:
+        if _python_series(platform.python_version()) != _python_series(expected):
             raise ValueError(
-                f"Python {platform.python_version()} does not match .python-version ({expected}); run ./scripts/setup core"
+                f"Python {platform.python_version()} is not in the {expected} series "
+                "(.python-version); run ./scripts/setup core"
             )
         for module in ("aiohttp", "numpy", "websockets", "psutil", "plotbench.server"):
             __import__(module)
@@ -239,9 +245,11 @@ def preflight(*, frontends=(), backends=(), browser_executable=None, headless=Fa
                     )
                 )
                 runtime.setdefault("components", {})[component] = details
-                if details["python"] != (ROOT / ".python-version").read_text().strip():
+                expected = (ROOT / ".python-version").read_text().strip()
+                if _python_series(details["python"]) != _python_series(expected):
                     raise ValueError(
-                        f"{component} Python does not match .python-version; rerun setup"
+                        f"{component} Python {details['python']} is not in the {expected} series; "
+                        "rerun setup"
                     )
                 if system == "Linux" and not details["wayland_plugins"]:
                     raise ValueError(f"Qt Wayland platform plugin missing for {component}")
