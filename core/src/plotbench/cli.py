@@ -152,7 +152,9 @@ def main():
             try:
                 from .tui import run_tui
             except ImportError as exc:
-                raise RuntimeError(f"the TUI requires textual: {exc}") from exc
+                raise RuntimeError(
+                    f'the TUI needs the "tui" extra: pip install "plotbench-core[tui]" ({exc})'
+                ) from exc
             run_tui()
         elif args.command == "doctor":
             from .runtime import doctor

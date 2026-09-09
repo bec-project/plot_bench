@@ -58,7 +58,8 @@ if ! awk -v installed="$PLOTBENCH_UV_VERSION" -v required="$PLOTBENCH_UV_MIN_VER
 fi
 echo "Using uv $PLOTBENCH_UV_VERSION at $PLOTBENCH_UV_BIN"
 "$PLOTBENCH_UV_BIN" python install "$PLOTBENCH_PYTHON_VERSION" --no-bin
-PLOTBENCH_CORE_ARGS=(--locked --inexact)
+# The core environment is the CLI/TUI entry point, so it always includes the TUI.
+PLOTBENCH_CORE_ARGS=(--locked --inexact --extra tui)
 selected plotly && PLOTBENCH_CORE_ARGS+=(--extra browser)
 # Preserve previously installed optional components when adding another frontend.
 UV_PROJECT_ENVIRONMENT="$PLOTBENCH_ROOT/.envs/plotting-benchmark" "$PLOTBENCH_UV_BIN" sync --project core \

@@ -368,9 +368,10 @@ requires-dist = [
     { name = "numpy", specifier = ">=2.2,<3" },
     { name = "playwright", marker = "extra == 'browser'", specifier = ">=1.55,<2" },
     { name = "psutil", specifier = ">=7,<8" },
+    { name = "textual", marker = "extra == 'tui'", specifier = ">=1,<9" },
     { name = "websockets", specifier = ">=15,<17" },
 ]
-provides-extras = ["browser"]
+provides-extras = ["browser", "tui"]
 
 [package.metadata.requires-dev]
 dev = [
