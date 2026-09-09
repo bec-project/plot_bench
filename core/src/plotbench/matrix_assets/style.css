@@ -74,7 +74,16 @@ input:focus, select:focus, textarea:focus, button:focus-visible, summary:focus-v
 input[aria-invalid="true"] { border-color: var(--danger); }
 
 .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.field-label { font-size: 12px; color: var(--muted); font-weight: 500; }
+.field-label { font-size: 12px; color: var(--muted); font-weight: 500; display: inline-flex; align-items: center; gap: 5px; }
+
+/* Info tooltip: pure-CSS reveal on hover/focus. */
+.infotip { position: relative; display: inline-flex; cursor: help; }
+.infotip-icon { display: grid; place-items: center; width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--border); color: var(--muted); font-size: 9px; font-style: italic; font-weight: 700; line-height: 1; }
+.infotip:hover .infotip-icon, .infotip:focus .infotip-icon { border-color: var(--accent); color: var(--accent); }
+/* display:none (not visibility:hidden) so the hidden bubble never adds page width. */
+.infotip-bubble { display: none; position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); width: max-content; max-width: 240px; padding: 8px 10px; border-radius: 6px; background: #0a1720; border: 1px solid var(--border); color: var(--text); font-size: 12px; font-weight: 400; line-height: 1.4; text-transform: none; letter-spacing: 0; white-space: normal; z-index: 20; pointer-events: none; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4); }
+.infotip:hover .infotip-bubble, .infotip:focus .infotip-bubble, .infotip:focus-within .infotip-bubble { display: block; }
+.infotip-bubble::after { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: var(--border); }
 .field-hint { color: #6d8393; font-weight: 400; }
 .field-error { font-size: 12px; color: var(--danger); }
 .field-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px 16px; }
@@ -109,6 +118,7 @@ button { font: inherit; cursor: pointer; }
 .base-block { margin: 6px 0 14px; }
 
 /* Segmented view control -------------------------------------------------- */
+.view-control { display: inline-flex; align-items: center; gap: 8px; }
 .segmented { display: inline-flex; height: var(--control-h); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
 .seg { height: 100%; border: 0; border-left: 1px solid var(--border); background: var(--bg); color: var(--muted); padding: 0 14px; font-size: 13px; text-transform: capitalize; }
 .seg:first-child { border-left: 0; }
@@ -119,11 +129,20 @@ button { font: inherit; cursor: pointer; }
 .selections { display: flex; flex-wrap: wrap; gap: 24px; }
 .chip-group { border: 0; margin: 0; padding: 0; min-width: 0; }
 .chip-group[disabled] { opacity: 0.45; }
-.chip-group > legend { font-size: 12px; color: var(--muted); margin-bottom: 8px; padding: 0; }
+.chip-group > legend { font-size: 12px; color: var(--muted); margin-bottom: 8px; padding: 0; display: inline-flex; align-items: center; gap: 5px; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px; border: 1px solid var(--border); border-radius: 999px; font-size: 13px; color: var(--muted); user-select: none; }
 .chip input { accent-color: var(--accent); margin: 0; }
 .chip-on { border-color: var(--accent); color: var(--text); background: #0f2a2c; }
+.chip .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.dot-ok { background: #4bd07f; }
+.dot-missing { background: #e6a34a; }
+.chip-missing { border-style: dashed; }
+
+/* Missing-component install hint. */
+.install-hint { margin-top: 14px; border: 1px solid #6b5426; border-radius: 8px; background: rgba(230, 163, 74, 0.08); padding: 12px 14px; }
+.install-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.install-title { color: #e6b877; font-weight: 600; font-size: 13px; }
 
 /* Matrix axes ------------------------------------------------------------- */
 .axes { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border-soft); }

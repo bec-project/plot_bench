@@ -380,6 +380,11 @@ async function fetchInitial() {
   if (!response.ok) throw new Error("The matrix editor could not load its initial suite.");
   return response.json();
 }
+async function fetchEnvironment() {
+  const response = await fetch("/api/environment");
+  if (!response.ok) return null;
+  return response.json();
+}
 async function fetchPresets() {
   const response = await fetch("/api/presets");
   if (!response.ok) return [];
@@ -415,25 +420,86 @@ const ENUMS = {
   waveform_mode: ["replace", "append"],
   image_mode: ["scalar", "rgb"]
 };
+const VIEW_TIP = "Which plot(s) this workload drives: a 1-D waveform, a 2-D image, or both together.";
+const OPTION_TIPS = {
+  // frontends
+  pyqtgraph: "PyQtGraph — Qt, CPU raster rendering.",
+  "pyqtgraph-gl": "PyQtGraph with its OpenGL backend.",
+  matplotlib: "Matplotlib on the Qt Agg canvas.",
+  qtgraphs: "Qt Graphs (QML/Quick) renderer.",
+  "qtgraphs-cpp": "Qt Graphs via the native C++ SDK.",
+  iced: "Iced — native Rust GUI on wgpu.",
+  plotly: "Plotly.js in a controlled browser.",
+  // backends
+  python: "The built-in Python source. Always available with a core install.",
+  rust: "The faster native Rust source. Needs ./scripts/setup rust.",
+  // modes
+  stream: "Live frames delivered as the source produces them.",
+  replay: "A recording is preloaded, then played back at a fixed rate.",
+  // enum config values
+  replace: "Each frame redraws the whole curve.",
+  append: "Each frame appends new samples to a rolling window.",
+  scalar: "Single-channel intensity image.",
+  rgb: "Three-channel colour image."
+};
+const GROUP_TIPS = {
+  frontends: "The plotting implementations to benchmark. Each renders the same frames independently.",
+  backends: "Where frames are generated — the Python source or the faster Rust source.",
+  modes: "How frames reach the renderer: live streaming, or replay of a preloaded recording.",
+  kind: "Frontend benchmark drives a renderer; Source receiver probe measures the source and delivery only, with no plotting."
+};
 const SHARED_FIELDS = [
-  { key: "hz", label: "Target rate", kind: "rate", hint: "Hz" },
-  { key: "seed", label: "Data seed", kind: "number" }
+  {
+    key: "hz",
+    label: "Target rate",
+    kind: "rate",
+    hint: "Hz",
+    tip: "Frames per second the source generates and submits. Capped at 120 Hz."
+  },
+  {
+    key: "seed",
+    label: "Data seed",
+    kind: "number",
+    tip: "Seed for the deterministic data generator; the same seed reproduces identical frames."
+  }
 ];
 const WAVEFORM_FIELDS = [
-  { key: "points", label: "Waveform points", kind: "number" },
-  { key: "waveform_mode", label: "Waveform mode", kind: "enum" },
-  { key: "append_count", label: "Append count", kind: "number", hint: "append mode" }
+  {
+    key: "points",
+    label: "Waveform points",
+    kind: "number",
+    tip: "Number of samples in each waveform frame."
+  },
+  {
+    key: "waveform_mode",
+    label: "Waveform mode",
+    kind: "enum",
+    tip: "replace redraws the whole curve each frame; append adds to a rolling window."
+  },
+  {
+    key: "append_count",
+    label: "Append count",
+    kind: "number",
+    hint: "append mode",
+    tip: "In append mode, how many new samples are added per frame."
+  }
 ];
 const IMAGE_FIELDS = [
-  { key: "width", label: "Image width", kind: "number", hint: "px" },
-  { key: "height", label: "Image height", kind: "number", hint: "px" },
-  { key: "image_mode", label: "Image mode", kind: "enum" }
+  { key: "width", label: "Image width", kind: "number", hint: "px", tip: "Image width in pixels." },
+  { key: "height", label: "Image height", kind: "number", hint: "px", tip: "Image height in pixels." },
+  {
+    key: "image_mode",
+    label: "Image mode",
+    kind: "enum",
+    tip: "scalar sends a single intensity channel; rgb sends three colour channels."
+  }
 ];
 const RESOLUTION_FIELD = {
   key: "resolution",
   label: "Square resolution",
   kind: "number",
-  hint: "px, sets width & height"
+  hint: "px, sets width & height",
+  tip: "Shorthand that sets both width and height to the same square size."
 };
 const ALL_AXES = [
   "view",
@@ -465,155 +531,6 @@ function visibleGroups(view, includeResolution = false) {
   return groups;
 }
 const MAX_SAFE = Number.MAX_SAFE_INTEGER;
-function parseNumeric(text, allowDecimal) {
-  const trimmed = text.trim();
-  if (trimmed === "") return { value: void 0 };
-  const clean = allowDecimal ? /^-?\d*\.?\d+$/ : /^-?\d+$/;
-  if (!clean.test(trimmed)) {
-    return { value: text, error: allowDecimal ? "Enter a number." : "Enter a whole number." };
-  }
-  const n2 = Number(trimmed);
-  if (!Number.isFinite(n2)) return { value: text, error: "Enter a finite number." };
-  if (Math.abs(n2) > MAX_SAFE) {
-    return {
-      value: text,
-      error: `Too large for the editor (±${MAX_SAFE.toLocaleString()}). Use the CLI for larger integers.`
-    };
-  }
-  return { value: n2 };
-}
-function Field(props) {
-  return /* @__PURE__ */ u$1("label", { class: "field", children: [
-    /* @__PURE__ */ u$1("span", { class: "field-label", children: [
-      props.label,
-      props.hint ? /* @__PURE__ */ u$1("span", { class: "field-hint", children: [
-        " · ",
-        props.hint
-      ] }) : null
-    ] }),
-    props.children,
-    props.error ? /* @__PURE__ */ u$1("span", { class: "field-error", children: props.error }) : null
-  ] });
-}
-function NumberField(props) {
-  const [text, setText] = d(props.value === void 0 ? "" : String(props.value));
-  const emitted = A(props.value);
-  h(() => {
-    if (props.value !== emitted.current) {
-      setText(props.value === void 0 ? "" : String(props.value));
-      emitted.current = props.value;
-    }
-  }, [props.value]);
-  const parsed = parseNumeric(text, props.allowDecimal ?? false);
-  return /* @__PURE__ */ u$1(Field, { label: props.label, hint: props.hint, error: parsed.error, children: /* @__PURE__ */ u$1(
-    "input",
-    {
-      type: "text",
-      inputMode: props.allowDecimal ? "decimal" : "numeric",
-      value: text,
-      placeholder: props.placeholder === void 0 ? "Optional" : String(props.placeholder),
-      "aria-label": props.label,
-      "aria-invalid": parsed.error ? "true" : void 0,
-      onInput: (event) => {
-        const next = event.target.value;
-        setText(next);
-        const result = parseNumeric(next, props.allowDecimal ?? false);
-        emitted.current = result.value;
-        props.onChange(result.value);
-      }
-    }
-  ) });
-}
-function SelectField(props) {
-  return /* @__PURE__ */ u$1(Field, { label: props.label, hint: props.hint, children: /* @__PURE__ */ u$1(
-    "select",
-    {
-      value: props.value === void 0 ? "" : String(props.value),
-      "aria-label": props.label,
-      onChange: (event) => {
-        const next = event.target.value;
-        props.onChange(next === "" ? void 0 : next);
-      },
-      children: [
-        /* @__PURE__ */ u$1("option", { value: "", children: props.defaultLabel }),
-        props.options.map((option) => /* @__PURE__ */ u$1("option", { value: option, children: option }))
-      ]
-    }
-  ) });
-}
-function TextField(props) {
-  return /* @__PURE__ */ u$1(Field, { label: props.label, hint: props.hint, children: /* @__PURE__ */ u$1(
-    "input",
-    {
-      type: "text",
-      value: props.value,
-      placeholder: props.placeholder,
-      "aria-label": props.label,
-      onInput: (event) => props.onInput(event.target.value)
-    }
-  ) });
-}
-function ChipGroup(props) {
-  return /* @__PURE__ */ u$1("fieldset", { class: "chip-group", disabled: props.disabled, children: [
-    /* @__PURE__ */ u$1("legend", { children: props.legend }),
-    /* @__PURE__ */ u$1("div", { class: "chips", children: props.options.map((option) => {
-      const checked = props.selected.includes(option);
-      return /* @__PURE__ */ u$1("label", { class: checked ? "chip chip-on" : "chip", children: [
-        /* @__PURE__ */ u$1(
-          "input",
-          {
-            type: "checkbox",
-            value: option,
-            checked,
-            onChange: (event) => props.onToggle(option, event.target.checked)
-          }
-        ),
-        option
-      ] });
-    }) })
-  ] });
-}
-function ConfigFields(props) {
-  const view = String(props.config.view ?? props.defaults.view);
-  const groups = visibleGroups(view, props.includeResolution);
-  const set = (key, value) => {
-    const next = { ...props.config };
-    if (value === void 0) delete next[key];
-    else next[key] = value;
-    props.onChange(next);
-  };
-  return /* @__PURE__ */ u$1("div", { class: "config-groups", children: groups.map((group) => /* @__PURE__ */ u$1("fieldset", { class: "config-group", children: [
-    /* @__PURE__ */ u$1("legend", { children: group.title }),
-    /* @__PURE__ */ u$1("div", { class: "field-grid", children: group.fields.map((spec) => {
-      const value = props.config[spec.key];
-      const fallback = props.defaults[spec.key];
-      if (spec.kind === "enum") {
-        return /* @__PURE__ */ u$1(
-          SelectField,
-          {
-            label: spec.label,
-            hint: spec.hint,
-            value,
-            options: ENUMS[spec.key],
-            defaultLabel: `Default (${fallback})`,
-            onChange: (next) => set(spec.key, next)
-          }
-        );
-      }
-      return /* @__PURE__ */ u$1(
-        NumberField,
-        {
-          label: spec.label,
-          hint: spec.hint,
-          value,
-          allowDecimal: spec.kind === "rate",
-          placeholder: fallback,
-          onChange: (next) => set(spec.key, next)
-        }
-      );
-    }) })
-  ] })) });
-}
 function CopyButton(props) {
   const [copied, setCopied] = d(false);
   return /* @__PURE__ */ u$1(
@@ -645,6 +562,187 @@ function CommandLine(props) {
       /* @__PURE__ */ u$1(CopyButton, { text: props.command })
     ] })
   ] });
+}
+function InfoTip(props) {
+  return /* @__PURE__ */ u$1("span", { class: "infotip", tabIndex: 0, role: "note", "aria-label": props.text, children: [
+    /* @__PURE__ */ u$1("span", { class: "infotip-icon", "aria-hidden": "true", children: "i" }),
+    /* @__PURE__ */ u$1("span", { class: "infotip-bubble", role: "tooltip", children: props.text })
+  ] });
+}
+function parseNumeric(text, allowDecimal) {
+  const trimmed = text.trim();
+  if (trimmed === "") return { value: void 0 };
+  const clean = allowDecimal ? /^-?\d*\.?\d+$/ : /^-?\d+$/;
+  if (!clean.test(trimmed)) {
+    return { value: text, error: allowDecimal ? "Enter a number." : "Enter a whole number." };
+  }
+  const n2 = Number(trimmed);
+  if (!Number.isFinite(n2)) return { value: text, error: "Enter a finite number." };
+  if (Math.abs(n2) > MAX_SAFE) {
+    return {
+      value: text,
+      error: `Too large for the editor (±${MAX_SAFE.toLocaleString()}). Use the CLI for larger integers.`
+    };
+  }
+  return { value: n2 };
+}
+function Field(props) {
+  return /* @__PURE__ */ u$1("div", { class: "field", children: [
+    /* @__PURE__ */ u$1("span", { class: "field-label", children: [
+      props.label,
+      props.hint ? /* @__PURE__ */ u$1("span", { class: "field-hint", children: [
+        " · ",
+        props.hint
+      ] }) : null,
+      props.tip ? /* @__PURE__ */ u$1(InfoTip, { text: props.tip }) : null
+    ] }),
+    props.children,
+    props.error ? /* @__PURE__ */ u$1("span", { class: "field-error", children: props.error }) : null
+  ] });
+}
+function NumberField(props) {
+  const [text, setText] = d(props.value === void 0 ? "" : String(props.value));
+  const emitted = A(props.value);
+  h(() => {
+    if (props.value !== emitted.current) {
+      setText(props.value === void 0 ? "" : String(props.value));
+      emitted.current = props.value;
+    }
+  }, [props.value]);
+  const parsed = parseNumeric(text, props.allowDecimal ?? false);
+  return /* @__PURE__ */ u$1(Field, { label: props.label, hint: props.hint, tip: props.tip, error: parsed.error, children: /* @__PURE__ */ u$1(
+    "input",
+    {
+      type: "text",
+      inputMode: props.allowDecimal ? "decimal" : "numeric",
+      value: text,
+      placeholder: props.placeholder === void 0 ? "Optional" : String(props.placeholder),
+      "aria-label": props.label,
+      "aria-invalid": parsed.error ? "true" : void 0,
+      onInput: (event) => {
+        const next = event.target.value;
+        setText(next);
+        const result = parseNumeric(next, props.allowDecimal ?? false);
+        emitted.current = result.value;
+        props.onChange(result.value);
+      }
+    }
+  ) });
+}
+function SelectField(props) {
+  return /* @__PURE__ */ u$1(Field, { label: props.label, hint: props.hint, tip: props.tip, children: /* @__PURE__ */ u$1(
+    "select",
+    {
+      value: props.value === void 0 ? "" : String(props.value),
+      "aria-label": props.label,
+      onChange: (event) => {
+        const next = event.target.value;
+        props.onChange(next === "" ? void 0 : next);
+      },
+      children: [
+        /* @__PURE__ */ u$1("option", { value: "", children: props.defaultLabel }),
+        props.options.map((option) => /* @__PURE__ */ u$1("option", { value: option, children: option }))
+      ]
+    }
+  ) });
+}
+function TextField(props) {
+  return /* @__PURE__ */ u$1(Field, { label: props.label, hint: props.hint, children: /* @__PURE__ */ u$1(
+    "input",
+    {
+      type: "text",
+      value: props.value,
+      placeholder: props.placeholder,
+      "aria-label": props.label,
+      onInput: (event) => props.onInput(event.target.value)
+    }
+  ) });
+}
+function ChipGroup(props) {
+  return /* @__PURE__ */ u$1("fieldset", { class: "chip-group", disabled: props.disabled, children: [
+    /* @__PURE__ */ u$1("legend", { children: [
+      props.legend,
+      props.legendTip ? /* @__PURE__ */ u$1(InfoTip, { text: props.legendTip }) : null
+    ] }),
+    /* @__PURE__ */ u$1("div", { class: "chips", children: props.options.map((option) => {
+      const checked = props.selected.includes(option);
+      const status = props.status?.[option];
+      const missing = status ? !status.installed : false;
+      const title = [
+        props.tips?.[option],
+        status ? status.installed ? "Installed." : `Not installed — ./scripts/setup ${status.setup}` : void 0
+      ].filter(Boolean).join(" ");
+      return /* @__PURE__ */ u$1(
+        "label",
+        {
+          class: `chip${checked ? " chip-on" : ""}${missing ? " chip-missing" : ""}`,
+          title: title || void 0,
+          children: [
+            /* @__PURE__ */ u$1(
+              "input",
+              {
+                type: "checkbox",
+                value: option,
+                checked,
+                onChange: (event) => props.onToggle(option, event.target.checked)
+              }
+            ),
+            status ? /* @__PURE__ */ u$1(
+              "span",
+              {
+                class: `dot ${status.installed ? "dot-ok" : "dot-missing"}`,
+                "aria-hidden": "true"
+              }
+            ) : null,
+            option
+          ]
+        }
+      );
+    }) })
+  ] });
+}
+function ConfigFields(props) {
+  const view = String(props.config.view ?? props.defaults.view);
+  const groups = visibleGroups(view, props.includeResolution);
+  const set = (key, value) => {
+    const next = { ...props.config };
+    if (value === void 0) delete next[key];
+    else next[key] = value;
+    props.onChange(next);
+  };
+  return /* @__PURE__ */ u$1("div", { class: "config-groups", children: groups.map((group) => /* @__PURE__ */ u$1("fieldset", { class: "config-group", children: [
+    /* @__PURE__ */ u$1("legend", { children: group.title }),
+    /* @__PURE__ */ u$1("div", { class: "field-grid", children: group.fields.map((spec) => {
+      const value = props.config[spec.key];
+      const fallback = props.defaults[spec.key];
+      if (spec.kind === "enum") {
+        return /* @__PURE__ */ u$1(
+          SelectField,
+          {
+            label: spec.label,
+            hint: spec.hint,
+            tip: spec.tip,
+            value,
+            options: ENUMS[spec.key],
+            defaultLabel: `Default (${fallback})`,
+            onChange: (next) => set(spec.key, next)
+          }
+        );
+      }
+      return /* @__PURE__ */ u$1(
+        NumberField,
+        {
+          label: spec.label,
+          hint: spec.hint,
+          tip: spec.tip,
+          value,
+          allowDecimal: spec.kind === "rate",
+          placeholder: fallback,
+          onChange: (next) => set(spec.key, next)
+        }
+      );
+    }) })
+  ] })) });
 }
 function Launcher(props) {
   const { result } = props;
@@ -865,16 +963,19 @@ function RawJson(props) {
   );
 }
 function ViewSegmented(props) {
-  return /* @__PURE__ */ u$1("div", { class: "segmented", role: "group", "aria-label": "Plots", children: ENUMS.view.map((option) => /* @__PURE__ */ u$1(
-    "button",
-    {
-      type: "button",
-      class: props.value === option ? "seg seg-on" : "seg",
-      "aria-pressed": props.value === option,
-      onClick: () => props.onChange(option),
-      children: option
-    }
-  )) });
+  return /* @__PURE__ */ u$1("span", { class: "view-control", children: [
+    /* @__PURE__ */ u$1("div", { class: "segmented", role: "group", "aria-label": "Plots", children: ENUMS.view.map((option) => /* @__PURE__ */ u$1(
+      "button",
+      {
+        type: "button",
+        class: props.value === option ? "seg seg-on" : "seg",
+        "aria-pressed": props.value === option,
+        onClick: () => props.onChange(option),
+        children: option
+      }
+    )) }),
+    /* @__PURE__ */ u$1(InfoTip, { text: VIEW_TIP })
+  ] });
 }
 function parseAxisValues(text, isEnum) {
   const parts = text.split(",").map((value) => value.trim()).filter((value) => value !== "");
@@ -1026,11 +1127,11 @@ function GroupCard(props) {
   ] });
 }
 const TIMINGS = [
-  { key: "warmup_seconds", label: "Warmup", hint: "seconds", decimal: true },
-  { key: "measurement_seconds", label: "Measured", hint: "seconds", decimal: true },
-  { key: "cooldown_seconds", label: "Cooldown", hint: "seconds", decimal: true },
-  { key: "repetitions", label: "Repetitions", hint: "per combination", decimal: false },
-  { key: "order_seed", label: "Run order seed", hint: "shuffle", decimal: false }
+  { key: "warmup_seconds", label: "Warmup", hint: "seconds", decimal: true, tip: "Unmeasured seconds before each run so the renderer reaches steady state." },
+  { key: "measurement_seconds", label: "Measured", hint: "seconds", decimal: true, tip: "The measured window per run, in seconds." },
+  { key: "cooldown_seconds", label: "Cooldown", hint: "seconds", decimal: true, tip: "Idle seconds after each run before the next starts." },
+  { key: "repetitions", label: "Repetitions", hint: "per combination", decimal: false, tip: "How many times each workload combination runs." },
+  { key: "order_seed", label: "Run order seed", hint: "shuffle", decimal: false, tip: "Seed for the deterministic shuffle of run order across the campaign." }
 ];
 function timingDefaults(kind) {
   const probe = kind === "probe";
@@ -1064,6 +1165,7 @@ function blankSuite() {
 function App() {
   const [options, setOptions] = d(null);
   const [presets, setPresets] = d([]);
+  const [env, setEnv] = d(null);
   const [suite, setSuite] = d(null);
   const [kind, setKind] = d("run");
   const [active, setActive] = d(null);
@@ -1085,6 +1187,7 @@ function App() {
         setOptions(data);
         setSuite(data.suite);
         setPresets(await fetchPresets());
+        setEnv(await fetchEnvironment());
       } catch (failure) {
         setLoadError(`${failure.message ?? failure} Restart the matrix editor and reload this page.`);
       }
@@ -1211,6 +1314,22 @@ function App() {
     { label: "Preview", command: `./scripts/plotbench ${command} --suite ${runPath} --dry-run` },
     { label: "Full run", command: `./scripts/plotbench ${command} --suite ${runPath} --output results/${runStem}` }
   ];
+  const recheckEnv = async () => setEnv(await fetchEnvironment());
+  const selectedFrontends = probe ? [] : suite.frontends ?? options.frontends;
+  const selectedBackends = suite.backends ?? [options.default_backend];
+  const missing = [];
+  if (env) {
+    for (const name of selectedFrontends) {
+      const status = env.frontends[name];
+      if (status && !status.installed) missing.push({ name, setup: status.setup });
+    }
+    for (const name of selectedBackends) {
+      const status = env.backends[name];
+      if (status && !status.installed) missing.push({ name, setup: status.setup });
+    }
+  }
+  const setupNames = [...new Set(missing.map((item) => item.setup).filter(Boolean))];
+  const installCommand = setupNames.length ? `./scripts/setup ${setupNames.join(" ")}` : "";
   return /* @__PURE__ */ u$1("main", { children: [
     /* @__PURE__ */ u$1("header", { class: "app-header", children: [
       /* @__PURE__ */ u$1("p", { class: "eyebrow", children: "PLOTBENCH" }),
@@ -1233,8 +1352,11 @@ function App() {
       ] }),
       /* @__PURE__ */ u$1("div", { class: "field-grid setup-grid", children: [
         /* @__PURE__ */ u$1(TextField, { label: "Suite name", value: suite.name ?? "", placeholder: "Describe this campaign", onInput: (v2) => setField("name", v2) }),
-        /* @__PURE__ */ u$1("label", { class: "field", children: [
-          /* @__PURE__ */ u$1("span", { class: "field-label", children: "Preview command" }),
+        /* @__PURE__ */ u$1("div", { class: "field", children: [
+          /* @__PURE__ */ u$1("span", { class: "field-label", children: [
+            "Preview command",
+            /* @__PURE__ */ u$1(InfoTip, { text: GROUP_TIPS.kind })
+          ] }),
           /* @__PURE__ */ u$1("select", { id: "kind", value: kind, onChange: (e2) => setKind(e2.target.value), children: [
             /* @__PURE__ */ u$1("option", { value: "run", children: "Frontend benchmark (run)" }),
             /* @__PURE__ */ u$1("option", { value: "probe", children: "Source receiver probe" })
@@ -1243,16 +1365,32 @@ function App() {
         /* @__PURE__ */ u$1(TextField, { label: "Display context", hint: "recorded with results", value: suite.display_context ?? "", placeholder: "Monitor, refresh rate, scaling, placement", onInput: (v2) => setField("display_context", v2) })
       ] }),
       /* @__PURE__ */ u$1("div", { class: "selections", children: [
-        /* @__PURE__ */ u$1(ChipGroup, { legend: "Frontends", options: options.frontends, selected: suite.frontends ?? options.frontends, disabled: probe, onToggle: setSelection("frontends", options.frontends) }),
-        /* @__PURE__ */ u$1(ChipGroup, { legend: "Source backends", options: options.backends, selected: suite.backends ?? [options.default_backend], onToggle: setSelection("backends", [options.default_backend]) }),
-        /* @__PURE__ */ u$1(ChipGroup, { legend: "Delivery modes", options: options.modes, selected: suite.modes ?? options.modes, disabled: probe, onToggle: setSelection("modes", options.modes) })
+        /* @__PURE__ */ u$1(ChipGroup, { legend: "Frontends", legendTip: GROUP_TIPS.frontends, tips: OPTION_TIPS, status: env?.frontends, options: options.frontends, selected: suite.frontends ?? options.frontends, disabled: probe, onToggle: setSelection("frontends", options.frontends) }),
+        /* @__PURE__ */ u$1(ChipGroup, { legend: "Source backends", legendTip: GROUP_TIPS.backends, tips: OPTION_TIPS, status: env?.backends, options: options.backends, selected: suite.backends ?? [options.default_backend], onToggle: setSelection("backends", [options.default_backend]) }),
+        /* @__PURE__ */ u$1(ChipGroup, { legend: "Delivery modes", legendTip: GROUP_TIPS.modes, tips: OPTION_TIPS, options: options.modes, selected: suite.modes ?? options.modes, disabled: probe, onToggle: setSelection("modes", options.modes) })
       ] }),
       probe ? /* @__PURE__ */ u$1("p", { class: "muted small", children: "Probe measures the source and delivery only; frontend and mode selections are ignored." }) : null,
+      missing.length ? /* @__PURE__ */ u$1("div", { class: "install-hint", children: [
+        /* @__PURE__ */ u$1("div", { class: "install-head", children: [
+          /* @__PURE__ */ u$1("span", { class: "install-title", children: [
+            "⚠ Not installed: ",
+            missing.map((item) => item.name).join(", ")
+          ] }),
+          /* @__PURE__ */ u$1("button", { type: "button", class: "btn-soft", onClick: recheckEnv, children: "Re-check" })
+        ] }),
+        /* @__PURE__ */ u$1(CommandLine, { label: "Install", command: installCommand }),
+        /* @__PURE__ */ u$1("p", { class: "muted small", children: [
+          "Run this in your terminal, then Re-check. Verify with ",
+          /* @__PURE__ */ u$1("code", { children: "./scripts/plotbench doctor" }),
+          "."
+        ] })
+      ] }) : null,
       /* @__PURE__ */ u$1("div", { class: "field-grid timings-grid", children: TIMINGS.map((t2) => /* @__PURE__ */ u$1(
         NumberField,
         {
           label: t2.label,
           hint: t2.hint,
+          tip: t2.tip,
           allowDecimal: t2.decimal,
           value: suite[t2.key],
           placeholder: tDefaults[t2.key],

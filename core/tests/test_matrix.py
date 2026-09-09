@@ -8,7 +8,7 @@ from aiohttp.test_utils import TestClient, TestServer
 
 from plotbench import matrix
 from plotbench.matrix import create_app
-from plotbench.suites import prepare_suite
+from plotbench.suites import FRONTENDS, prepare_suite
 
 
 def suite():
@@ -249,6 +249,22 @@ def test_save_writes_slugged_suite_inside_custom_dir_and_refuses_traversal(tmp_p
             assert response.status == 400
             assert "Use the CLI" in (await response.json())["error"]
             assert not (custom / "big.json").exists()
+
+    asyncio.run(exercise())
+
+
+def test_environment_reports_install_status_and_setup_commands():
+    async def exercise():
+        async with TestClient(TestServer(create_app(suite()))) as client:
+            data = await (await client.get("/api/environment")).json()
+            assert set(data["frontends"]) == set(FRONTENDS)
+            assert data["frontends"]["pyqtgraph-gl"]["setup"] == "pyqtgraph"
+            assert data["frontends"]["matplotlib"]["setup"] == "matplotlib"
+            for entry in data["frontends"].values():
+                assert isinstance(entry["installed"], bool)
+            assert data["backends"]["python"] == {"installed": True, "setup": None}
+            assert data["backends"]["rust"]["setup"] == "rust"
+            assert isinstance(data["backends"]["rust"]["installed"], bool)
 
     asyncio.run(exercise())
 

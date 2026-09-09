@@ -1,7 +1,8 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { ENUMS, MAX_SAFE, visibleGroups } from '../config-fields';
-import type { Config, ConfigValue } from '../types';
+import type { ComponentStatus, Config, ConfigValue } from '../types';
+import { InfoTip } from './infotip';
 
 type Emitted = ConfigValue | undefined;
 
@@ -26,22 +27,32 @@ function parseNumeric(text: string, allowDecimal: boolean): { value: Emitted; er
   return { value: n };
 }
 
-export function Field(props: { label: string; hint?: string; children: ComponentChildren; error?: string }) {
+export function Field(props: {
+  label: string;
+  hint?: string;
+  tip?: string;
+  children: ComponentChildren;
+  error?: string;
+}) {
+  // A div (not a label) so an in-caption InfoTip does not toggle the control; the
+  // inputs carry their own aria-label for accessible naming.
   return (
-    <label class="field">
+    <div class="field">
       <span class="field-label">
         {props.label}
         {props.hint ? <span class="field-hint"> · {props.hint}</span> : null}
+        {props.tip ? <InfoTip text={props.tip} /> : null}
       </span>
       {props.children}
       {props.error ? <span class="field-error">{props.error}</span> : null}
-    </label>
+    </div>
   );
 }
 
 export function NumberField(props: {
   label: string;
   hint?: string;
+  tip?: string;
   value: ConfigValue | undefined;
   placeholder?: string | number;
   allowDecimal?: boolean;
@@ -60,7 +71,7 @@ export function NumberField(props: {
 
   const parsed = parseNumeric(text, props.allowDecimal ?? false);
   return (
-    <Field label={props.label} hint={props.hint} error={parsed.error}>
+    <Field label={props.label} hint={props.hint} tip={props.tip} error={parsed.error}>
       <input
         type="text"
         inputMode={props.allowDecimal ? 'decimal' : 'numeric'}
@@ -83,13 +94,14 @@ export function NumberField(props: {
 export function SelectField(props: {
   label: string;
   hint?: string;
+  tip?: string;
   value: ConfigValue | undefined;
   options: string[];
   defaultLabel: string;
   onChange: (value: Emitted) => void;
 }) {
   return (
-    <Field label={props.label} hint={props.hint}>
+    <Field label={props.label} hint={props.hint} tip={props.tip}>
       <select
         value={props.value === undefined ? '' : String(props.value)}
         aria-label={props.label}
@@ -132,22 +144,49 @@ export function ChipGroup(props: {
   options: string[];
   selected: string[];
   disabled?: boolean;
+  legendTip?: string;
+  tips?: Record<string, string>;
+  status?: Record<string, ComponentStatus>;
   onToggle: (value: string, checked: boolean) => void;
 }) {
   return (
     <fieldset class="chip-group" disabled={props.disabled}>
-      <legend>{props.legend}</legend>
+      <legend>
+        {props.legend}
+        {props.legendTip ? <InfoTip text={props.legendTip} /> : null}
+      </legend>
       <div class="chips">
         {props.options.map((option) => {
           const checked = props.selected.includes(option);
+          const status = props.status?.[option];
+          const missing = status ? !status.installed : false;
+          const title = [
+            props.tips?.[option],
+            status
+              ? status.installed
+                ? 'Installed.'
+                : `Not installed — ./scripts/setup ${status.setup}`
+              : undefined,
+          ]
+            .filter(Boolean)
+            .join(' ');
           return (
-            <label class={checked ? 'chip chip-on' : 'chip'}>
+            <label
+              class={`chip${checked ? ' chip-on' : ''}${missing ? ' chip-missing' : ''}`}
+              title={title || undefined}
+            >
               <input
                 type="checkbox"
                 value={option}
                 checked={checked}
                 onChange={(event) => props.onToggle(option, (event.target as HTMLInputElement).checked)}
               />
+              {status ? (
+                <span
+                  class={`dot ${status.installed ? 'dot-ok' : 'dot-missing'}`}
+                  aria-hidden="true"
+                />
+              ) : null}
               {option}
             </label>
           );
@@ -189,6 +228,7 @@ export function ConfigFields(props: {
                   <SelectField
                     label={spec.label}
                     hint={spec.hint}
+                    tip={spec.tip}
                     value={value}
                     options={ENUMS[spec.key]}
                     defaultLabel={`Default (${fallback})`}
@@ -200,6 +240,7 @@ export function ConfigFields(props: {
                 <NumberField
                   label={spec.label}
                   hint={spec.hint}
+                  tip={spec.tip}
                   value={value}
                   allowDecimal={spec.kind === 'rate'}
                   placeholder={fallback}

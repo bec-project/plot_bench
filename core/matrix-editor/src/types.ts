@@ -88,6 +88,16 @@ export interface Preset {
   error?: string;
 }
 
+export interface ComponentStatus {
+  installed: boolean;
+  setup: string | null;
+}
+
+export interface EnvironmentStatus {
+  frontends: Record<string, ComponentStatus>;
+  backends: Record<string, ComponentStatus>;
+}
+
 export interface SaveResult {
   path: string;
   name: string;

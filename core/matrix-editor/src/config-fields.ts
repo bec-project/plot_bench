@@ -9,6 +9,7 @@ export interface FieldSpec {
   label: string;
   kind: FieldKind;
   hint?: string;
+  tip?: string;
 }
 
 export const ENUMS: Record<string, string[]> = {
@@ -17,21 +18,86 @@ export const ENUMS: Record<string, string[]> = {
   image_mode: ['scalar', 'rgb'],
 };
 
+// Short explanations surfaced as tooltips on options and section legends.
+export const VIEW_TIP =
+  'Which plot(s) this workload drives: a 1-D waveform, a 2-D image, or both together.';
+
+export const OPTION_TIPS: Record<string, string> = {
+  // frontends
+  pyqtgraph: 'PyQtGraph — Qt, CPU raster rendering.',
+  'pyqtgraph-gl': 'PyQtGraph with its OpenGL backend.',
+  matplotlib: 'Matplotlib on the Qt Agg canvas.',
+  qtgraphs: 'Qt Graphs (QML/Quick) renderer.',
+  'qtgraphs-cpp': 'Qt Graphs via the native C++ SDK.',
+  iced: 'Iced — native Rust GUI on wgpu.',
+  plotly: 'Plotly.js in a controlled browser.',
+  // backends
+  python: 'The built-in Python source. Always available with a core install.',
+  rust: 'The faster native Rust source. Needs ./scripts/setup rust.',
+  // modes
+  stream: 'Live frames delivered as the source produces them.',
+  replay: 'A recording is preloaded, then played back at a fixed rate.',
+  // enum config values
+  replace: 'Each frame redraws the whole curve.',
+  append: 'Each frame appends new samples to a rolling window.',
+  scalar: 'Single-channel intensity image.',
+  rgb: 'Three-channel colour image.',
+};
+
+export const GROUP_TIPS = {
+  frontends: 'The plotting implementations to benchmark. Each renders the same frames independently.',
+  backends: 'Where frames are generated — the Python source or the faster Rust source.',
+  modes: 'How frames reach the renderer: live streaming, or replay of a preloaded recording.',
+  kind: 'Frontend benchmark drives a renderer; Source receiver probe measures the source and delivery only, with no plotting.',
+} as const;
+
 export const SHARED_FIELDS: FieldSpec[] = [
-  { key: 'hz', label: 'Target rate', kind: 'rate', hint: 'Hz' },
-  { key: 'seed', label: 'Data seed', kind: 'number' },
+  {
+    key: 'hz',
+    label: 'Target rate',
+    kind: 'rate',
+    hint: 'Hz',
+    tip: 'Frames per second the source generates and submits. Capped at 120 Hz.',
+  },
+  {
+    key: 'seed',
+    label: 'Data seed',
+    kind: 'number',
+    tip: 'Seed for the deterministic data generator; the same seed reproduces identical frames.',
+  },
 ];
 
 export const WAVEFORM_FIELDS: FieldSpec[] = [
-  { key: 'points', label: 'Waveform points', kind: 'number' },
-  { key: 'waveform_mode', label: 'Waveform mode', kind: 'enum' },
-  { key: 'append_count', label: 'Append count', kind: 'number', hint: 'append mode' },
+  {
+    key: 'points',
+    label: 'Waveform points',
+    kind: 'number',
+    tip: 'Number of samples in each waveform frame.',
+  },
+  {
+    key: 'waveform_mode',
+    label: 'Waveform mode',
+    kind: 'enum',
+    tip: 'replace redraws the whole curve each frame; append adds to a rolling window.',
+  },
+  {
+    key: 'append_count',
+    label: 'Append count',
+    kind: 'number',
+    hint: 'append mode',
+    tip: 'In append mode, how many new samples are added per frame.',
+  },
 ];
 
 export const IMAGE_FIELDS: FieldSpec[] = [
-  { key: 'width', label: 'Image width', kind: 'number', hint: 'px' },
-  { key: 'height', label: 'Image height', kind: 'number', hint: 'px' },
-  { key: 'image_mode', label: 'Image mode', kind: 'enum' },
+  { key: 'width', label: 'Image width', kind: 'number', hint: 'px', tip: 'Image width in pixels.' },
+  { key: 'height', label: 'Image height', kind: 'number', hint: 'px', tip: 'Image height in pixels.' },
+  {
+    key: 'image_mode',
+    label: 'Image mode',
+    kind: 'enum',
+    tip: 'scalar sends a single intensity channel; rgb sends three colour channels.',
+  },
 ];
 
 // A square-image shorthand offered on group base configs only.
@@ -40,6 +106,7 @@ export const RESOLUTION_FIELD: FieldSpec = {
   label: 'Square resolution',
   kind: 'number',
   hint: 'px, sets width & height',
+  tip: 'Shorthand that sets both width and height to the same square size.',
 };
 
 export const ALL_AXES: string[] = [

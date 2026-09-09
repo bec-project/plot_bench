@@ -156,6 +156,23 @@ def create_app(suite):
             return web.json_response({"error": str(exc)}, status=400)
         return web.json_response(payload, dumps=lambda value: json.dumps(value, allow_nan=False))
 
+    async def environment(request):
+        """A fast, filesystem-only probe of which components are installed."""
+        from .runtime import component_installed, setup_component
+
+        frontends = {
+            name: {"installed": component_installed(name), "setup": setup_component(name)}
+            for name in FRONTENDS
+        }
+        backends = {
+            name: {
+                "installed": component_installed(name),
+                "setup": None if name == "python" else name,
+            }
+            for name in BACKENDS
+        }
+        return web.json_response(dict(frontends=frontends, backends=backends))
+
     async def presets(request):
         items = []
         for directory, source in ((SCENARIOS_DIR, "bundled"), (CUSTOM_DIR, "custom")):
@@ -212,6 +229,7 @@ def create_app(suite):
             web.get("/", asset),
             web.get("/{name:index.html|editor.js|style.css}", asset),
             web.get("/api/initial", initial),
+            web.get("/api/environment", environment),
             web.get("/api/presets", presets),
             web.post("/api/preview", preview),
             web.post("/api/save", save),

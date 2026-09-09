@@ -1,19 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { fetchInitial, fetchPresets, preview, previewRaw, saveSuite } from './api';
+import { fetchEnvironment, fetchInitial, fetchPresets, preview, previewRaw, saveSuite } from './api';
+import { GROUP_TIPS, OPTION_TIPS } from './config-fields';
+import { CommandLine } from './components/commands';
 import { ChipGroup, NumberField, TextField } from './components/fields';
+import { InfoTip } from './components/infotip';
 import { Launcher } from './components/launcher';
 import { PlanPreview } from './components/preview';
 import { PresetGallery } from './components/presets';
 import { RawJson } from './components/rawjson';
 import { GroupCard, WorkloadCard } from './components/workloads';
-import type { InitialData, Kind, Plan, Preset, SaveResult, Suite } from './types';
+import type { EnvironmentStatus, InitialData, Kind, Plan, Preset, SaveResult, Suite } from './types';
 
-const TIMINGS: Array<{ key: keyof Suite; label: string; hint: string; decimal: boolean }> = [
-  { key: 'warmup_seconds', label: 'Warmup', hint: 'seconds', decimal: true },
-  { key: 'measurement_seconds', label: 'Measured', hint: 'seconds', decimal: true },
-  { key: 'cooldown_seconds', label: 'Cooldown', hint: 'seconds', decimal: true },
-  { key: 'repetitions', label: 'Repetitions', hint: 'per combination', decimal: false },
-  { key: 'order_seed', label: 'Run order seed', hint: 'shuffle', decimal: false },
+const TIMINGS: Array<{ key: keyof Suite; label: string; hint: string; decimal: boolean; tip: string }> = [
+  { key: 'warmup_seconds', label: 'Warmup', hint: 'seconds', decimal: true, tip: 'Unmeasured seconds before each run so the renderer reaches steady state.' },
+  { key: 'measurement_seconds', label: 'Measured', hint: 'seconds', decimal: true, tip: 'The measured window per run, in seconds.' },
+  { key: 'cooldown_seconds', label: 'Cooldown', hint: 'seconds', decimal: true, tip: 'Idle seconds after each run before the next starts.' },
+  { key: 'repetitions', label: 'Repetitions', hint: 'per combination', decimal: false, tip: 'How many times each workload combination runs.' },
+  { key: 'order_seed', label: 'Run order seed', hint: 'shuffle', decimal: false, tip: 'Seed for the deterministic shuffle of run order across the campaign.' },
 ];
 
 function timingDefaults(kind: Kind): Record<string, number> {
@@ -52,6 +55,7 @@ function blankSuite(): Suite {
 export function App() {
   const [options, setOptions] = useState<InitialData | null>(null);
   const [presets, setPresets] = useState<Preset[]>([]);
+  const [env, setEnv] = useState<EnvironmentStatus | null>(null);
   const [suite, setSuite] = useState<Suite | null>(null);
   const [kind, setKind] = useState<Kind>('run');
   const [active, setActive] = useState<string | null>(null);
@@ -76,6 +80,7 @@ export function App() {
         setOptions(data);
         setSuite(data.suite);
         setPresets(await fetchPresets());
+        setEnv(await fetchEnvironment());
       } catch (failure: any) {
         setLoadError(`${failure.message ?? failure} Restart the matrix editor and reload this page.`);
       }
@@ -227,6 +232,24 @@ export function App() {
     { label: 'Full run', command: `./scripts/plotbench ${command} --suite ${runPath} --output results/${runStem}` },
   ];
 
+  // Which selected components are not installed, and the command that installs them.
+  const recheckEnv = async () => setEnv(await fetchEnvironment());
+  const selectedFrontends = probe ? [] : suite.frontends ?? options.frontends;
+  const selectedBackends = suite.backends ?? [options.default_backend];
+  const missing: Array<{ name: string; setup: string | null }> = [];
+  if (env) {
+    for (const name of selectedFrontends) {
+      const status = env.frontends[name];
+      if (status && !status.installed) missing.push({ name, setup: status.setup });
+    }
+    for (const name of selectedBackends) {
+      const status = env.backends[name];
+      if (status && !status.installed) missing.push({ name, setup: status.setup });
+    }
+  }
+  const setupNames = [...new Set(missing.map((item) => item.setup).filter(Boolean))] as string[];
+  const installCommand = setupNames.length ? `./scripts/setup ${setupNames.join(' ')}` : '';
+
   return (
     <main>
       <header class="app-header">
@@ -248,28 +271,41 @@ export function App() {
         <div class="step"><span class="step-no">2</span><h2>Execution</h2></div>
         <div class="field-grid setup-grid">
           <TextField label="Suite name" value={suite.name ?? ''} placeholder="Describe this campaign" onInput={(v) => setField('name', v)} />
-          <label class="field">
-            <span class="field-label">Preview command</span>
+          <div class="field">
+            <span class="field-label">Preview command<InfoTip text={GROUP_TIPS.kind} /></span>
             <select id="kind" value={kind} onChange={(e) => setKind((e.target as HTMLSelectElement).value as Kind)}>
               <option value="run">Frontend benchmark (run)</option>
               <option value="probe">Source receiver probe</option>
             </select>
-          </label>
+          </div>
           <TextField label="Display context" hint="recorded with results" value={suite.display_context ?? ''} placeholder="Monitor, refresh rate, scaling, placement" onInput={(v) => setField('display_context', v)} />
         </div>
 
         <div class="selections">
-          <ChipGroup legend="Frontends" options={options.frontends} selected={suite.frontends ?? options.frontends} disabled={probe} onToggle={setSelection('frontends', options.frontends)} />
-          <ChipGroup legend="Source backends" options={options.backends} selected={suite.backends ?? [options.default_backend]} onToggle={setSelection('backends', [options.default_backend])} />
-          <ChipGroup legend="Delivery modes" options={options.modes} selected={suite.modes ?? options.modes} disabled={probe} onToggle={setSelection('modes', options.modes)} />
+          <ChipGroup legend="Frontends" legendTip={GROUP_TIPS.frontends} tips={OPTION_TIPS} status={env?.frontends} options={options.frontends} selected={suite.frontends ?? options.frontends} disabled={probe} onToggle={setSelection('frontends', options.frontends)} />
+          <ChipGroup legend="Source backends" legendTip={GROUP_TIPS.backends} tips={OPTION_TIPS} status={env?.backends} options={options.backends} selected={suite.backends ?? [options.default_backend]} onToggle={setSelection('backends', [options.default_backend])} />
+          <ChipGroup legend="Delivery modes" legendTip={GROUP_TIPS.modes} tips={OPTION_TIPS} options={options.modes} selected={suite.modes ?? options.modes} disabled={probe} onToggle={setSelection('modes', options.modes)} />
         </div>
         {probe ? <p class="muted small">Probe measures the source and delivery only; frontend and mode selections are ignored.</p> : null}
+        {missing.length ? (
+          <div class="install-hint">
+            <div class="install-head">
+              <span class="install-title">
+                ⚠ Not installed: {missing.map((item) => item.name).join(', ')}
+              </span>
+              <button type="button" class="btn-soft" onClick={recheckEnv}>Re-check</button>
+            </div>
+            <CommandLine label="Install" command={installCommand} />
+            <p class="muted small">Run this in your terminal, then Re-check. Verify with <code>./scripts/plotbench doctor</code>.</p>
+          </div>
+        ) : null}
 
         <div class="field-grid timings-grid">
           {TIMINGS.map((t) => (
             <NumberField
               label={t.label}
               hint={t.hint}
+              tip={t.tip}
               allowDecimal={t.decimal}
               value={suite[t.key] as number | undefined}
               placeholder={tDefaults[t.key as string]}

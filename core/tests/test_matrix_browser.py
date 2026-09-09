@@ -45,6 +45,9 @@ def test_matrix_build_preview_export_save_and_mobile_layout(tmp_path):
                 await expect(page.locator(".run-here")).to_contain_text(
                     "scenarios_custom/my-suite.json --dry-run"
                 )
+                # Option tooltips and per-component install-status dots are present.
+                await expect(page.locator(".infotip").first).to_be_visible()
+                assert await page.locator(".chip .dot").count() > 0
 
                 await page.get_by_role("button", name="+ Add workload", exact=True).click()
                 await page.locator("#cases article").nth(1).get_by_label(

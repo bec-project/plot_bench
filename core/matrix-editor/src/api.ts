@@ -1,4 +1,12 @@
-import type { InitialData, Kind, Plan, Preset, SaveResult, Suite } from './types';
+import type {
+  EnvironmentStatus,
+  InitialData,
+  Kind,
+  Plan,
+  Preset,
+  SaveResult,
+  Suite,
+} from './types';
 
 async function jsonOrError(response: Response): Promise<any> {
   const result = await response.json().catch(() => ({}));
@@ -11,6 +19,12 @@ async function jsonOrError(response: Response): Promise<any> {
 export async function fetchInitial(): Promise<InitialData> {
   const response = await fetch('/api/initial');
   if (!response.ok) throw new Error('The matrix editor could not load its initial suite.');
+  return response.json();
+}
+
+export async function fetchEnvironment(): Promise<EnvironmentStatus | null> {
+  const response = await fetch('/api/environment');
+  if (!response.ok) return null;
   return response.json();
 }
 

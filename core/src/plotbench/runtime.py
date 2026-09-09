@@ -107,6 +107,32 @@ def _executable(component):
     }[component]
 
 
+# pyqtgraph-gl shares the pyqtgraph environment, so `setup pyqtgraph` installs both.
+SETUP_ALIAS = {"pyqtgraph-gl": "pyqtgraph"}
+
+
+def setup_component(component):
+    """The `./scripts/setup` argument that installs the given component."""
+    return SETUP_ALIAS.get(component, component)
+
+
+def component_installed(component):
+    """Fast filesystem check that a component's build artifact exists.
+
+    No imports, subprocesses or Qt initialization — suitable for the editor's live
+    environment probe. `doctor` remains the authority for full verification.
+    """
+    if component == "python":
+        return True
+    if component == "plotly":
+        return (ROOT / "frontends/plotly/dist/index.html").is_file()
+    try:
+        executable = _executable(component)
+    except KeyError:
+        return False
+    return executable.is_file() and os.access(executable, os.X_OK)
+
+
 def _run_check(command, *, environment=None, timeout=15):
     try:
         result = subprocess.run(
