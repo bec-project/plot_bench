@@ -6,15 +6,20 @@ Python adapter's cost is the binding and NumPy path, and how much is Qt Graphs i
 
 Requirements: a Qt 6 C++ SDK (6.8 or newer) with the Graphs, Quick, QuickControls2,
 Network and WebSockets modules, CMake 3.21+ and a C++20 compiler. The SDK is a bootstrap
-tool like uv or Cargo; `./scripts/setup qtgraphs-cpp` looks in `~/Qt/6.*/macos` and
-`/opt/homebrew/opt/qt`, or use `PLOTBENCH_QT_PREFIX`. The build lands in `build/` and
-setup records the executable's identity for benchmark provenance.
+tool like uv or Cargo. Setup accepts normal CMake discovery, `CMAKE_PREFIX_PATH`,
+or an explicit `PLOTBENCH_QT_PREFIX`. See [platform setup](../../docs/setup.md).
+The build lands in `build/` and setup records its identity for provenance.
 
 ```sh
 ./scripts/setup qtgraphs-cpp
-./scripts/plotbench demo qtgraphs-cpp --backend rust
-build/plotbench-qtgraphs-cpp --url http://127.0.0.1:8765 --mode replay --duration 10
-cd frontends/qtgraphs-cpp/build && ctest --output-on-failure
+./scripts/plotbench demo qtgraphs-cpp
+```
+
+For a direct adapter launch, start `./scripts/plotbench serve` in another terminal:
+
+```sh
+frontends/qtgraphs-cpp/build/plotbench-qtgraphs-cpp --url http://127.0.0.1:8765 --mode replay --duration 10
+ctest --test-dir frontends/qtgraphs-cpp/build --output-on-failure
 ```
 
 Waveforms use the native **Qt Graphs** `GraphsView`/`LineSeries`; each frame rewrites one

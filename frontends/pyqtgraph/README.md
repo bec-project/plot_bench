@@ -3,16 +3,17 @@
 Independent Python 3.13 package. Only this adapter's environment contains PyQtGraph;
 the source/telemetry client comes from the sibling `core` package.
 
-From the monorepo root (start the shared producer first):
+From the repository root:
 
 ```sh
-UV_CACHE_DIR="$PWD/.cache/uv" UV_PYTHON_INSTALL_DIR="$PWD/.envs/python" \
-UV_PROJECT_ENVIRONMENT="$PWD/.envs/plotting-benchmark-pyqtgraph" \
-uv sync --project frontends/pyqtgraph --python 3.13.14
-.envs/plotting-benchmark-pyqtgraph/bin/plotbench-pyqtgraph
-.envs/plotting-benchmark-pyqtgraph/bin/plotbench-pyqtgraph --opengl
-.envs/plotting-benchmark-pyqtgraph/bin/plotbench-pyqtgraph --mode replay --duration 10
+./scripts/setup pyqtgraph
+./scripts/plotbench demo pyqtgraph
+./scripts/plotbench demo pyqtgraph --mode replay
 ```
+
+See [platform setup](../../docs/setup.md) for system requirements and
+[validation](../../docs/validation.md) for test coverage.
+
 
 The producer control page changes frequency, dimensions, waveform replace/append,
 RGB/scalar image, and waveform/image/both views. All updates use the complete

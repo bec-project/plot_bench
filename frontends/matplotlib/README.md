@@ -3,15 +3,17 @@
 Independent Python 3.13 environment using QtAgg, with reusable `Line2D` and
 `AxesImage` artists and explicit background blitting.
 
-From the monorepo root (start the shared producer first):
+From the repository root:
 
 ```sh
-UV_CACHE_DIR="$PWD/.cache/uv" UV_PYTHON_INSTALL_DIR="$PWD/.envs/python" \
-UV_PROJECT_ENVIRONMENT="$PWD/.envs/plotting-benchmark-matplotlib" \
-uv sync --project frontends/matplotlib --python 3.13.14
-.envs/plotting-benchmark-matplotlib/bin/plotbench-matplotlib
-.envs/plotting-benchmark-matplotlib/bin/plotbench-matplotlib --mode replay --duration 10
+./scripts/setup matplotlib
+./scripts/plotbench demo matplotlib
+./scripts/plotbench demo matplotlib --mode replay
 ```
+
+See [platform setup](../../docs/setup.md) for system requirements and
+[validation](../../docs/validation.md) for test coverage.
+
 
 Use the shared producer controls for source frequency/dimensions, waveform
 replace/append, scalar/RGB images and waveform/image/both. Every waveform update

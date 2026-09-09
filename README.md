@@ -6,32 +6,105 @@ frontends decode and render the same protocol. Backend results remain separate.
 
 ## Quick start
 
-Install [uv](https://docs.astral.sh/uv/), then run from the repository root:
+Install [uv](https://docs.astral.sh/uv/) and follow the
+[platform setup guide](docs/setup.md) for your desktop, then run from the repository root:
 
 ```sh
 ./scripts/setup pyqtgraph
+./scripts/plotbench doctor --frontends pyqtgraph --backends python
 ./scripts/plotbench demo pyqtgraph
+```
+
+Close the demo before recording a short functional benchmark:
+
+```sh
 ./scripts/plotbench run --suite scenarios/smoke.json --frontends pyqtgraph --modes stream --dry-run
 ./scripts/plotbench run --suite scenarios/smoke.json --frontends pyqtgraph --modes stream
 ```
 
-The last command writes an offline report and raw measurements under `results/`.
-Use a visible desktop for benchmarks. Short smoke runs verify operation, not
-stable performance rankings. Linux support is under validation.
+The runner prints the result directory. Open its **report.html** for compact charts
+or **report-extended.html** for complete evidence. Both work offline. Raw samples,
+logs, the selected suite and JSON/CSV summaries remain under `results/`.
+Short smoke runs verify operation; they do not establish stable performance rankings.
 
-## Components
+## Create your own matrix
 
-Sources: Python/NumPy and [Rust](backends/rust/README.md).
-Frontends: [PyQtGraph](frontends/pyqtgraph/README.md) (raster/OpenGL),
-[Matplotlib](frontends/matplotlib/README.md), [Qt Graphs](frontends/qtgraphs/README.md),
-[Qt Graphs C++](frontends/qtgraphs-cpp/README.md), [Iced](frontends/iced/README.md),
-and [Plotly/React](frontends/plotly/README.md).
+```sh
+./scripts/plotbench matrix --suite scenarios/smoke.json
+```
 
-See the [protocol and measurement contract](docs/protocol.md) and
-[presentation conventions](docs/presentation.md). The common metric is submitted
-updates per second, not displayed FPS. Per-adapter timing boundaries differ.
+The local browser editor lets you add cases and Cartesian groups, select frontends,
+sources and delivery modes, set timings, inspect the expanded schedule and download
+validated JSON. It does not run benchmarks. Close it and execute the exported file:
+
+```sh
+./scripts/plotbench run --suite my-suite.json --dry-run --json
+./scripts/plotbench run --suite my-suite.json --output results/my-comparison
+```
+
+CLI filters and timing overrides remain available. See the
+[suite reference](docs/suites.md) before using a large sweep.
+
+## Frontends and sources
+
+| Component | Rendering implementation |
+|---|---|
+| [PyQtGraph](frontends/pyqtgraph/README.md) | Raster and OpenGL curve variants; ImageItem |
+| [Matplotlib](frontends/matplotlib/README.md) | QtAgg with reusable artists and fixed-axes blitting |
+| [Qt Graphs](frontends/qtgraphs/README.md) | PySide6 native waveform series; custom Qt Quick image provider |
+| [Qt Graphs C++](frontends/qtgraphs-cpp/README.md) | Native C++ waveform submission and custom Qt Quick image provider |
+| [Iced](frontends/iced/README.md) | Rust/wgpu with a custom waveform Canvas and image widget |
+| [Plotly/React](frontends/plotly/README.md) | Production TypeScript bundle; scattergl, heatmap and image |
+
+Install only selected components with `./scripts/setup COMPONENT`. Rust/Cargo, npm
+and the C++ Qt SDK are required only for their respective components. Local Python
+environments are isolated; no BEC, Redis, credentials or shared conda setup is needed.
+See the [core](core/README.md) and [Rust source](backends/rust/README.md).
+
+Python is the default source. After `./scripts/setup rust`, choose `--backend rust`
+for a demo or `--backends python rust` for a suite. Use `plotbench probe` to measure
+source and decoded-delivery capacity without plotting. See [backends](docs/backends.md).
+
+## Understand the measurements
+
+All frontends receive centrally generated waveform replacement/append and
+scalar/RGB image workloads. Streaming uses bounded delivery and decoded-frame
+acknowledgements; replay uses a bounded centrally generated dataset in CPU memory.
+Formal runs launch one frontend at a time.
+
+The common metric is **submitted updates/s**, not displayed FPS. Adapter API timing
+boundaries differ and can exclude deferred GPU work. Reports keep workload, source,
+delivery mode, build and runtime/display contexts separate and retain failures.
+Use a controlled visible desktop and record refresh/scaling/placement with
+`--display-context`. See [methodology](docs/methodology.md),
+[protocol](docs/protocol.md), and [reports](docs/reports.md).
+
+macOS and Linux x86-64 are the release targets. Linux qualification targets native
+Wayland on Ubuntu 24.04 and RHEL-compatible 9+. See the
+[validation record](docs/validation.md) for verified checks and remaining limits;
+headless/container tests are not GPU benchmarks. Windows and Linux ARM qualification
+are outside the initial release.
+
+## Use an agent or contribute
+
+Agents should start with [AGENTS.md](AGENTS.md). Example requests:
+
+> Preview a matrix comparing PyQtGraph and Matplotlib with the Python source,
+> 10k and 100k waveform points at 60 Hz, streaming, three 30-second repetitions.
+> Tell me the run count and estimated duration before measuring.
+
+> Run the smoke suite for my installed PyQtGraph frontend and give me links to the
+> compact and extended reports. Preserve failed attempts and identify source limits.
+
+> Regenerate the reports in results/my-comparison and explain which runs are
+> comparable without treating submitted update rates as displayed FPS.
+
+See [contributing](CONTRIBUTING.md), [adding a frontend](docs/frontends.md),
+[development checks](docs/validation.md), and the [demo gallery](docs/demo-gallery.html).
+The repository retains separate frontend packages and one shared measurement contract.
 
 ## License
 
-Project code is [BSD-3-Clause licensed](LICENSE). Dependencies retain their own licenses;
-Qt Graphs is available under GPLv3 or a commercial Qt license.
+Project code is [BSD-3-Clause licensed](LICENSE), Copyright (c) 2026 Jan Wyzula.
+Dependencies retain their own licenses; Qt Graphs is GPLv3 or commercially licensed.
+See [third-party notices](docs/licenses.md).

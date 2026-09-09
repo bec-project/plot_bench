@@ -1,0 +1,159 @@
+name: Functional validation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_HOME: ${{ github.workspace }}/.cache/cargo
+
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  desktop-components:
+    name: Components (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Linux libraries for functional tests
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config cmake ninja-build \
+            libwayland-dev libxkbcommon-dev libegl1 libgl1 libvulkan1 \
+            mesa-vulkan-drivers libfontconfig1 libfreetype6 libdbus-1-3
+      - name: Install selected components and test tools
+        run: ./scripts/setup core pyqtgraph matplotlib qtgraphs plotly rust iced --dev
+      - name: Browser system libraries
+        if: runner.os == 'Linux'
+        run: .envs/plotting-benchmark/bin/python -m playwright install-deps chromium
+      - name: Core and source conformance
+        run: .envs/plotting-benchmark/bin/python -m pytest core/tests
+      - name: Matrix editor browser interactions
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.cache/playwright
+        run: |
+          PLOTBENCH_TEST_BROWSER="$(.envs/plotting-benchmark/bin/python - <<'PY'
+          from playwright.sync_api import sync_playwright
+          with sync_playwright() as playwright:
+              print(playwright.chromium.executable_path)
+          PY
+          )"
+          export PLOTBENCH_TEST_BROWSER
+          .envs/plotting-benchmark/bin/python -m pytest core/tests/test_matrix_browser.py
+      - name: Python quality checks
+        run: |
+          .envs/plotting-benchmark/bin/python -m ruff check core
+          .envs/plotting-benchmark/bin/python -m black core --check
+      - name: Qt adapter tests (offscreen, not performance)
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          .envs/plotting-benchmark-pyqtgraph/bin/python -m pytest frontends/pyqtgraph/tests
+          .envs/plotting-benchmark-matplotlib/bin/python -m pytest frontends/matplotlib/tests
+          .envs/plotting-benchmark-qtgraphs/bin/python -m pytest frontends/qtgraphs/tests
+      - name: TypeScript tests and production build
+        run: |
+          export PATH="$PWD/.envs/node/node_modules/node/bin:$PATH"
+          npm --prefix frontends/plotly test
+          npm --prefix frontends/plotly run build
+          .envs/plotting-benchmark/bin/python -m plotbench.provenance plotly
+      - name: Rust tests and formatting
+        run: |
+          cargo fmt --manifest-path backends/rust/Cargo.toml --all --check
+          cargo fmt --manifest-path frontends/iced/Cargo.toml --all --check
+          cargo test --manifest-path backends/rust/Cargo.toml --locked --release
+          cargo test --manifest-path frontends/iced/Cargo.toml --locked --release
+          cargo clippy --manifest-path backends/rust/Cargo.toml --locked --all-targets -- -D warnings
+          cargo clippy --manifest-path frontends/iced/Cargo.toml --locked --all-targets -- -D warnings
+      - name: Browser lifecycle smoke (headless, not performance)
+        run: |
+          cargo build --manifest-path backends/rust/Cargo.toml --locked --release
+          .envs/plotting-benchmark/bin/python -m plotbench.provenance rust
+          ./scripts/plotbench run --suite scenarios/smoke.json --frontends plotly \
+            --backends python rust --modes stream replay --limit 1 \
+            --warmup 0.5 --duration 2 --repetitions 1 --cooldown 0 --headless
+
+  cpp:
+    name: Qt C++ (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Linux C++ and Qt development libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build libgl1-mesa-dev \
+            libegl1-mesa-dev libwayland-dev libxkbcommon-dev libfontconfig1-dev
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.11.2'
+          modules: 'qtgraphs qtquick3d qtshadertools qtwebsockets'
+          cache: true
+      - name: Build with the selected SDK
+        run: PLOTBENCH_QT_PREFIX="$QT_ROOT_DIR" ./scripts/setup qtgraphs-cpp --dev
+      - name: Protocol and resource tests
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: ctest --test-dir frontends/qtgraphs-cpp/build --output-on-failure
+
+  enterprise-linux:
+    name: AlmaLinux ${{ matrix.version }} compatibility
+    runs-on: ubuntu-24.04
+    container: almalinux:${{ matrix.version }}
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ['9', '10']
+    steps:
+      - name: Bootstrap build and runtime packages
+        run: |
+          dnf --enablerepo=crb install -y git curl gcc gcc-c++ make pkgconf-pkg-config cmake ninja-build \
+            wayland-devel libxkbcommon-devel mesa-libEGL mesa-libGL vulkan-loader \
+            mesa-vulkan-drivers fontconfig freetype dbus-libs nodejs npm
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Install Rust through rustup
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o /tmp/rustup-init.sh
+          sh /tmp/rustup-init.sh -y --profile minimal --default-toolchain none
+          echo "$CARGO_HOME/bin" >> "$GITHUB_PATH"
+      - name: Build selected components (no bundled browser)
+        run: ./scripts/setup core pyqtgraph matplotlib qtgraphs plotly rust iced --dev --browser system
+      - name: Core and source conformance
+        run: .envs/plotting-benchmark/bin/python -m pytest core/tests
+      - name: Qt conversion/adapter tests (offscreen, not performance)
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          .envs/plotting-benchmark-pyqtgraph/bin/python -m pytest frontends/pyqtgraph/tests
+          .envs/plotting-benchmark-matplotlib/bin/python -m pytest frontends/matplotlib/tests
+          .envs/plotting-benchmark-qtgraphs/bin/python -m pytest frontends/qtgraphs/tests
+      - name: Rust and TypeScript tests
+        run: |
+          cargo test --manifest-path backends/rust/Cargo.toml --locked --release
+          cargo test --manifest-path frontends/iced/Cargo.toml --locked --release
+          export PATH="$PWD/.envs/node/node_modules/node/bin:$PATH"
+          npm --prefix frontends/plotly test
+      - name: Explain qualification boundary
+        run: echo 'Container checks do not qualify native Wayland, an installed browser, or GPU performance.'

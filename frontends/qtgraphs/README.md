@@ -5,15 +5,17 @@ Independent Python 3.13 + PySide6 environment. Waveforms use **Qt Graphs** QML
 use the deprecated Qt Charts module. qtpy supplies ordinary Qt types; QtGraphs is
 imported from PySide6 because qtpy does not wrap this module.
 
-From the monorepo root (start the shared producer first):
+From the repository root:
 
 ```sh
-UV_CACHE_DIR="$PWD/.cache/uv" UV_PYTHON_INSTALL_DIR="$PWD/.envs/python" \
-UV_PROJECT_ENVIRONMENT="$PWD/.envs/plotting-benchmark-qtgraphs" \
-uv sync --project frontends/qtgraphs --python 3.13.14
-.envs/plotting-benchmark-qtgraphs/bin/plotbench-qtgraphs
-.envs/plotting-benchmark-qtgraphs/bin/plotbench-qtgraphs --mode replay --duration 10
+./scripts/setup qtgraphs
+./scripts/plotbench demo qtgraphs
+./scripts/plotbench demo qtgraphs --mode replay
 ```
+
+See [platform setup](../../docs/setup.md) for system requirements and
+[validation](../../docs/validation.md) for test coverage.
+
 
 **The image view requires additional custom work.** Qt Graphs does not provide a
 native 2D scalar/RGB image series. This adapter implements a `QQuickImageProvider`,

@@ -45,7 +45,7 @@ is recorded in metadata.
 The presentation uses the shared dark benchmark palette, a workload strip, four
 live metric columns, and equally sized waveform/image cards. Single-view cases
 use the entire plot row. The **Source controls** button opens the configured
-source URL with macOS `open`, passing the URL as a direct argument. Actual plot
+source URL with `open` on macOS or `xdg-open` on Linux, passing the URL as a direct argument. Actual plot
 dimensions continue to be recorded after resizing; hold the window size fixed
 during measurements. Resizing fits the existing Canvas path until the next data
 update replaces it, with the same physical stroke width.
@@ -194,3 +194,8 @@ guarantees; the update budget excludes deferred GPU and display presentation wor
 Replay shows receive age as **N/A**. Targets remain unavailable before the first
 frame and follow the active rate after stream changes or replay reloads. Hover over
 a metric card for the interpretation.
+
+Linux builds enable native Wayland. See [platform setup](../../docs/setup.md)
+and [validation](../../docs/validation.md); offscreen/container checks do not
+qualify GPU performance. From the repository root use `./scripts/setup iced` and
+`./scripts/plotbench demo iced`.
