@@ -105,7 +105,7 @@ export const RESOLUTION_FIELD: FieldSpec = {
   key: 'resolution',
   label: 'Square resolution',
   kind: 'number',
-  hint: 'px, sets width & height',
+  hint: 'px',
   tip: 'Shorthand that sets both width and height to the same square size.',
 };
 
