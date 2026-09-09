@@ -167,7 +167,7 @@ def test_report_embeds_hardware_and_acquisition_dates_and_escapes_metadata(tmp_p
     campaign(tmp_path, [job()])
     write_run(tmp_path / "run-0001")
     finalize_campaign_manifest(tmp_path, status="completed", attempted=1, failed=0)
-    html = build_report(tmp_path).read_text()
+    html = build_report(tmp_path).with_name("report-extended.html").read_text()
     expected_fragments = (
         "MacBookPro18,3",
         "macOS 15.7.5 (24G624)",
@@ -224,7 +224,7 @@ def test_legacy_results_fall_back_to_run_host_json_without_inventing_fields(tmp_
             }
         )
     )
-    html = build_report(tmp_path).read_text()
+    html = build_report(tmp_path).with_name("report-extended.html").read_text()
     assert "No campaign manifest" in html
     assert "Apple M1 Pro" in html and "aarch64" in html
     assert "2026-09-08T14:32:08+00:00" in html
@@ -251,7 +251,7 @@ def test_legacy_naive_timestamps_never_receive_a_timezone(tmp_path):
     assert campaign_record["timezone"] == "Not recorded"
     assert campaign_record["hardware"] is None
     assert parse_timestamp("nonsense") == (None, "unreadable: nonsense")
-    html = build_report(tmp_path).read_text()
+    html = build_report(tmp_path).with_name("report-extended.html").read_text()
     assert "timezone not recorded" in html
 
 
@@ -259,7 +259,7 @@ def test_incomplete_campaign_lists_absent_runs_instead_of_omitting_them(tmp_path
     campaign(tmp_path, [job(), job(repetition=2), job(scenario="image")])
     write_run(tmp_path / "run-0001")
     finalize_campaign_manifest(tmp_path, status="interrupted", attempted=1, failed=0)
-    html = build_report(tmp_path).read_text()
+    html = build_report(tmp_path).with_name("report-extended.html").read_text()
     assert "Incomplete campaign" in html
     assert "1 of 3 planned runs recorded" in html and "2 planned runs absent" in html
     assert "image · stream · example · rust · repeat 1" in html
@@ -321,7 +321,9 @@ def test_diagnostics_are_separate_sections_with_directory_qualified_links(tmp_pa
             {"replay": "../replay", "stability": "../stability", "source_probe": "../source-probe"}
         )
     )
-    html = build_report(main).read_text()
+    html = build_report(main).with_name("report-extended.html").read_text()
+    ids = re.findall(r'\bid="([^"]+)"', html)
+    assert len(ids) == len(set(ids))
     summary = json.loads((main / "summary.json").read_text())
     assert len(summary["runs"]) == 1 and len(summary["comparisons"]) == 1
     entries = summary["diagnostics"]["entries"]
@@ -355,7 +357,7 @@ def test_missing_or_unknown_diagnostics_are_reported_unavailable(tmp_path):
     write_run(tmp_path / "run-0001")
     finalize_campaign_manifest(tmp_path, status="completed", attempted=1, failed=0)
     (tmp_path / "diagnostics.json").write_text(json.dumps({"replay": "../nowhere", "bogus": "x"}))
-    html = build_report(tmp_path).read_text()
+    html = build_report(tmp_path).with_name("report-extended.html").read_text()
     summary = json.loads((tmp_path / "summary.json").read_text())
     assert summary["diagnostics"]["entries"]["replay"]["status"] == "unavailable"
     assert "does not exist" in summary["diagnostics"]["entries"]["replay"]["error"]
@@ -377,7 +379,7 @@ def test_replacement_attempts_are_a_separate_section_and_never_replace_failures(
     write_run(replacement / "run-0001")
     finalize_campaign_manifest(replacement, status="completed", attempted=1, failed=0)
     (main / "diagnostics.json").write_text(json.dumps({"replacement": "../replacement"}))
-    html = build_report(main).read_text()
+    html = build_report(main).with_name("report-extended.html").read_text()
     summary = json.loads((main / "summary.json").read_text())
     assert summary["runs"][0]["status"] == "exit-1" and summary["comparisons"][0]["valid"] == 0
     entry = summary["diagnostics"]["entries"]["replacement"]
@@ -411,7 +413,7 @@ def test_labelled_diagnostic_attempts_stay_separate_sections(tmp_path):
             }
         )
     )
-    html = build_report(main).read_text()
+    html = build_report(main).with_name("report-extended.html").read_text()
     summary = json.loads((main / "summary.json").read_text())
     entries = summary["diagnostics"]["entries"]
     assert entries["stability:first attempt"]["label"] == "first attempt"
@@ -444,7 +446,9 @@ def test_extension_runs_merge_into_the_comparison_only_when_they_match_the_suite
     write_run(extension / "run-0004", frontend="cpp", mode="replay")
     finalize_campaign_manifest(extension, status="completed", attempted=4, failed=0)
     (main / "diagnostics.json").write_text(json.dumps({"extension:cpp": "../cpp"}))
-    html = build_report(main).read_text()
+    html = build_report(main).with_name("report-extended.html").read_text()
+    ids = re.findall(r'\bid="([^"]+)"', html)
+    assert len(ids) == len(set(ids))
     summary = json.loads((main / "summary.json").read_text())
     assert summary["campaign"]["recorded_runs"] == 1
     assert summary["campaign"]["merged_extension_runs"] == 1
@@ -471,7 +475,7 @@ def test_extension_runs_merge_into_the_comparison_only_when_they_match_the_suite
 
 def test_absent_diagnostics_manifest_is_stated(tmp_path):
     write_run(tmp_path / "run-0001")
-    html = build_report(tmp_path).read_text()
+    html = build_report(tmp_path).with_name("report-extended.html").read_text()
     assert "No <code>diagnostics.json</code> manifest" in html
     summary = json.loads((tmp_path / "summary.json").read_text())
     assert summary["diagnostics"] == {"manifest_present": False, "error": None, "entries": {}}

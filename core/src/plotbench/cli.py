@@ -7,6 +7,20 @@ from pathlib import Path
 
 from .backends import BACKENDS
 from .config import Config
+from .suites import FRONTENDS
+
+
+def add_suite_options(parser):
+    parser.add_argument("--duration", type=float, help="override measured seconds per repetition")
+    parser.add_argument("--warmup", type=float, help="override warmup seconds")
+    parser.add_argument("--cooldown", type=float, help="override cooldown seconds after each run")
+    parser.add_argument("--repetitions", type=int, help="override repetition count")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="validate and preview without launching"
+    )
+    parser.add_argument(
+        "--json", action="store_true", help="machine-readable preview; requires --dry-run"
+    )
 
 
 def main():
@@ -27,7 +41,7 @@ def main():
             serve.add_argument("--" + name.replace("_", "-"), type=type(default), default=None)
     run = sub.add_parser("run", help="run a suite sequentially and generate a report")
     run.add_argument("--suite", type=Path, default=Path("scenarios/smoke.json"))
-    run.add_argument("--frontends", nargs="+")
+    run.add_argument("--frontends", nargs="+", choices=FRONTENDS)
     run.add_argument("--modes", nargs="+", choices=("stream", "replay"))
     run.add_argument("--backends", nargs="+", choices=BACKENDS)
     run.add_argument(
@@ -43,7 +57,10 @@ def main():
         action="store_true",
         help="browser diagnostic only; not comparable to visible GUIs",
     )
-    run.add_argument("--dry-run", action="store_true")
+    run.add_argument(
+        "--browser-executable", type=Path, help="use this Chromium executable for Plotly"
+    )
+    add_suite_options(run)
     report = sub.add_parser(
         "report", help="regenerate HTML, CSV and JSON summaries from raw measurements"
     )
@@ -52,20 +69,12 @@ def main():
         "--probe", action="store_true", help="regenerate a receiver-only backend probe report"
     )
     demo = sub.add_parser("demo", help="launch a frontend and start a source if needed")
-    demo.add_argument(
-        "frontend",
-        choices=(
-            "pyqtgraph",
-            "pyqtgraph-gl",
-            "matplotlib",
-            "qtgraphs",
-            "qtgraphs-cpp",
-            "iced",
-            "plotly",
-        ),
-    )
+    demo.add_argument("frontend", choices=FRONTENDS)
     demo.add_argument("--mode", choices=("stream", "replay"), default="stream")
     demo.add_argument("--url", default="http://127.0.0.1:8765")
+    demo.add_argument(
+        "--browser-executable", type=Path, help="use this Chromium executable for Plotly"
+    )
     demo.add_argument(
         "--backend",
         choices=BACKENDS,
@@ -74,11 +83,23 @@ def main():
     probe = sub.add_parser("probe", help="measure source and WebSocket delivery without plotting")
     probe.add_argument("--suite", type=Path, default=Path("scenarios/backend-probe.json"))
     probe.add_argument("--backends", nargs="+", choices=BACKENDS)
-    probe.add_argument("--duration", type=float, help="override measured seconds per repetition")
-    probe.add_argument("--warmup", type=float, help="override warmup seconds")
-    probe.add_argument("--repetitions", type=int)
+    probe.add_argument("--limit", type=int, help="limit expanded cases before repetitions/backends")
     probe.add_argument("--output", type=Path)
-    probe.add_argument("--dry-run", action="store_true")
+    add_suite_options(probe)
+    matrix = sub.add_parser("matrix", help="open the local suite editor and export benchmark JSON")
+    matrix.add_argument("--suite", type=Path, default=Path("scenarios/smoke.json"))
+    matrix.add_argument(
+        "--port", type=int, default=0, help="loopback port (default: choose a free port)"
+    )
+    matrix.add_argument(
+        "--no-open", action="store_true", help="print the URL without opening a browser"
+    )
+    doctor = sub.add_parser("doctor", help="check selected dependencies, builds and desktop access")
+    doctor.add_argument("--frontends", nargs="+", choices=FRONTENDS)
+    doctor.add_argument("--backends", nargs="+", choices=BACKENDS)
+    doctor.add_argument("--browser-executable", type=Path)
+    doctor.add_argument("--headless", action="store_true", help="check a Plotly diagnostic runtime")
+    doctor.add_argument("--json", action="store_true", help="emit machine-readable check results")
     args = parser.parse_args()
     try:
         if args.command == "serve":
@@ -121,6 +142,15 @@ def main():
             from .probe import run_probe_suite
 
             run_probe_suite(args)
+        elif args.command == "matrix":
+            from .matrix import serve_matrix
+
+            serve_matrix(args)
+        elif args.command == "doctor":
+            from .runtime import doctor
+
+            if not doctor(args):
+                parser.exit(1)
     except (ValueError, FileNotFoundError, RuntimeError) as exc:
         parser.exit(1, f"plotbench: {exc}\n")
 

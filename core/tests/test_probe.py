@@ -1,4 +1,5 @@
 import json
+import re
 from types import SimpleNamespace
 
 import pytest
@@ -57,6 +58,8 @@ def test_failed_probe_is_retained_in_all_report_formats(tmp_path):
     assert "source unavailable" in (tmp_path / "summary.csv").read_text()
     assert "failed" in (tmp_path / "report.html").read_text()
     assert "No valid measurements" in (tmp_path / "report.html").read_text()
+    assert "failed" in (tmp_path / "report-extended.html").read_text()
+    assert "<table" not in (tmp_path / "report.html").read_text()
     assert not (tmp_path / "received-throughput.svg").exists()
 
 
@@ -85,11 +88,19 @@ def test_probe_report_regenerates_from_raw_manifests_and_keeps_evidence(tmp_path
     assert len(result["comparisons"]) == 1
     assert (tmp_path / "received-throughput.svg").is_file()
     assert (tmp_path / "source-delivery.svg").is_file()
-    assert 'href="run-0001/run.json"' in report.read_text()
+    compact = report.read_text()
+    extended = report.with_name("report-extended.html").read_text()
+    assert 'href="run-0001/run.json"' in extended
+    assert "<table" not in compact and "<table" in extended
+    assert 'href="report-extended.html#runs"' in compact
+    assert 'href="report.html"' in extended
+    assert re.findall(r"<svg.*?</svg>", compact, re.S) == re.findall(
+        r"<svg.*?</svg>", extended, re.S
+    )
     assert (folder / "run.json").read_text() == manifest
     assert (folder / "receiver.jsonl").read_text() == ' {"seq": 1}\n'
     single = build_probe_report(folder)
-    assert 'href="./run.json"' in single.read_text()
+    assert 'href="./run.json"' in single.with_name("report-extended.html").read_text()
     assert (folder / "run.json").read_text() == manifest
 
 

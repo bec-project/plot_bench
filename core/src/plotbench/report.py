@@ -21,6 +21,7 @@ from .campaign import (
     read_campaign,
 )
 from .provenance import capture_provenance
+from .report_layout import compact_report_html, diagnostic_anchor, report_anchor
 from .series import run_series, series_svg
 
 TIMING_STAGES = {
@@ -363,6 +364,13 @@ def aggregate(rows):
                     "renderer_environment",
                     "headless",
                     "browser_version",
+                    "browser_selection",
+                    "browser_executable",
+                    "browser_executable_sha256",
+                    "browser_launch_arguments",
+                    "playwright_version",
+                    "display_protocol_requested",
+                    "display_session",
                     "user_agent",
                     "iced_version",
                     "build_profile",
@@ -448,7 +456,7 @@ def workload_label(config):
 
 
 def throughput_svg(groups):
-    width, left, right, step = 980, 225, 105, 44
+    width, left, right, step = 980, 225, 175, 44
     height = 60 + step * len(groups)
     max_hz = (
         max([group["target_hz"] for group in groups] + [group["max_hz"] or 0 for group in groups])
@@ -622,7 +630,8 @@ def run_row_html(row, label_prefix=""):
     label = f"{escape(row['scenario'])}<small>{escape(row['mode'])} · repeat {row['repetition']}</small>"
     areas = row["metadata"].get("plot_viewports", {})
     label += f'<small>1D: {area_label(areas.get("waveform"))}<br>2D: {area_label(areas.get("image"))}</small>'
-    run_id = f"{escape(label_prefix)}{escape(row['run_id'])}"
+    anchor = report_anchor("run", row["path"], row["run_id"], label_prefix)
+    run_id = f'<a href="#{anchor}">{escape(label_prefix)}{escape(row["run_id"])}</a>'
     return (
         f"<tr><td>{escape(row['frontend'])}<small>{run_id}</small></td><td>{escape(row['backend'])}</td>"
         f"<td>{label}</td><td>{escape(row['status'])}</td><td>{fmt(row['submitted_hz'])}</td>"
@@ -647,8 +656,9 @@ def run_details_html(row, label_prefix=""):
         observed_display_contexts=row["observed_display_contexts"],
     )
     path = escape(row["path"])
+    anchor = report_anchor("run", row["path"], row["run_id"], label_prefix)
     return (
-        f'<details><summary>{escape(label_prefix)}{escape(row["run_id"])} · {escape(row["frontend"])} · {escape(row["mode"])} · {escape(row["backend"])} · {escape(row["scenario"])}</summary>'
+        f'<details id="{anchor}"><summary>{escape(label_prefix)}{escape(row["run_id"])} · {escape(row["frontend"])} · {escape(row["mode"])} · {escape(row["backend"])} · {escape(row["scenario"])}</summary>'
         f"<pre>{escape(json.dumps(record, indent=2))}</pre>"
         f'<a href="{path}/measurements.jsonl">Raw measurements</a> · <a href="{path}/resources.jsonl">Resource samples</a> · '
         f'<a href="{path}/source.jsonl">Source samples</a> · <a href="{path}/frontend.log">Frontend log</a> · '
@@ -663,21 +673,34 @@ RUN_TABLE_HEAD = (
 )
 
 
-def comparison_sections_html(grouped, heading_level="h2"):
+def comparison_sections_html(grouped, heading_level="h2", *, scope="main", compact=False):
     sections = []
     comparisons = defaultdict(list)
     for group in grouped:
         comparisons[group["scenario"], group["mode"], group["backend"]].append(group)
     for (scenario, mode, backend), groups in comparisons.items():
+        anchor = report_anchor("comparison", scope, scenario, mode, backend)
         limited = any(group["source_limited"] for group in groups)
         note = (
             "The producer fell below target in at least one valid run; read source and delivery evidence before attributing the rate to the frontend."
             if limited
             else "Compare rates against the gold target marker. White ranges show the observed minimum and maximum across repetitions."
         )
+        evidence = (
+            f'<p><a href="report-extended.html#{anchor}">Open this comparison in the extended report</a></p>'
+            if compact
+            else (
+                '<p><a href="#runs">Per-run measurements</a> · <a href="#evidence">Source/build evidence</a></p>'
+                if scope == "main"
+                else f'<p><a href="#{scope}">Diagnostic measurements and evidence</a></p>'
+            )
+        )
         sections.append(
-            f"<section><{heading_level}>{escape(scenario)} <span>{escape(mode)} · {escape(backend)} source</span></{heading_level}>"
-            f"<p>{note} Bars show median submitted update rates over valid repetitions, not displayed FPS.</p>{throughput_svg(groups)}</section>"
+            f'<section class="chart" id="{anchor}" data-scenario="{escape(scenario, quote=True)}" '
+            f'data-mode="{escape(mode, quote=True)}" data-backend="{escape(backend, quote=True)}">'
+            f"<{heading_level}>{escape(scenario)} <span>{escape(mode)} · {escape(backend)} source</span></{heading_level}>"
+            f"<p>{note} Bars show median submitted update rates over valid repetitions, not displayed FPS.</p>"
+            f'<div class="chart-scroll">{throughput_svg(groups)}</div>{evidence}</section>'
         )
     return "".join(sections)
 
@@ -706,7 +729,7 @@ def timing_sections_html(rows):
             }
         )
         sections.append(
-            f'<section><h2>{escape(frontend)} · timing stages</h2><p>{escape("; ".join(boundaries))}</p>'
+            f'<section id="{report_anchor("timing", frontend)}"><h2>{escape(frontend)} · timing stages</h2><p>{escape("; ".join(boundaries))}</p>'
             "<p>Stage observations are not additive and are not comparable to another adapter’s full-frame time. Coverage describes available telemetry, not screen presentation. Missing timings are shown as —.</p>"
             '<div class="scroll"><table><thead><tr><th>Run</th><th>Stage</th><th>Observation coverage</th><th>p50 ms</th><th>p95 ms</th><th>p99 ms</th></tr></thead>'
             f'<tbody>{"".join(stage_rows)}</tbody></table></div></section>'
@@ -925,14 +948,15 @@ def diagnostics_html(diagnostics, main_count):
     for entry in diagnostics["entries"].values():
         if entry["kind"] not in DIAGNOSTIC_KINDS:
             sections.append(
-                f'<section class="diagnostic"><h2>{escape(str(entry["kind"]))}</h2><p class="banner">Unavailable: {escape(str(entry["error"]))} (reference {text(entry["reference"])}).</p></section>'
+                f'<section class="diagnostic" id="{diagnostic_anchor(entry)}"><h2>{escape(str(entry["kind"]))}</h2><p class="banner">Unavailable: {escape(str(entry["error"]))} (reference {text(entry["reference"])}).</p></section>'
             )
     return "".join(sections)
 
 
 def diagnostic_entry_html(kind, title, description, entry, main_count):
+    anchor = diagnostic_anchor(entry)
     if entry["status"] != "available":
-        return f'<section class="diagnostic"><h2>{escape(title)}</h2><p class="banner">Unavailable: {escape(str(entry["error"]))} (reference {text(entry["reference"])}).</p></section>'
+        return f'<section class="diagnostic" id="{anchor}"><h2>{escape(title)}</h2><p class="banner">Unavailable: {escape(str(entry["error"]))} (reference {text(entry["reference"])}).</p></section>'
     campaign = entry["campaign"] or {}
     note = (
         f'<p class="banner"><strong>Operator note.</strong> {escape(entry["note"])}</p>'
@@ -954,7 +978,7 @@ def diagnostic_entry_html(kind, title, description, entry, main_count):
             else ""
         )
         return (
-            f'<section class="diagnostic"><h2>{escape(title)}</h2>{header}{link}'
+            f'<section class="diagnostic" id="{anchor}"><h2>{escape(title)}</h2>{header}{link}'
             f"<p>{len(entry['probe']['runs'])} receiver-only runs. Target met requires both generation and decoded receipt to reach 98% of the requested rate in that repetition.</p>"
             f'{probe_table_html(entry["probe"], entry["link"])}</section>'
         )
@@ -974,7 +998,7 @@ def diagnostic_entry_html(kind, title, description, entry, main_count):
             else "<p>No runs were excluded.</p>"
         )
         return (
-            f'<section class="diagnostic"><h2>{escape(title)}</h2>{header}'
+            f'<section class="diagnostic" id="{anchor}"><h2>{escape(title)}</h2>{header}'
             f"<p>{len(rows)} runs recorded in <code>{escape(entry['link'])}</code>; {valid} valid; {len(merged)} merged into the comparison above under the "
             f"<code>{escape(entry.get('label') or kind)}</code> label; {len(excluded)} excluded. Merged runs appear in the charts, the per-run table, the timing tables and the CSV/JSON with their label; they never share a bar with the original runs.</p>"
             f'<p><a href="{escape(entry["link"])}/report.html">Open the extension directory\'s own report</a> · <a href="{escape(entry["link"])}/summary.json">Its summary JSON</a></p>'
@@ -1003,12 +1027,12 @@ def diagnostic_entry_html(kind, title, description, entry, main_count):
             )
         body += "".join(charts)
     else:
-        body += comparison_sections_html(entry["comparisons"], heading_level="h3")
+        body += comparison_sections_html(entry["comparisons"], heading_level="h3", scope=anchor)
     body += (
         f'<div class="scroll"><table>{RUN_TABLE_HEAD}<tbody>{"".join(run_row_html(row, prefix) for row in rows)}</tbody></table></div>'
         + "".join(run_details_html(row, prefix) for row in rows)
     )
-    return f'<section class="diagnostic"><h2>{escape(title)}</h2>{header}{body}</section>'
+    return f'<section class="diagnostic" id="{anchor}"><h2>{escape(title)}</h2>{header}{body}</section>'
 
 
 def merge_extensions(campaign, diagnostics):
@@ -1074,6 +1098,7 @@ def merge_extensions(campaign, diagnostics):
 
 
 def build_report(path):
+    """Write compact/extended offline HTML and shared summaries; return the compact path."""
     path, folders, rows = summarize_directory(path)
     if not folders:
         raise ValueError(f"no run manifests in {path}")
@@ -1158,19 +1183,21 @@ def build_report(path):
         if smoke
         else "Repeated workload measurements — compare equivalent scenarios and inspect timing boundaries before selecting a renderer."
     )
-    html = f"""<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Plotting benchmark report</title>
+    html = f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Plotting benchmark · Extended report</title>
 <style>:root{{font:16px system-ui;color:#e9f0fa;background:#0e1420}}body{{max-width:1120px;margin:0 auto;padding:48px 24px}}h1{{font-size:44px;letter-spacing:-1.5px}}h2{{font-size:23px}}h3{{font-size:18px;margin-top:26px}}h2 span,h3 span{{font-size:13px;color:#65ddc2;padding-left:14px}}p,li{{color:#b3c2d6;line-height:1.65}}.tag{{color:#65ddc2;letter-spacing:2px;font-size:12px}}section{{margin:28px 0;padding:24px;background:#172235;border-radius:12px}}section.diagnostic{{border-left:4px solid #7aa6ff}}svg{{width:100%;max-height:none}}table{{width:100%;border-collapse:collapse;font-size:13px}}th,td{{text-align:left;padding:13px 10px;border-bottom:1px solid #314158;white-space:nowrap}}th{{color:#9eb2ce;font-weight:500}}table.facts th{{width:280px;vertical-align:top}}table.facts td{{white-space:normal;overflow-wrap:anywhere}}table.facts ul{{margin:0;padding-left:18px}}small{{display:block;color:#91a6c2;margin-top:5px}}.scroll{{overflow:auto}}a{{color:#65ddc2}}details{{border-top:1px solid #314158;padding:15px 0}}summary{{cursor:pointer}}pre{{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.5}}code{{color:#e9f0fa}}input{{background:#101a2b;color:white;border:1px solid #405577;border-radius:6px;padding:10px;width:280px}}.banner{{border-left:4px solid #f5c76e;padding:10px 14px;background:#22304a;border-radius:6px}}.banner.ok{{border-left-color:#63d7b9}}@media print{{:root{{color:#101820;background:white}}section{{background:#eef2f8}}p,li,small{{color:#334155}}details{{display:block}}}}</style>
-<div class="tag">PLOTBENCH / RECORDED MEASUREMENTS</div><h1>Plotting benchmark report</h1>
+</head><body><div class="tag">PLOTBENCH / RECORDED MEASUREMENTS</div><h1>Plotting benchmark report</h1><p>Extended view · {text(campaign.get('suite_name'))}</p>
+<nav aria-label="Report navigation"><a href="report.html">Compact report</a> · <a href="#campaign">Campaign</a> · <a href="#comparisons">Charts</a> · <a href="#runs">Runs</a> · <a href="#timings">Timing stages</a> · <a href="#followup-evidence">Diagnostics</a> · <a href="#evidence">Evidence</a></nav>
 {campaign_html(campaign, hardware, rows, missing, generated_at, extensions)}
 <section><h2>Technical summary</h2><p>{classification}</p><p>{len(rows)} runs recorded; {len(failures)} failed or lacked usable data. Every result retains its configuration, raw samples and adapter measurement boundary. No displayed-FPS or GPU-time ranking is inferred.</p></section>
-<section><h2>Read the measurements consistently</h2><p>Submitted updates/s counts measured updates over a fixed interval after warmup. A submitted update does not prove screen presentation. Update-duration percentiles describe each adapter’s documented synchronous work: Matplotlib includes Agg rasterization, while GPU frontends can return before GPU completion. Compare end-to-end throughput within a workload; do not interpret these API durations as equivalent GPU timings.</p><p>Source Hz counts generated frames. Delivery ACK Hz estimates decoded delivery from source-observed acknowledgements for a single client over the available counter span. Missing counters or multiple clients produce —, not zero. It is not a plotted or presented frame rate. Backend identity is recorded and comparisons keep Python and Rust separate. Streaming includes transport and conversion; replay cycles a bounded CPU-resident dataset generated by the same source. Sequence gaps include skipped source deadlines and coalesced updates. Gap percentages cover the observed sequence span; throughput also exposes startup or tail starvation. Approximate receive age uses same-host wall clocks and is not presentation latency.</p><p><strong>Drawing areas differ between frontends.</strong> Equal logical window dimensions do not produce equal data-area pixels because axes, controls and layout differ. Actual physical plot regions are recorded per adapter below. These are fixed-window application comparisons, not normalized raster-area measurements; small rate differences may reflect layout and pixel workload.</p><p>CPU is the frontend process-tree sum (100% = one logical CPU). RSS sums resident memory and can count shared pages more than once. Browser resources include the automation driver. GPU utilization and monitor presentation timing are not captured portably.</p></section>
-{comparison_sections_html(grouped)}
+<section id="methodology"><h2>Read the measurements consistently</h2><p>Submitted updates/s counts measured updates over a fixed interval after warmup. A submitted update does not prove screen presentation. Update-duration percentiles describe each adapter’s documented synchronous work: Matplotlib includes Agg rasterization, while GPU frontends can return before GPU completion. Compare end-to-end throughput within a workload; do not interpret these API durations as equivalent GPU timings.</p><p>Source Hz counts generated frames. Delivery ACK Hz estimates decoded delivery from source-observed acknowledgements for a single client over the available counter span. Missing counters or multiple clients produce —, not zero. It is not a plotted or presented frame rate. Backend identity is recorded and comparisons keep Python and Rust separate. Streaming includes transport and conversion; replay cycles a bounded CPU-resident dataset generated by the same source. Sequence gaps include skipped source deadlines and coalesced updates. Gap percentages cover the observed sequence span; throughput also exposes startup or tail starvation. Approximate receive age uses same-host wall clocks and is not presentation latency.</p><p><strong>Drawing areas differ between frontends.</strong> Equal logical window dimensions do not produce equal data-area pixels because axes, controls and layout differ. Actual physical plot regions are recorded per adapter below. These are fixed-window application comparisons, not normalized raster-area measurements; small rate differences may reflect layout and pixel workload.</p><p>CPU is the frontend process-tree sum (100% = one logical CPU). RSS sums resident memory and can count shared pages more than once. Browser resources include the automation driver. GPU utilization and monitor presentation timing are not captured portably.</p></section>
+<div id="comparisons">{comparison_sections_html(grouped)}</div>
 <section><h2>Per-run measurements</h2><p>Percentiles are computed per repetition from raw samples. The comparison charts use the median repetition rate and observed range, without pooling different workloads, source backends, source/build identities or recorded display/runtime contexts. Multiple bars with a context suffix identify distinct execution conditions. Filter the table to inspect a frontend or scenario.</p><input id="filter" placeholder="Filter runs…" aria-label="Filter runs"><div class="scroll"><table id="runs">{RUN_TABLE_HEAD}<tbody>{"".join(run_row_html(row, row_prefix(row)) for row in rows)}</tbody></table></div></section>
-{timing_sections_html(rows)}
-<section><h2>Implementation costs and next measurements</h2><p>Iced uses a custom waveform Canvas, axes and coordinate mapping. Qt Graphs supplies native waveform series, but the image case requires an additional Qt Quick image provider. These are implementation and maintenance costs alongside runtime performance. Scalar color conversion belongs to each frontend, but some libraries defer color lookup and paint beyond the synchronous timer; consult the timing stages. RGB input is already colored by the common source.</p><p>For a selection decision, run at least three 30-second measurements per target workload on an otherwise idle Mac. Keep window pixel area, display scaling and refresh rate fixed. Inspect source-limited runs using replay, then validate visually and under interactive use. A 120 Hz input stream alone does not establish 120 visible frames/s.</p></section>
-{diagnostics_html(diagnostics, len(rows))}
-<section><h2>Reproduce and audit</h2><p><a href="summary.csv">Download CSV</a> · <a href="summary.json">Download structured summary</a>. Source/build provenance is retained per run. The report generator’s separate provenance and generation time are in summary.json. Expand a run to inspect exact configuration and timing semantics.</p>{"".join(run_details_html(row, row_prefix(row)) for row in rows)}</section>
-<script>document.querySelector('#filter').addEventListener('input',event=>{{const query=event.target.value.toLowerCase();for(const row of document.querySelectorAll('#runs tbody tr'))row.hidden=!row.textContent.toLowerCase().includes(query)}});</script></html>"""
+<div id="timings">{timing_sections_html(rows)}</div>
+<section><h2>Next measurements</h2><p>For a selection decision, run at least three 30-second measurements per target workload on an otherwise idle machine. Keep window pixel area, display scaling and refresh rate fixed. Inspect source-limited runs using replay, then validate visually and under interactive use. A 120 Hz input stream alone does not establish 120 visible frames/s. Consult each adapter's documentation for its implementation and maintenance requirements.</p></section>
+<div id="followup-evidence">{diagnostics_html(diagnostics, len(rows))}</div>
+<section id="evidence"><h2>Reproduce and audit</h2><p><a href="summary.csv">Download CSV</a> · <a href="summary.json">Download structured summary</a>. Source/build provenance is retained per run. The report generator’s separate provenance and generation time are in summary.json. Expand a run to inspect exact configuration and timing semantics.</p>{"".join(run_details_html(row, row_prefix(row)) for row in rows)}</section>
+<script>document.querySelector('#filter').addEventListener('input',event=>{{const query=event.target.value.toLowerCase();for(const row of document.querySelectorAll('#runs tbody tr'))row.hidden=!row.textContent.toLowerCase().includes(query)}});function openEvidence(){{const target=document.getElementById(location.hash.slice(1));if(target&&target.tagName==='DETAILS'){{target.open=true;target.scrollIntoView();}}}}window.addEventListener('hashchange',openEvidence);openEvidence();</script></body></html>"""
+    (path / "report-extended.html").write_text(html)
     target = path / "report.html"
-    target.write_text(html)
+    target.write_text(compact_report_html(summary, comparison_sections_html(grouped, compact=True)))
     return target

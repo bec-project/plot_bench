@@ -101,14 +101,17 @@ def test_completion_grace_scales_with_duration_and_latency_is_recorded():
 
 
 @pytest.mark.parametrize("page_error", [None, "rasterization failed"])
+@pytest.mark.parametrize("headless", [False, True])
+@pytest.mark.parametrize("custom_executable", [None, "/custom/chromium"])
 def test_browser_worker_only_captures_after_completion_and_always_exports_metadata(
-    monkeypatch, tmp_path, page_error
+    monkeypatch, tmp_path, page_error, headless, custom_executable
 ):
     # An in-process Playwright substitute: no browser, page, HTTP server or network is started.
     import playwright.async_api
 
     events = []
     batches = []
+    hashed_paths = []
 
     class FakePage:
         def __init__(self):
@@ -161,8 +164,13 @@ def test_browser_worker_only_captures_after_completion_and_always_exports_metada
             self.handlers["disconnected"](self)
 
     class FakeChromium:
-        async def launch(self, *, headless):
-            assert not headless
+        executable_path = "/test/chromium"
+
+        async def launch(self, **options):
+            assert options == {
+                "headless": headless,
+                "executable_path": custom_executable or self.executable_path,
+            }
             return FakeBrowser()
 
     class FakePlaywright:
@@ -173,9 +181,21 @@ def test_browser_worker_only_captures_after_completion_and_always_exports_metada
             pass
 
     monkeypatch.setattr(playwright.async_api, "async_playwright", FakePlaywright)
+    monkeypatch.setattr(
+        "plotbench.browser_worker.browser_launch_options",
+        lambda **kwargs: dict(
+            headless=kwargs["headless"],
+            **({"executable_path": custom_executable} if custom_executable else {}),
+        ),
+    )
+    monkeypatch.setattr(
+        "plotbench.browser_worker.file_hash",
+        lambda path: hashed_paths.append(path) or "test-fingerprint",
+    )
     monkeypatch.setattr("plotbench.browser_worker.request", lambda _url, data: batches.append(data))
     args = SimpleNamespace(
-        headless=False,
+        headless=headless,
+        browser_executable=custom_executable,
         width=1100,
         height=820,
         duration=30,
@@ -201,3 +221,6 @@ def test_browser_worker_only_captures_after_completion_and_always_exports_metada
         assert isinstance(metadata["completion_latency_seconds"], float)
     assert metadata["browser_version"] == "test-browser"
     assert metadata["browser_device_scale_factor"] == 2
+    assert metadata["browser_selection"] == ("custom" if custom_executable else "bundled")
+    assert metadata["browser_executable"] == (custom_executable or "/test/chromium")
+    assert hashed_paths == [metadata["browser_executable"]]

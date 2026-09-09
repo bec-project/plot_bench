@@ -66,7 +66,7 @@ def test_failures_are_retained_but_not_ranked(tmp_path):
     assert comparison["attempted"] == 1
     assert comparison["valid"] == 0
     assert comparison["median_hz"] is None
-    report = build_report(tmp_path)
+    report = build_report(tmp_path).with_name("report-extended.html")
     assert "timeout" in report.read_text()
     assert "displayed FPS" in report.read_text()
     assert (tmp_path / "summary.csv").exists()
@@ -117,7 +117,7 @@ def test_invalid_measurement_evidence_is_excluded(tmp_path, metadata, expected):
 def test_single_run_report_links_point_to_local_raw_files(tmp_path):
     folder = tmp_path / "run-0001"
     write_run(folder)
-    text = build_report(folder).read_text()
+    text = build_report(folder).with_name("report-extended.html").read_text()
     assert 'href="./measurements.jsonl"' in text
     assert 'href="run-0001/measurements.jsonl"' not in text
 
@@ -136,7 +136,7 @@ def test_backend_results_are_never_pooled(tmp_path):
     assert len(groups) == 2
     assert {group["backend"] for group in groups} == {"python", "rust"}
     assert all(group["attempted"] == group["valid"] == 1 for group in groups)
-    text = build_report(tmp_path).read_text()
+    text = build_report(tmp_path).with_name("report-extended.html").read_text()
     assert "python source" in text and "rust source" in text
     assert "<th>Backend</th>" in text and "<th>Source Hz</th>" in text
 
@@ -196,7 +196,7 @@ def test_optional_timing_coverage_uses_measured_window_and_never_fills_missing_w
     assert row["update_complete_samples"] == 20
     assert row["update_complete_p50_ms"] == 119.5
     assert row["image_upload_wait_p50_ms"] is None
-    report = build_report(folder).read_text()
+    report = build_report(folder).with_name("report-extended.html").read_text()
     assert "Observation coverage" in report and "10/20 (50.0%)" in report
     assert "A unique documented boundary" in report
     assert "Stage observations are not additive" in report
@@ -233,7 +233,7 @@ def test_report_preserves_each_runs_provenance_and_links(tmp_path):
         record = json.loads(path.read_text())
         record["provenance"] = {"git": {"commit": f"revision-{index}"}}
         path.write_text(json.dumps(record))
-    html = build_report(tmp_path).read_text()
+    html = build_report(tmp_path).with_name("report-extended.html").read_text()
     for index in range(2):
         assert f"revision-{index}" in html
         assert f'href="run-{index}/measurements.jsonl"' in html
@@ -287,3 +287,26 @@ def test_repetitions_with_different_execution_contexts_are_not_pooled(tmp_path, 
     groups = aggregate([base, changed, base])
     assert sorted(group["valid"] for group in groups) == [1, 2]
     assert not any(group["repeated_sustained_candidate"] for group in groups)
+
+
+@pytest.mark.parametrize(
+    "key,value",
+    [
+        ("browser_selection", "custom"),
+        ("browser_executable", "/example/custom-chromium"),
+        ("browser_executable_sha256", "different-binary-with-the-same-version"),
+        ("browser_launch_arguments", ["--ozone-platform=wayland"]),
+        ("playwright_version", "different-driver"),
+        ("display_protocol_requested", "wayland"),
+        ("display_session", {"session_type": "wayland", "desktop": "different-compositor"}),
+    ],
+)
+def test_same_browser_version_with_different_execution_settings_is_not_pooled(tmp_path, key, value):
+    folder = tmp_path / "run"
+    write_run(folder)
+    base = summarize_run(folder)
+    base["metadata"]["browser_version"] = "123.0"
+    changed = json.loads(json.dumps(base))
+    changed["metadata"][key] = value
+    groups = aggregate([base, changed, base])
+    assert sorted(group["valid"] for group in groups) == [1, 2]

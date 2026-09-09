@@ -6,11 +6,13 @@ import threading
 import time
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from importlib.metadata import version
 from pathlib import Path
 from urllib.parse import urlencode
 
 from .client import frontend_parser, request
-from .runner import ROOT
+from .provenance import file_hash
+from .runtime import ROOT, browser_launch_options, display_session
 
 
 def completion_grace_seconds(duration):
@@ -131,12 +133,31 @@ async def run_browser(args, page_url):
         "qa_screenshot": False,
         "qa_screenshot_stage": "after duration completion and final frontend telemetry flush",
         "automation_status_monitor": "exposed binding for first submission and flushed completion; no status polling",
-        "resource_scope": "browser worker and all descendants, including Playwright driver and Chromium GPU process; excludes WindowServer and source",
+        "resource_scope": "browser worker and all descendants, including Playwright driver and Chromium GPU process; excludes desktop compositor and source",
+        "playwright_version": version("playwright"),
+        "display_session": display_session(),
     }
     failure = None
     try:
         async with async_playwright() as playwright:
-            browser = await playwright.chromium.launch(headless=args.headless)
+            options = browser_launch_options(
+                browser_executable=getattr(args, "browser_executable", None), headless=args.headless
+            )
+            metadata["browser_selection"] = (
+                "custom" if options.get("executable_path") else "bundled"
+            )
+            metadata["browser_executable"] = (
+                options.get("executable_path") or playwright.chromium.executable_path
+            )
+            # Pin the checked executable in both modes. Otherwise Playwright silently
+            # selects its separate headless-shell binary for a headless bundled launch.
+            options["executable_path"] = metadata["browser_executable"]
+            metadata["browser_executable_sha256"] = file_hash(metadata["browser_executable"])
+            metadata["browser_launch_arguments"] = options.get("args", [])
+            metadata["display_protocol_requested"] = (
+                "headless" if args.headless else ("wayland" if options.get("args") else "native")
+            )
+            browser = await playwright.chromium.launch(**options)
             try:
                 metadata["browser_version"] = browser.version
                 probe = await browser.new_page(no_viewport=True)
@@ -200,6 +221,7 @@ def main():
     parser.add_argument("--headless", action="store_true")
     parser.add_argument("--screenshot", type=Path)
     parser.add_argument("--interactive", action="store_true")
+    parser.add_argument("--browser-executable", type=Path, help="native Chromium/Chrome executable")
     args = parser.parse_args()
     if args.screenshot and not args.duration:
         parser.error(

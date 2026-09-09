@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Plotbench · Matrix editor</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/editor.js"></script>
+</head>
+<body>
+  <main>
+    <header><p class="eyebrow">PLOTBENCH</p><h1>Build a benchmark matrix</h1>
+      <p>Choose workloads, inspect the complete run order and export a suite for the CLI or your agent.</p>
+      <p class="muted">This editor runs locally. Previewing and exporting do not launch measurements.</p>
+    </header>
+    <div class="toolbar">
+      <label class="button">Import suite JSON<input id="import" type="file" accept=".json,application/json"></label>
+      <button id="export" disabled>Export suite JSON</button>
+      <span id="export-status" role="status"></span>
+    </div>
+    <section aria-labelledby="setup-heading"><h2 id="setup-heading">Suite and execution</h2>
+      <div class="fields">
+        <label>Suite name<input id="name" type="text"></label>
+        <label>Preview command<select id="kind"><option value="run">Frontend benchmark</option><option value="probe">Source receiver probe</option></select></label>
+        <label class="wide">Display context<input id="display_context" type="text" placeholder="Monitor, configured refresh rate, scaling and placement"></label>
+      </div>
+      <div id="selections" class="selections"></div>
+      <div id="timings" class="fields"></div>
+    </section>
+    <section aria-labelledby="cases-heading">
+      <div class="section-heading"><h2 id="cases-heading">Individual workloads</h2><button id="add-case">Add workload</button></div>
+      <p class="muted">Each row creates one named workload. Empty fields use the source defaults shown as placeholders.</p>
+      <div id="cases"></div>
+    </section>
+    <section aria-labelledby="groups-heading">
+      <div class="section-heading"><h2 id="groups-heading">Workload groups</h2><button id="add-group">Add group</button></div>
+      <p class="muted">A group expands every combination of its matrix values. Axes override base fields. Resolution sets both image dimensions; use either a resolution axis or width/height axes. Points defaults append count to 10% when omitted.</p>
+      <div id="groups"></div>
+    </section>
+    <details id="advanced"><summary>Advanced: edit complete suite JSON</summary>
+      <p class="muted">Applying JSON replaces the form. Import preserves unknown fields so validation can identify them.</p>
+      <p class="muted">The editor rejects numbers outside −9007199254740991 to 9007199254740991 to prevent rounding. Use the CLI directly for larger integer seeds. Imported JSON is validated by Python before the form is updated.</p>
+      <textarea id="raw" rows="16" spellcheck="false" aria-label="Complete suite JSON"></textarea>
+      <button id="apply-json">Apply JSON</button>
+    </details>
+    <section aria-labelledby="preview-heading"><h2 id="preview-heading">Execution preview</h2>
+      <p id="error" role="alert" hidden></p>
+      <p id="summary" aria-live="polite">Loading suite…</p>
+      <p id="command" class="command"></p>
+      <p class="muted">The time estimate includes warmup, measurement and cooldown. Startup, replay preload, teardown and report generation take additional time.</p>
+      <div class="table-wrap"><table><thead><tr><th>Run</th><th>Workload</th><th>Frontend</th><th>Source</th><th>Mode</th><th>Repeat</th><th>Target</th></tr></thead><tbody id="jobs"></tbody></table></div>
+      <p id="preview-limit" class="muted"></p>
+    </section>
+  </main>
+</body>
+</html>

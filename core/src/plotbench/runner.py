@@ -1,10 +1,7 @@
 """Sequential process-isolated scenario runner, including a visible browser worker."""
 
-import itertools
 import json
-import math
 import os
-import random
 import signal
 import socket
 import subprocess
@@ -22,21 +19,18 @@ from .campaign import finalize_campaign_manifest, write_campaign_manifest
 from .client import request
 from .config import Config
 from .provenance import capture_provenance, require_current_artifact
+from .runtime import frontend_environment, require_preflight
+from .suites import FRONTENDS as FRONTENDS
+from .suites import expand_cases as expand_cases
+from .suites import plan_from_args, print_plan
 
-FRONTENDS = (
-    "pyqtgraph",
-    "pyqtgraph-gl",
-    "matplotlib",
-    "qtgraphs",
-    "qtgraphs-cpp",
-    "iced",
-    "plotly",
-)
 BUILT_COMPONENTS = ("rust", "iced", "plotly", "qtgraphs-cpp")
 ROOT = Path(__file__).resolve().parents[3]
 
 
-def frontend_command(name, url, mode, run_id, duration=0, headless=False, screenshot=None):
+def frontend_command(
+    name, url, mode, run_id, duration=0, headless=False, screenshot=None, browser_executable=None
+):
     args = ["--url", url, "--mode", mode, "--run-id", run_id, "--duration", str(duration)]
     if name == "iced":
         executable = ROOT / "frontends/iced/target/release/plotbench-iced"
@@ -48,6 +42,8 @@ def frontend_command(name, url, mode, run_id, duration=0, headless=False, screen
             command.append("--headless")
         if screenshot:
             command.extend(["--screenshot", str(screenshot)])
+        if browser_executable:
+            command.extend(["--browser-executable", str(browser_executable)])
         return command
     else:
         package = "pyqtgraph" if name == "pyqtgraph-gl" else name
@@ -164,74 +160,37 @@ def monitor_process(process, path, timeout):
     return "ok" if process.returncode == 0 else f"exit-{process.returncode}"
 
 
-def expand_cases(suite):
-    cases = list(suite.get("cases", []))
-    for group in suite.get("case_groups", []):
-        keys = list(group["matrix"])
-        for combination in itertools.product(*(group["matrix"][key] for key in keys)):
-            config = dict(group.get("base", {}), **dict(zip(keys, combination, strict=True)))
-            if "resolution" in config:
-                config["width"] = config["height"] = config.pop("resolution")
-            if "points" in config and "append_count" not in config:
-                config["append_count"] = max(1, config["points"] // 10)
-            label = "-".join(str(value) for value in combination)
-            cases.append(dict(name=f"{group['name']}-{label}", config=config))
-    if not cases:
-        raise ValueError("suite has no cases")
-    names = [case["name"] for case in cases]
-    if len(set(names)) != len(names):
-        raise ValueError("scenario names must be unique to keep different workloads separate")
-    for case in cases:
-        Config(**case["config"])
-    return cases
-
-
 def run_suite(args):
-    suite = json.loads(args.suite.read_text())
-    cases = expand_cases(suite)
-    if args.limit is not None:
-        if args.limit < 1:
-            raise ValueError("limit must be positive")
-        cases = cases[: args.limit]
-    frontends = args.frontends or suite.get("frontends", list(FRONTENDS))
-    if set(frontends) - set(FRONTENDS):
-        raise ValueError(f"frontends must be drawn from {FRONTENDS}")
-    modes = args.modes or suite.get("modes", ["stream", "replay"])
-    backends = getattr(args, "backends", None) or suite.get("backends", ["python"])
-    if not backends or len(set(backends)) != len(backends):
-        raise ValueError("choose at least one backend, without duplicates")
-    for backend in backends:
-        validate_backend(backend)
-    repetitions = int(suite.get("repetitions", 3))
-    warmup = float(suite.get("warmup_seconds", 5))
-    measurement = float(suite.get("measurement_seconds", 30))
-    cooldown = float(suite.get("cooldown_seconds", 1))
-    if (
-        not all(math.isfinite(value) for value in (warmup, measurement, cooldown))
-        or repetitions < 1
-        or warmup < 0
-        or measurement <= 0
-        or cooldown < 0
-    ):
-        raise ValueError("invalid repetition count or timing")
-    jobs = list(itertools.product(cases, modes, range(repetitions), frontends, backends))
-    random.Random(suite.get("order_seed", 42)).shuffle(jobs)
-    nominal = len(jobs) * (warmup + measurement)
-    print(
-        f"{len(jobs)} sequential runs · {nominal / 60:.1f} minutes of sampling, plus startup/preload/cooldown",
-        flush=True,
-    )
+    plan = plan_from_args(args)
+    suite, jobs = plan.suite, plan.jobs
+    frontends, modes, backends = plan.frontends, plan.modes, plan.backends
+    repetitions = plan.repetitions
+    warmup, measurement, cooldown = plan.warmup, plan.measurement, plan.cooldown
+    json_output = getattr(args, "json", False)
+    if json_output and not args.dry_run:
+        raise ValueError("--json requires --dry-run")
+    print_plan(plan, json_output=json_output, detailed=args.dry_run)
     if args.dry_run:
-        for case, mode, rep, frontend, backend in jobs:
-            print(f"{case['name']} / {mode} / {frontend} / {backend} / repeat {rep + 1}")
         return
     artifacts = {
         component: require_current_artifact(component)
         for component in BUILT_COMPONENTS
         if component in backends or component in frontends
     }
+    preflight = require_preflight(
+        frontends=frontends,
+        backends=backends,
+        browser_executable=getattr(args, "browser_executable", None),
+        headless=args.headless,
+    )
+    environment = frontend_environment(frontends=frontends, headless=args.headless)
     display_context = getattr(args, "display_context", None) or suite.get("display_context")
-    provenance = dict(capture_provenance(), artifacts=artifacts, display_context=display_context)
+    provenance = dict(
+        capture_provenance(),
+        artifacts=artifacts,
+        display_context=display_context,
+        preflight=preflight,
+    )
     output = (
         args.output or ROOT / "results" / datetime.now().strftime("suite-%Y%m%d-%H%M%S")
     ).resolve()
@@ -303,15 +262,23 @@ def run_suite(args):
                         if component in (backend, frontend)
                     },
                     display_context=display_context,
+                    preflight=preflight,
                 )
                 with source_process(folder, config, backend=backend) as url:
                     command = frontend_command(
-                        frontend, url, mode, run_id, warmup + measurement + 0.2, args.headless, None
+                        frontend,
+                        url,
+                        mode,
+                        run_id,
+                        warmup + measurement + 0.2,
+                        args.headless,
+                        None,
+                        browser_executable=getattr(args, "browser_executable", None),
                     )
                     manifest["command"] = command
                     with (folder / "frontend.log").open("w") as log:
                         process = subprocess.Popen(
-                            command, stdout=log, stderr=log, start_new_session=True
+                            command, stdout=log, stderr=log, start_new_session=True, env=environment
                         )
                         try:
                             manifest["status"] = monitor_process(
@@ -367,6 +334,7 @@ def run_suite(args):
 
 def launch_demo(args):
     owned_source = None
+    source_port = None
     requested_backend = getattr(args, "backend", None)
     try:
         try:
@@ -381,15 +349,29 @@ def launch_demo(args):
             parsed = urlparse(args.url)
             if parsed.hostname not in ("127.0.0.1", "localhost"):
                 raise RuntimeError("remote source unavailable") from None
-            output = ROOT / "results" / datetime.now().strftime("demo-%Y%m%d-%H%M%S")
             actual_backend = requested_backend or "python"
-            owned_source = source_process(output, port=parsed.port or 8765, backend=actual_backend)
+            source_port = parsed.port or 8765
+        require_preflight(
+            frontends=[args.frontend],
+            backends=[actual_backend] if source_port is not None else [],
+            browser_executable=getattr(args, "browser_executable", None),
+        )
+        environment = frontend_environment(frontends=[args.frontend])
+        if source_port is not None:
+            output = ROOT / "results" / datetime.now().strftime("demo-%Y%m%d-%H%M%S")
+            owned_source = source_process(output, port=source_port, backend=actual_backend)
             owned_source.__enter__()
         print(f"Source backend: {actual_backend} · Live workload controls: {args.url}", flush=True)
-        command = frontend_command(args.frontend, args.url, args.mode, "demo")
+        command = frontend_command(
+            args.frontend,
+            args.url,
+            args.mode,
+            "demo",
+            browser_executable=getattr(args, "browser_executable", None),
+        )
         if args.frontend == "plotly":
             command.append("--interactive")
-        process = subprocess.Popen(command, start_new_session=True)
+        process = subprocess.Popen(command, start_new_session=True, env=environment)
         try:
             process.wait()
         except KeyboardInterrupt:

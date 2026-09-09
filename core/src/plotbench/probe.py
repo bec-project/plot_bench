@@ -1,10 +1,7 @@
 """A common decode-and-acknowledge receiver measures delivery without plotting."""
 
 import csv
-import itertools
 import json
-import math
-import random
 import time
 from datetime import datetime
 from html import escape
@@ -13,7 +10,7 @@ from pathlib import Path
 from websockets.exceptions import WebSocketException
 from websockets.sync.client import connect
 
-from .backends import backend_from_health, validate_backend
+from .backends import backend_from_health
 from .campaign import finalize_campaign_manifest, local_now, read_campaign, write_campaign_manifest
 from .client import request
 from .config import Config
@@ -21,7 +18,9 @@ from .probe_charts import build_probe_charts
 from .protocol import MAX_PACKET, decode_frame
 from .provenance import capture_provenance, require_current_artifact
 from .report import deadline_counter_increase, percentile, read_jsonl
-from .runner import ROOT, expand_cases, source_process
+from .runner import ROOT, source_process
+from .runtime import require_preflight
+from .suites import plan_from_args, print_plan
 
 
 def receive_probe(url, config, warmup, duration):
@@ -104,6 +103,8 @@ def summarize_probe(samples, source, start_ms, duration, target_hz):
 
 
 def write_probe_report(output, rows):
+    from .report_layout import acquisition_interval
+
     charts = build_probe_charts(rows)
     campaign = read_campaign(output)
     generated_at = local_now()
@@ -176,6 +177,31 @@ def write_probe_report(output, rows):
         f"{escape(str(hardware.get('os') or 'Not recorded'))}. "
         f"Report generated {escape(generated_at.isoformat(timespec='seconds'))}."
     )
+    compact_acquisition = (
+        f"Acquired {acquisition_interval(campaign)}; status {escape(campaign['completion_status'])}. "
+        f"Recorded host: {escape(str(hardware.get('cpu_model') or 'Not recorded'))}, "
+        f"{escape(str(hardware.get('os') or 'Not recorded'))}."
+    )
+    statuses = sorted({row["status"] for row in rows if row["status"] != "ok"})
+    warnings = [
+        f"{sum(row['status'] == status for row in rows)} {escape(status)} runs retained in the evidence."
+        for status in statuses
+    ]
+    planned = campaign.get("runs_planned")
+    if not campaign["manifest_present"]:
+        warnings.append(
+            "No campaign manifest; the planned count and acquisition context were not recorded."
+        )
+    elif campaign["completion_status"] in ("running", "interrupted", "error") or (
+        planned is not None and len(rows) < planned
+    ):
+        warnings.append(
+            f"Incomplete campaign: {len(rows)} of {planned if planned is not None else 'unknown'} "
+            "planned runs recorded. Absent attempts are not included in the charts."
+        )
+    if campaign.get("manifest_error"):
+        warnings.append(escape(campaign["manifest_error"]))
+    warning_html = "".join(f'<p class="overview-note">{warning}</p>' for warning in warnings)
 
     def value(row, key):
         item = row.get(key)
@@ -202,25 +228,31 @@ def write_probe_report(output, rows):
             )
             + f'<td>{target_label}</td><td><a href="{escape(row["path"])}/run.json">Details</a></td></tr>'
         )
-    html = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>Source backend comparison</title>
+    table_section = f"""<section id="runs"><h2>Per-run measurements</h2>
+<p>Each backend runs alone with identical configuration and the same receiving client. Source Hz counts produced packets; received Hz counts successfully decoded and acknowledged packets. Generation time includes packing and dispatch overhead. No renderer is involved.</p>
+<div class="table-scroll"><table><thead><tr><th>Workload</th><th>Backend</th><th>Repeat</th><th>Status</th><th>Target Hz</th><th>Source Hz</th><th>Received Hz</th><th>MiB/s</th><th>Generation p95 ms</th><th>Decode p95 ms</th><th>Age p95 ms</th><th>Target met</th><th>Evidence</th></tr></thead><tbody>{"".join(body)}</tbody></table></div></section>"""
+    for filename, extended in (("report.html", False), ("report-extended.html", True)):
+        view = "Extended" if extended else "Compact"
+        other_view = "Compact" if extended else "Extended"
+        other_file = "report.html" if extended else "report-extended.html"
+        html = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Source backend comparison · {view} report</title>
 <style>
 :root{{font:15px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#dce8ee;background:#0b141b;color-scheme:dark}}
 *{{box-sizing:border-box}}body{{max-width:1280px;margin:auto;padding:40px 28px}}h1{{font-size:36px;letter-spacing:-1px;margin:10px 0 16px}}h2{{font-size:22px;margin:0 0 14px}}p,li,figcaption{{line-height:1.65;color:#9fb6c4}}a{{color:#64dccc;text-underline-offset:3px}}a:focus-visible{{outline:2px solid #64dccc;outline-offset:4px}}
 .eyebrow{{color:#8fa7b6;font-size:11px;font-weight:700;letter-spacing:2px}}.intro{{max-width:1000px}}.overview-note{{border-left:3px solid #64dccc;padding:8px 16px;margin:26px 0}}section{{margin:24px 0}}figure{{margin:0 0 24px;background:#11202a;border:1px solid #273d4b;border-radius:6px;overflow:hidden}}figcaption{{padding:0 24px 20px;font-size:13px}}.chart-scroll,.table-scroll{{overflow:auto}}svg{{display:block;width:100%;min-width:900px;height:auto}}.table-scroll{{background:#11202a;border:1px solid #273d4b;border-radius:6px}}table{{border-collapse:collapse;width:100%;white-space:nowrap}}th,td{{padding:12px 10px;border-bottom:1px solid #273d4b;text-align:left;font-size:13px}}th{{color:#9fb6c4;font-size:12px}}.notes{{border-top:1px solid #273d4b;padding-top:24px}}@media(max-width:700px){{body{{padding:26px 16px}}h1{{font-size:29px}}figcaption{{padding:0 16px 16px}}}}@media print{{body{{max-width:none;padding:0}}figure{{break-inside:avoid}}svg{{min-width:0}}a{{text-decoration:none}}}}
 </style></head><body>
-<header><div class="eyebrow">PLOTBENCH / RECORDED BACKEND CAPACITY</div><h1>Source backend comparison</h1><p class="intro">{escape(summary["measurement"])}</p></header>
-<p class="overview-note">{acquisition}</p>
-<p class="overview-note">{charted} of {len(rows)} recorded runs included in the charts. Medians use only valid runs with matching workload configuration, backend, target and measurement duration. All attempts remain in the table below.</p>
-<section aria-label="Graphical overview">{overview}</section>
-<section><h2>Per-run measurements</h2>
-<p>Each backend runs alone with identical configuration and the same receiving client. Source Hz counts produced packets; received Hz counts successfully decoded and acknowledged packets. Generation time includes packing and dispatch overhead. No renderer is involved.</p>
-<div class="table-scroll"><table><thead><tr><th>Workload</th><th>Backend</th><th>Repeat</th><th>Status</th><th>Target Hz</th><th>Source Hz</th><th>Received Hz</th><th>MiB/s</th><th>Generation p95 ms</th><th>Decode p95 ms</th><th>Age p95 ms</th><th>Target met</th><th>Evidence</th></tr></thead><tbody>{"".join(body)}</tbody></table></div></section>
+<header><div class="eyebrow">PLOTBENCH / RECORDED BACKEND CAPACITY</div><h1>Source backend comparison</h1><p class="intro">{view} view · {escape(str(campaign.get('suite_name') or 'Unnamed suite'))}. {escape(summary["measurement"])}</p>
+<nav aria-label="Report navigation"><a href="{other_file}">{other_view} report</a> · <a href="report-extended.html#runs">Run evidence</a> · <a href="summary.csv">CSV</a> · <a href="summary.json">Structured summary</a></nav></header>
+<p class="overview-note">{acquisition if extended else compact_acquisition}</p>{warning_html}
+<p class="overview-note">{charted} of {len(rows)} recorded runs included in the charts. Medians use only valid runs with matching workload configuration, backend, target, measurement duration and source/build identity. All attempts remain in the <a href="report-extended.html#runs">extended evidence table</a>.</p>
+<section id="charts" aria-label="Graphical overview">{overview}</section>
+{table_section if extended else ''}
 <section class="notes"><h2>Reading the overview</h2>
 <p>Target met is evaluated for each repetition, using unrounded rates: both generation and delivery must reach at least 98% of the requested rate. A median near the target does not mean every repetition passed. The chart shows how many valid repetitions met that criterion.</p>
 <ul>{"".join(f"<li>{escape(item)}</li>" for item in summary["limitations"])}</ul>
-<p><a href="summary.csv">Download per-run CSV</a> · <a href="summary.json">Download runs and chart summaries as JSON</a></p></section></body></html>"""
-    (output / "report.html").write_text(html)
+<p><a href="summary.csv">Download per-run CSV</a> · <a href="summary.json">Download runs, chart summaries and source/build provenance as JSON</a>. Report generated {escape(generated_at.isoformat(timespec='seconds'))}; generator provenance remains separate from acquisition evidence.</p></section></body></html>"""
+        (output / filename).write_text(html)
 
 
 def build_probe_report(path):
@@ -245,41 +277,19 @@ def build_probe_report(path):
 
 
 def run_probe_suite(args):
-    suite = json.loads(args.suite.read_text())
-    cases = expand_cases(suite)
-    backends = args.backends or suite.get("backends", ["python", "rust"])
-    if not backends or len(set(backends)) != len(backends):
-        raise ValueError("choose at least one backend, without duplicates")
-    for backend in backends:
-        validate_backend(backend)
-    warmup = args.warmup if args.warmup is not None else float(suite.get("warmup_seconds", 2))
-    duration = (
-        args.duration if args.duration is not None else float(suite.get("measurement_seconds", 10))
-    )
-    repetitions = (
-        args.repetitions if args.repetitions is not None else int(suite.get("repetitions", 3))
-    )
-    cooldown = float(suite.get("cooldown_seconds", 0.5))
-    if (
-        not all(math.isfinite(value) for value in (warmup, duration, cooldown))
-        or warmup < 0
-        or duration <= 0
-        or cooldown < 0
-        or repetitions < 1
-    ):
-        raise ValueError("invalid repetition count or timing")
-    jobs = list(itertools.product(cases, backends, range(repetitions)))
-    random.Random(suite.get("order_seed", 42)).shuffle(jobs)
-    print(
-        f"{len(jobs)} receiver-only runs · {len(jobs) * (warmup + duration) / 60:.1f} minutes of sampling plus startup",
-        flush=True,
-    )
+    plan = plan_from_args(args, kind="probe")
+    suite, jobs, backends = plan.suite, plan.jobs, plan.backends
+    warmup, duration, cooldown = plan.warmup, plan.measurement, plan.cooldown
+    repetitions = plan.repetitions
+    json_output = getattr(args, "json", False)
+    if json_output and not args.dry_run:
+        raise ValueError("--json requires --dry-run")
+    print_plan(plan, json_output=json_output, detailed=args.dry_run)
     if args.dry_run:
-        for case, backend, repetition in jobs:
-            print(f"{case['name']} / {backend} / repeat {repetition + 1}")
         return
     artifacts = {"rust": require_current_artifact("rust")} if "rust" in backends else {}
-    provenance = dict(capture_provenance(), artifacts=artifacts)
+    preflight = require_preflight(backends=backends)
+    provenance = dict(capture_provenance(), artifacts=artifacts, preflight=preflight)
     output = (
         args.output or ROOT / "results" / datetime.now().strftime("backend-probe-%Y%m%d-%H%M%S")
     ).resolve()
@@ -303,6 +313,7 @@ def run_probe_suite(args):
         warmup_seconds=warmup,
         measurement_seconds=duration,
         repetitions=repetitions,
+        cooldown_seconds=cooldown,
         provenance=provenance,
     )
     rows = []
