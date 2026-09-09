@@ -1,10 +1,12 @@
 """Interactive launcher (Textual): inspect environments and launch sources,
 component setup, benchmark suites and the matrix editor from one place.
 
-The TUI orchestrates the same commands you would run by hand: `./scripts/setup`
-for installs and `python -m plotbench.cli ...` for everything else. It therefore
-expects a repository checkout; component installs are disabled when `scripts/`
-is absent. It never measures anything itself.
+Each action runs as an independent process with its own output tab, so a source,
+a suite run, a setup and the matrix editor can all run at once. A launch button
+toggles to Stop while its action is running. The TUI orchestrates the same
+commands you would run by hand (`./scripts/setup` for installs, `python -m
+plotbench.cli ...` otherwise); it expects a repository checkout and never measures
+anything itself.
 """
 
 import asyncio
@@ -16,7 +18,17 @@ from pathlib import Path
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
-from textual.widgets import Button, DataTable, Footer, Header, OptionList, RichLog, Static
+from textual.widgets import (
+    Button,
+    DataTable,
+    Footer,
+    Header,
+    OptionList,
+    RichLog,
+    Static,
+    TabbedContent,
+    TabPane,
+)
 from textual.widgets.option_list import Option
 
 from .backends import BACKENDS
@@ -27,8 +39,17 @@ ROOT = Path(__file__).resolve().parents[3]
 SCRIPTS = ROOT / "scripts" / "setup"
 SCENARIOS = ROOT / "scenarios"
 CUSTOM = ROOT / "scenarios_custom"
-# The components `./scripts/setup` can install, in a sensible offer order.
 INSTALLABLE = ["rust", "pyqtgraph", "matplotlib", "qtgraphs", "qtgraphs-cpp", "iced", "plotly"]
+
+# Each launch slot: sidebar button labels for idle and running states.
+SLOTS = {
+    "rust": ("Launch Rust source", "Stop Rust source"),
+    "python": ("Launch Python source", "Stop Python source"),
+    "install": ("Install component", "Stop install"),
+    "run": ("Run a suite", "Stop suite"),
+    "matrix": ("Matrix editor", "Stop matrix editor"),
+}
+STATE_MARK = {"live": "● live", "done": "○ done", "failed": "✗ failed"}
 
 
 def _cli(*args):
@@ -70,39 +91,39 @@ class PlotbenchTUI(App):
     #sidebar Button { width: 100%; margin-bottom: 1; }
     #main { padding: 1 2; }
     .section-title { text-style: bold; color: $accent; margin-bottom: 1; }
-    #env { height: auto; max-height: 50%; margin-bottom: 1; }
-    #running { color: $text-muted; margin-bottom: 1; }
-    #log { height: 1fr; border: solid $panel; background: $surface; padding: 0 1; }
+    #env { height: auto; max-height: 45%; margin-bottom: 1; }
+    #tabs { height: 1fr; }
+    RichLog { background: $surface; padding: 0 1; }
     .spacer { height: 1fr; }
     ChooseScreen { align: center middle; }
     #dialog { width: 70; height: auto; max-height: 80%; padding: 1 2; background: $surface; border: solid $accent; }
     #dialog-title { text-style: bold; margin-bottom: 1; }
     #dialog-options { height: auto; max-height: 20; margin-bottom: 1; }
     """
-    BINDINGS = [("q", "quit", "Quit"), ("r", "refresh", "Refresh"), ("x", "stop", "Stop process")]
+    BINDINGS = [("q", "quit", "Quit"), ("r", "refresh", "Refresh"), ("x", "stop", "Stop active")]
 
     def __init__(self):
         super().__init__()
-        self.proc = None
+        self.procs = {}
+        self._panes = set()
 
     def compose(self) -> ComposeResult:
         yield Header()
         with Horizontal(id="body"):
             with Vertical(id="sidebar"):
                 yield Static("Actions", classes="section-title")
-                yield Button("Launch Rust source", id="rust")
-                yield Button("Launch Python source", id="python")
-                yield Button("Install component", id="install")
-                yield Button("Run a suite", id="run")
-                yield Button("Matrix editor", id="matrix")
+                for slot, (idle, _) in SLOTS.items():
+                    yield Button(idle, id=slot)
                 yield Static("", classes="spacer")
                 yield Button("Refresh", id="refresh")
-                yield Button("Stop process", id="stop", variant="error")
             with Vertical(id="main"):
                 yield Static("Environments", classes="section-title")
                 yield DataTable(id="env", cursor_type="row", zebra_stripes=True)
-                yield Static("Idle.", id="running")
-                yield RichLog(id="log", markup=False, highlight=False, wrap=True)
+                yield Static(
+                    "Output — each action gets a tab; several can run at once",
+                    classes="section-title",
+                )
+                yield TabbedContent(id="tabs")
         yield Footer()
 
     def on_mount(self) -> None:
@@ -111,9 +132,6 @@ class PlotbenchTUI(App):
         if not SCRIPTS.exists():
             self.query_one("#install", Button).disabled = True
         self.refresh_env()
-        if not SCRIPTS.exists():
-            self.log_write("scripts/setup not found — component installs are disabled.")
-        self.log_write("Ready. Choose an action on the left; press x to stop a running process.")
 
     # -- environment table ---------------------------------------------------
     def refresh_env(self) -> None:
@@ -129,22 +147,31 @@ class PlotbenchTUI(App):
 
     def action_refresh(self) -> None:
         self.refresh_env()
-        self.log_write("Environments refreshed.")
 
     # -- actions --------------------------------------------------------------
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        actions = {
-            "rust": lambda: self.start(_cli("serve", "--backend", "rust"), "Rust source"),
-            "python": lambda: self.start(_cli("serve", "--backend", "python"), "Python source"),
-            "matrix": lambda: self.start(_cli("matrix"), "Matrix editor"),
-            "install": self.choose_install,
-            "run": self.choose_run,
-            "refresh": self.action_refresh,
-            "stop": self.action_stop,
-        }
-        handler = actions.get(event.button.id)
-        if handler:
-            handler()
+        slot = event.button.id
+        if slot == "refresh":
+            self.action_refresh()
+        elif slot in SLOTS:
+            self.toggle(slot)
+
+    def toggle(self, slot) -> None:
+        if self._slot_running(slot):
+            self.terminate(slot)
+            return
+        if slot == "install":
+            self.choose_install()
+        elif slot == "run":
+            self.choose_run()
+        elif slot == "rust":
+            self.run_worker(self._launch("rust", _cli("serve", "--backend", "rust"), "Rust source"))
+        elif slot == "python":
+            self.run_worker(
+                self._launch("python", _cli("serve", "--backend", "python"), "Python source")
+            )
+        elif slot == "matrix":
+            self.run_worker(self._launch("matrix", _cli("matrix"), "Matrix editor"))
 
     def choose_install(self) -> None:
         if not SCRIPTS.exists():
@@ -155,11 +182,13 @@ class PlotbenchTUI(App):
             for name in INSTALLABLE
         ]
 
-        def installed(value):
+        def picked(value):
             if value:
-                self.start(["./scripts/setup", value], f"setup {value}")
+                self.run_worker(
+                    self._launch("install", ["./scripts/setup", value], f"setup {value}")
+                )
 
-        self.push_screen(ChooseScreen("Install or rebuild which component?", options), installed)
+        self.push_screen(ChooseScreen("Install or rebuild which component?", options), picked)
 
     def choose_run(self) -> None:
         suites = []
@@ -171,25 +200,37 @@ class PlotbenchTUI(App):
             self.notify("No suites found in scenarios/ or scenarios_custom/.")
             return
 
-        def chosen(value):
+        def picked(value):
             if value:
-                self.start(_cli("run", "--suite", value), f"run {value}")
+                label = f"suite {value.split('/')[-1]}"
+                self.run_worker(self._launch("run", _cli("run", "--suite", value), label))
 
-        self.push_screen(ChooseScreen("Run which suite?", suites), chosen)
+        self.push_screen(ChooseScreen("Run which suite?", suites), picked)
 
     # -- process management ---------------------------------------------------
-    def start(self, argv, label) -> None:
-        if self.proc is not None and self.proc.returncode is None:
-            self.notify(
-                "A process is already running — press x to stop it first.", severity="warning"
-            )
-            return
-        self.run_worker(self._run(argv, label), exclusive=False)
+    def _slot_running(self, slot) -> bool:
+        proc = self.procs.get(slot)
+        return proc is not None and proc.returncode is None
 
-    async def _run(self, argv, label) -> None:
-        self.log_write(f"$ {' '.join(str(part) for part in argv)}")
+    async def _launch(self, slot, argv, label) -> None:
+        if self._slot_running(slot):
+            self.notify(f"{label} is already running.")
+            return
+        tabs = self.query_one("#tabs", TabbedContent)
+        pane_id, log_id = f"pane-{slot}", f"log-{slot}"
+        if pane_id not in self._panes:
+            log = RichLog(id=log_id, markup=False, highlight=False, wrap=True)
+            await tabs.add_pane(TabPane(label, log, id=pane_id))
+            self._panes.add(pane_id)
+        else:
+            log = self.query_one(f"#{log_id}", RichLog)
+            log.clear()
+        tabs.active = pane_id
+        self._set_button(slot, running=True)
+        self._set_tab(slot, label, "live")
+        log.write(f"$ {' '.join(str(part) for part in argv)}")
         try:
-            self.proc = await asyncio.create_subprocess_exec(
+            proc = await asyncio.create_subprocess_exec(
                 *argv,
                 cwd=str(ROOT),
                 stdout=asyncio.subprocess.PIPE,
@@ -197,46 +238,54 @@ class PlotbenchTUI(App):
                 start_new_session=True,
             )
         except OSError as exc:
-            self.log_write(f"Failed to start {label}: {exc}")
-            self.proc = None
+            log.write(f"Failed to start: {exc}")
+            self._set_button(slot, running=False)
+            self._set_tab(slot, label, "failed")
             return
-        self.set_running(f"running: {label}  (pid {self.proc.pid}) — press x to stop")
-        assert self.proc.stdout is not None
-        async for raw in self.proc.stdout:
-            self.log_write(raw.decode(errors="replace").rstrip())
-        code = await self.proc.wait()
-        self.log_write(f"[{label}] exited with code {code}.")
-        self.proc = None
-        self.set_running("Idle.")
-        self.refresh_env()
+        self.procs[slot] = proc
+        assert proc.stdout is not None
+        async for raw in proc.stdout:
+            log.write(raw.decode(errors="replace").rstrip())
+        code = await proc.wait()
+        log.write(f"[exited with code {code}]")
+        self.procs[slot] = None
+        self._set_button(slot, running=False)
+        self._set_tab(slot, label, "done" if code == 0 else "failed")
+        if slot == "install":
+            self.refresh_env()
+
+    def terminate(self, slot) -> None:
+        proc = self.procs.get(slot)
+        if proc is None or proc.returncode is not None:
+            return
+        try:
+            os.killpg(proc.pid, signal.SIGTERM)
+        except (ProcessLookupError, OSError):
+            pass
 
     def action_stop(self) -> None:
-        self._terminate()
-
-    def _terminate(self) -> bool:
-        if self.proc is None or self.proc.returncode is not None:
-            self.notify("No process is running.")
-            return False
-        try:
-            os.killpg(self.proc.pid, signal.SIGTERM)
-            self.log_write("Sent SIGTERM to the running process.")
-        except (ProcessLookupError, OSError) as exc:
-            self.log_write(f"Could not stop the process: {exc}")
-        return True
+        active = self.query_one("#tabs", TabbedContent).active
+        if active.startswith("pane-"):
+            self.terminate(active[len("pane-") :])
 
     def on_unmount(self) -> None:
-        if self.proc is not None and self.proc.returncode is None:
-            try:
-                os.killpg(self.proc.pid, signal.SIGKILL)
-            except (ProcessLookupError, OSError):
-                pass
+        for proc in self.procs.values():
+            if proc is not None and proc.returncode is None:
+                try:
+                    os.killpg(proc.pid, signal.SIGKILL)
+                except (ProcessLookupError, OSError):
+                    pass
 
     # -- helpers --------------------------------------------------------------
-    def set_running(self, text) -> None:
-        self.query_one("#running", Static).update(text)
+    def _set_button(self, slot, running) -> None:
+        button = self.query_one(f"#{slot}", Button)
+        button.label = SLOTS[slot][1 if running else 0]
+        button.variant = "error" if running else "default"
 
-    def log_write(self, text) -> None:
-        self.query_one("#log", RichLog).write(text)
+    def _set_tab(self, slot, label, state) -> None:
+        self.query_one("#tabs", TabbedContent).get_tab(
+            f"pane-{slot}"
+        ).label = f"{label}  {STATE_MARK[state]}"
 
 
 def run_tui() -> None:
