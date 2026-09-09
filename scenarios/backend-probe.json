@@ -1,0 +1,15 @@
+{
+  "name": "Source and WebSocket capacity without plotting",
+  "backends": ["python", "rust"],
+  "warmup_seconds": 2,
+  "measurement_seconds": 10,
+  "repetitions": 3,
+  "cooldown_seconds": 0.5,
+  "order_seed": 42,
+  "cases": [
+    {"name": "waveform-10k-120hz", "config": {"view": "waveform", "hz": 120, "points": 10000}},
+    {"name": "waveform-1m-120hz", "config": {"view": "waveform", "hz": 120, "points": 1000000}},
+    {"name": "scalar-2048-120hz", "config": {"view": "image", "hz": 120, "width": 2048, "height": 2048, "image_mode": "scalar"}},
+    {"name": "rgb-2048-120hz", "config": {"view": "image", "hz": 120, "width": 2048, "height": 2048, "image_mode": "rgb"}}
+  ]
+}

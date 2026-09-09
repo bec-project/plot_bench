@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plotting benchmark · Demo gallery</title>
+  <style>
+    :root { font: 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0b141c; color: #d8e6ed; color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { max-width: 1540px; margin: auto; padding: 36px 24px; }
+    .eyebrow { color: #8fa7b6; font-size: 10px; letter-spacing: 2px; font-weight: 600; }
+    h1 { font-size: 30px; font-weight: 600; letter-spacing: -.7px; margin: 9px 0 12px; }
+    p { color: #8fa7b6; font-size: 13px; line-height: 1.6; margin: 0; }
+    header { margin-bottom: 26px; }
+    main { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+    article { min-width: 0; overflow: hidden; background: #111e28; border: 1px solid #253745; border-radius: 8px; }
+    .heading { padding: 16px 18px; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+    h2 { font-size: 16px; font-weight: 600; margin: 0; }
+    .heading span { color: #8fa7b6; font-size: 11px; }
+    img { display: block; width: 100%; height: auto; border-top: 1px solid #253745; }
+    article > p { padding: 13px 18px; font-size: 11px; border-top: 1px solid #253745; }
+    a { color: #64dccc; text-decoration: none; } a:hover { text-decoration: underline; }
+    a:focus-visible { outline: 2px solid #64dccc; outline-offset: -3px; }
+    footer { margin-top: 24px; color: #8fa7b6; font-size: 11px; line-height: 1.6; }
+    @media (max-width: 900px) { main { grid-template-columns: minmax(0, 1fr); } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="eyebrow">PLOTTING BENCHMARK</div>
+    <h1>One workload. A shared presentation.</h1>
+    <p>Live demo previews · 30 Hz source · 10,000 waveform points · 512 × 512 scalar image.<br>
+      Open any preview at full resolution. The indicators are live snapshots, not a performance ranking.</p>
+  </header>
+  <main>
+    <article>
+      <div class="heading"><h2>PyQtGraph</h2><span>Raster / OpenGL</span></div>
+      <a href="../frontends/pyqtgraph/screenshots/pyqtgraph-cpu.png"><img src="../frontends/pyqtgraph/screenshots/pyqtgraph-cpu.png" alt="PyQtGraph raster demo with matched workload and performance cards"></a>
+      <p>Both variants use the same shell. Earlier OpenGL renderer checks (before this theme): <a href="../frontends/pyqtgraph/screenshots/pyqtgraph-gl-waveform.png">waveform</a> · <a href="../frontends/pyqtgraph/screenshots/pyqtgraph-gl-image.png">image</a>.</p>
+    </article>
+    <article>
+      <div class="heading"><h2>Matplotlib</h2><span>QtAgg</span></div>
+      <a href="../frontends/matplotlib/screenshots/matplotlib.png"><img src="../frontends/matplotlib/screenshots/matplotlib.png" alt="Matplotlib demo with side-by-side waveform and scalar image"></a>
+      <p>Reusable artists and fixed-axes blitting, within the common presentation shell.</p>
+    </article>
+    <article>
+      <div class="heading"><h2>Qt Graphs</h2><span>Qt Quick / Metal</span></div>
+      <a href="../frontends/qtgraphs/screenshots/qtgraphs.png"><img src="../frontends/qtgraphs/screenshots/qtgraphs.png" alt="Qt Graphs native waveform and custom Qt Quick image demo"></a>
+      <p>Native waveform series; the image display requires custom Qt Quick implementation.</p>
+    </article>
+    <article>
+      <div class="heading"><h2>Iced</h2><span>Canvas / wgpu</span></div>
+      <a href="../frontends/iced/screenshots/iced-demo.png"><img src="../frontends/iced/screenshots/iced-demo.png" alt="Iced demo with custom waveform Canvas and scalar image"></a>
+      <p>Custom Canvas waveform, axes and scalar mapping; the maintenance cost is documented.</p>
+    </article>
+    <article>
+      <div class="heading"><h2>Plotly + React</h2><span>WebGL / browser</span></div>
+      <a href="../frontends/plotly/screenshots/plotly-demo.png"><img src="../frontends/plotly/screenshots/plotly-demo.png" alt="Plotly and React demo with matched live performance cards"></a>
+      <p>Source controls expand within the application; full data uses scattergl, heatmap and image traces.</p>
+    </article>
+    <article>
+      <div class="heading"><h2>Source controls</h2><span>Shared by all frontends</span></div>
+      <a href="screenshots/source-controls.png"><img src="screenshots/source-controls.png" alt="Shared source controls for rate, waveform settings and image dimensions"></a>
+      <p>Configure streaming workloads up to 120 Hz, including append/replace and RGB/scalar modes.</p>
+    </article>
+  </main>
+  <footer>Submitted updates are not displayed FPS. Toolkit-specific axes and layout can produce different physical plot areas; each run records its actual dimensions.<br>
+    Launch instructions and measurement definitions are in the <a href="../README.md">README</a>.</footer>
+</body>
+</html>

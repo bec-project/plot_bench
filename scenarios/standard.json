@@ -1,0 +1,14 @@
+{
+  "name": "Full waveform and image sweep",
+  "warmup_seconds": 5,
+  "measurement_seconds": 30,
+  "repetitions": 3,
+  "cooldown_seconds": 2,
+  "order_seed": 42,
+  "frontends": ["pyqtgraph", "pyqtgraph-gl", "matplotlib", "qtgraphs", "iced", "plotly"],
+  "modes": ["stream", "replay"],
+  "case_groups": [
+    {"name": "waveform", "base": {"view": "waveform"}, "matrix": {"waveform_mode": ["replace", "append"], "points": [10000, 100000, 1000000], "hz": [10, 30, 60, 120]}},
+    {"name": "image", "base": {"view": "image"}, "matrix": {"image_mode": ["scalar", "rgb"], "resolution": [256, 512, 1024, 2048], "hz": [10, 30, 60, 120]}}
+  ]
+}

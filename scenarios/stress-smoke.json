@@ -1,0 +1,15 @@
+{
+  "name": "Largest preset functional validation at 120 Hz input",
+  "warmup_seconds": 1,
+  "measurement_seconds": 3,
+  "repetitions": 1,
+  "cooldown_seconds": 1,
+  "order_seed": 42,
+  "frontends": ["pyqtgraph", "pyqtgraph-gl", "matplotlib", "qtgraphs", "iced", "plotly"],
+  "modes": ["stream"],
+  "cases": [
+    {"name": "waveform-1m-120hz", "config": {"view": "waveform", "hz": 120, "points": 1000000, "append_count": 100000, "waveform_mode": "replace"}},
+    {"name": "scalar-2048-120hz", "config": {"view": "image", "hz": 120, "width": 2048, "height": 2048, "image_mode": "scalar"}},
+    {"name": "rgb-2048-120hz", "config": {"view": "image", "hz": 120, "width": 2048, "height": 2048, "image_mode": "rgb"}}
+  ]
+}

@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+PLOTBENCH_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$PLOTBENCH_ROOT"
+export PLAYWRIGHT_BROWSERS_PATH="$PLOTBENCH_ROOT/.cache/playwright"
+if [[ ! -x .envs/plotting-benchmark/bin/plotbench ]]; then
+  echo 'Run ./scripts/setup first.' >&2
+  exit 1
+fi
+exec .envs/plotting-benchmark/bin/plotbench "$@"

@@ -1,0 +1,24 @@
+[package]
+name = "plotbench-iced"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "Iced frontend for the shared plotting benchmark protocol"
+license = "BSD-3-Clause"
+publish = false
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+iced = { version = "=0.14.0", default-features = false, features = ["wgpu", "canvas", "image-without-codecs", "tokio", "sysinfo"] }
+iced_runtime = "=0.14.0"
+png = "0.18"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tungstenite = { version = "0.28", features = ["rustls-tls-native-roots"] }
+url = "2"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1

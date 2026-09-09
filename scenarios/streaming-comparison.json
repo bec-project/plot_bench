@@ -1,0 +1,48 @@
+{
+  "name": "Rust streaming comparison: realistic and extreme workloads at 60 and 120 Hz",
+  "warmup_seconds": 5,
+  "measurement_seconds": 30,
+  "repetitions": 3,
+  "cooldown_seconds": 2,
+  "order_seed": 42,
+  "backends": ["rust"],
+  "frontends": ["pyqtgraph", "pyqtgraph-gl", "matplotlib", "qtgraphs", "iced", "plotly"],
+  "modes": ["stream"],
+  "cases": [
+    {
+      "name": "combined-append-100k-scalar-512-60hz",
+      "config": {
+        "view": "both",
+        "points": 100000,
+        "append_count": 10000,
+        "waveform_mode": "append",
+        "width": 512,
+        "height": 512,
+        "image_mode": "scalar",
+        "hz": 60
+      }
+    }
+  ],
+  "case_groups": [
+    {
+      "name": "waveform-replace",
+      "base": {"view": "waveform", "waveform_mode": "replace"},
+      "matrix": {"points": [10000, 100000], "hz": [60, 120]}
+    },
+    {
+      "name": "waveform-append",
+      "base": {"view": "waveform", "waveform_mode": "append"},
+      "matrix": {"points": [10000, 100000], "hz": [60, 120]}
+    },
+    {
+      "name": "image-scalar",
+      "base": {"view": "image", "image_mode": "scalar"},
+      "matrix": {"resolution": [512, 2048], "hz": [60, 120]}
+    },
+    {
+      "name": "image-rgb",
+      "base": {"view": "image", "image_mode": "rgb"},
+      "matrix": {"resolution": [512, 2048], "hz": [60, 120]}
+    }
+  ]
+}

@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plotbench · Source controls</title>
+  <style>
+    :root { font: 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #d8e6ed; background: #0b141c; color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { max-width: 1100px; margin: 0 auto; padding: 28px 24px; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+    .eyebrow { color: #8fa7b6; font-size: 10px; font-weight: 700; letter-spacing: 2px; }
+    h1 { font-size: 28px; font-weight: 600; letter-spacing: -.7px; margin: 7px 0 0; }
+    .badge { border: 1px solid #253745; border-radius: 5px; color: #64dccc; padding: 7px 10px; font-size: 11px; white-space: nowrap; }
+    p { color: #8fa7b6; line-height: 1.6; margin: 0 0 18px; }
+    section { background: #111e28; border: 1px solid #253745; border-radius: 6px; margin-bottom: 18px; }
+    .panel-heading { padding: 14px 18px; border-bottom: 1px solid #253745; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    h2 { font-size: 13px; font-weight: 600; margin: 0; }
+    .panel-heading span { font-size: 11px; color: #8fa7b6; }
+    form { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; padding: 20px 18px; }
+    .presets { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 20px; padding-bottom: 18px; border-bottom: 1px solid #253745; }
+    .presets p { grid-column: 1 / -1; font-size: 11px; margin: 0; }
+    label { display: flex; flex-direction: column; gap: 8px; font-size: 12px; color: #8fa7b6; }
+    input, select, button { font: inherit; border: 1px solid #314451; border-radius: 4px; padding: 10px; min-width: 0; }
+    input, select { color: #d8e6ed; background: #0b141c; width: 100%; }
+    input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid #64dccc; outline-offset: 3px; }
+    button { background: #64dccc; border-color: #64dccc; color: #0b2427; font-weight: 600; cursor: pointer; padding: 10px 18px; }
+    button:disabled { opacity: .5; cursor: wait; }
+    .actions { grid-column: 1 / -1; display: flex; align-items: center; gap: 16px; }
+    .actions span { color: #8fa7b6; font-size: 11px; }
+    #error { color: #ffa7a7; margin: 0; }
+    #error:empty { display: none; }
+    #status { white-space: pre-wrap; padding: 18px; margin: 0; font: 12px/1.9 ui-monospace, SFMono-Regular, monospace; color: #8fa7b6; overflow-wrap: anywhere; }
+    footer { display: flex; justify-content: space-between; gap: 16px; color: #8fa7b6; font-size: 11px; line-height: 1.6; }
+    a { color: #64dccc; text-decoration: none; } a:hover { text-decoration: underline; }
+    code { font-size: 11px; }
+    @media (max-width: 760px) { form { grid-template-columns: repeat(2, minmax(0, 1fr)); } header, footer, .actions { align-items: flex-start; flex-direction: column; } .panel-heading span { text-align: right; } }
+    @media (max-width: 480px) { form, .presets { grid-template-columns: minmax(0, 1fr); } body { padding: 24px 16px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div><div class="eyebrow">PLOTTING BENCHMARK</div><h1>Source controls</h1></div>
+    <span class="badge" id="backend">Python · shared deterministic source</span>
+  </header>
+  <p>One workload for every frontend. Changes apply to connected streaming demos;
+    restart replay demos to load the new workload.</p>
+  <section aria-labelledby="workload-title">
+    <div class="panel-heading"><h2 id="workload-title">Workload</h2><span>Waveforms &amp; images · up to 120 Hz</span></div>
+    <form id="config">
+      <div class="presets">
+        <label>Update rate preset<select id="rate-preset" aria-describedby="preset-help">
+          <option value="">Custom rate</option>
+          <option value="1">1 Hz</option><option value="5">5 Hz</option><option value="10">10 Hz</option>
+          <option value="15">15 Hz</option><option value="24">24 Hz</option><option value="30">30 Hz</option>
+          <option value="60">60 Hz</option><option value="90">90 Hz</option><option value="120">120 Hz</option>
+        </select></label>
+        <label>Image resolution preset<select id="resolution-preset" aria-describedby="preset-help">
+          <option value="">Custom resolution</option>
+          <optgroup label="Square images">
+            <option value="256x256">256 × 256</option><option value="512x512">512 × 512</option>
+            <option value="1024x1024">1024 × 1024</option><option value="2048x2048">2048 × 2048</option>
+            <option value="4096x4096">4096 × 4096</option>
+          </optgroup>
+          <optgroup label="Video sizes · width × height">
+            <option value="640x480">640 × 480 · VGA</option><option value="1280x720">1280 × 720 · HD</option>
+            <option value="1920x1080">1920 × 1080 · Full HD</option><option value="3840x2160">3840 × 2160 · 4K UHD</option>
+          </optgroup>
+        </select></label>
+        <p id="preset-help">Presets fill the fields below. You can also enter custom values. Select Apply workload to send your changes.</p>
+      </div>
+      <label>Target rate · Hz<input name="hz" type="number" min="0.1" max="120" step="0.1" required></label>
+      <label>View<select name="view"><option value="both">Waveform + image</option><option value="waveform">Waveform</option><option value="image">Image</option></select></label>
+      <label>Waveform points<input name="points" type="number" min="1" max="10000000" required></label>
+      <label>Waveform mode<select name="waveform_mode"><option value="replace">Replace complete waveform</option><option value="append">Append into rolling window</option></select></label>
+      <label>Samples appended per update<input name="append_count" type="number" min="1" required></label>
+      <label>Image mode<select name="image_mode"><option value="scalar">Scalar → shared colormap</option><option value="rgb">RGB · 8 bits/channel</option></select></label>
+      <label>Image width<input name="width" type="number" min="1" max="8192" required></label>
+      <label>Image height<input name="height" type="number" min="1" max="8192" required></label>
+      <label>Deterministic seed<input name="seed" type="number" min="0" required></label>
+      <div class="actions"><button type="submit">Apply workload</button><span>Use the benchmark CLI for recorded runs with fixed settings.</span><p id="error" role="alert"></p></div>
+    </form>
+  </section>
+  <section aria-labelledby="source-title">
+    <div class="panel-heading"><h2 id="source-title">Source activity</h2><span>Refreshes every second</span></div>
+    <pre id="status" role="status">Connecting…</pre>
+  </section>
+  <footer><span><a href="http://127.0.0.1:5173">Open Plotly frontend ↗</a> · Start it with <code>./scripts/plotbench demo plotly</code></span><span>Source rate is independent of display refresh.</span></footer>
+  <script>
+    const form = document.querySelector('form');
+    const err = document.querySelector('#error');
+    const apply = form.querySelector('button');
+    const ratePreset = document.querySelector('#rate-preset');
+    const resolutionPreset = document.querySelector('#resolution-preset');
+    const dirty = new Map();
+    let confirmed = null;
+    let pending = false;
+    const valueOf = el => el.type === 'number' ? Number(el.value) : el.value;
+    const updateButton = () => {
+      apply.disabled = pending || !confirmed || dirty.size === 0;
+      ratePreset.disabled = resolutionPreset.disabled = !confirmed;
+    };
+    function syncPresets() {
+      const rate = String(Number(form.elements.namedItem('hz').value));
+      const resolution = `${Number(form.elements.namedItem('width').value)}x${Number(form.elements.namedItem('height').value)}`;
+      // Polling must not interrupt keyboard navigation in an open preset menu.
+      if (document.activeElement !== ratePreset) {
+        ratePreset.value = [...ratePreset.options].some(option => option.value === rate) ? rate : '';
+      }
+      if (document.activeElement !== resolutionPreset) {
+        resolutionPreset.value = [...resolutionPreset.options].some(option => option.value === resolution) ? resolution : '';
+      }
+    }
+    function recordEdit(el) {
+      if (!pending && confirmed && el.value !== '' && valueOf(el) === confirmed[el.name]) dirty.delete(el.name);
+      else dirty.set(el.name, {value: valueOf(el)});
+    }
+    function usePreset(values) {
+      for (const [name, value] of Object.entries(values)) {
+        const el = form.elements.namedItem(name);
+        el.value = value;
+        recordEdit(el);
+      }
+      syncPresets();
+      updateButton();
+    }
+    ratePreset.addEventListener('change', () => {
+      if (ratePreset.value) usePreset({hz: Number(ratePreset.value)});
+      else form.elements.namedItem('hz').focus();
+    });
+    resolutionPreset.addEventListener('change', () => {
+      if (resolutionPreset.value) {
+        const [width, height] = resolutionPreset.value.split('x').map(Number);
+        usePreset({width, height});
+      } else form.elements.namedItem('width').focus();
+    });
+    function render(config) {
+      // An older poll may finish after a successful configuration update.
+      if (confirmed && config.generation < confirmed.generation) return;
+      confirmed = config;
+      for (const el of form.elements) {
+        if (el.name && !dirty.has(el.name) && document.activeElement !== el) el.value = config[el.name];
+      }
+      syncPresets();
+      updateButton();
+    }
+    form.addEventListener('input', event => {
+      const el = event.target;
+      if (!el.name) return;
+      recordEdit(el);
+      syncPresets();
+      updateButton();
+    });
+    form.addEventListener('focusout', () => {
+      // Let focus move before refreshing a pristine field that was being inspected.
+      queueMicrotask(() => { if (confirmed) render(confirmed); });
+    });
+    async function load() {
+      const response = await fetch('/api/config');
+      if (!response.ok) throw Error('Could not load source configuration.');
+      render(await response.json());
+    }
+    form.onsubmit = async event => {
+      event.preventDefault();
+      if (pending || !dirty.size) return;
+      err.textContent = '';
+      pending = true;
+      updateButton();
+      const submitted = new Map(dirty);
+      const patch = Object.fromEntries([...submitted].map(([name, edit]) => [name, edit.value]));
+      try {
+        const response = await fetch('/api/config', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(patch)});
+        const result = await response.json();
+        if (!response.ok) throw Error(result.error || `HTTP ${response.status}`);
+        for (const [name, edit] of submitted) {
+          // Keep edits made while this request was in flight for the next apply.
+          if (dirty.get(name) === edit) dirty.delete(name);
+        }
+        render(result);
+        await health();
+      } catch (error) { err.textContent = error.message; }
+      finally { pending = false; updateButton(); }
+    };
+    async function health() {
+      const status = document.querySelector('#status');
+      try {
+        const response = await fetch('/api/health');
+        if (!response.ok) throw Error('Could not read source activity.');
+        const h = await response.json();
+        render(h.config);
+        const backend = h.backend || 'python';
+        document.querySelector('#backend').textContent = `${backend === 'python' ? 'Python' : backend === 'rust' ? 'Rust' : backend} · shared deterministic source`;
+        status.textContent = `${h.status.toUpperCase()}  ·  ${h.clients} streaming client(s)\nTarget: ${h.config.hz} Hz  ·  Generated: ${h.generated}\nMissed source deadlines: ${h.deadline_misses}  ·  Replaced queued frames: ${h.mailbox_drops}\n${h.error || 'Raw measurements: ' + h.output}`;
+      } catch (error) { status.textContent = error.message; }
+    }
+    updateButton();
+    load().catch(error => { err.textContent = error.message; });
+    health();
+    setInterval(health, 1000);
+  </script>
+</body>
+</html>
