@@ -49,7 +49,12 @@ def qt_window_metadata(window, *, platform_name=None):
         "refresh_source": "QScreen.refreshRate; reported nominal rate, not measured presentation",
         "geometry": _rect(screen.geometry()),
         "available_geometry": _rect(screen.availableGeometry()),
-        "window_geometry": _rect(window.geometry()),
+        "window_geometry": (
+            [None, None, window.geometry().width(), window.geometry().height()]
+            if platform_name == "wayland"
+            else _rect(window.geometry())
+        ),
+        "window_position_available": platform_name != "wayland",
         "geometry_units": "logical pixels; [x, y, width, height]",
         "device_pixel_ratio": screen.devicePixelRatio(),
         "window_device_pixel_ratio": pixel_ratio,

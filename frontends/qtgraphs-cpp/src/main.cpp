@@ -1,9 +1,12 @@
 // Plotbench Qt Graphs C++ frontend: native Qt Graphs LineSeries plus a custom Qt Quick image.
 #include <QCommandLineParser>
+#include <QDir>
 #include <QEventLoop>
 #include <QGuiApplication>
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QJsonObject>
+#include <QLibraryInfo>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QQmlApplicationEngine>
@@ -12,6 +15,7 @@
 #include <QQuickWindow>
 #include <QTimer>
 #include <cstdio>
+#include <cstring>
 
 #include "controller.h"
 #include "image_provider.h"
@@ -60,6 +64,20 @@ bool fetchColorTable(const QString &url, FrameImageProvider *provider, QString *
 }  // namespace
 
 int main(int argc, char *argv[]) {
+    if (argc == 2 && std::strcmp(argv[1], "--runtime-info") == 0) {
+        QCoreApplication app(argc, argv);
+        const QDir platforms(QLibraryInfo::path(QLibraryInfo::PluginsPath) + QStringLiteral("/platforms"));
+        QJsonArray plugins;
+        for (const QString &name : platforms.entryList({QStringLiteral("*qwayland*.so")}, QDir::Files)) {
+            plugins.append(platforms.absoluteFilePath(name));
+        }
+        const QByteArray output = QJsonDocument(QJsonObject{
+            {QStringLiteral("qt"), QString::fromLatin1(qVersion())},
+            {QStringLiteral("wayland_plugins"), plugins},
+        }).toJson(QJsonDocument::Compact);
+        std::puts(output.constData());
+        return 0;
+    }
     QGuiApplication app(argc, argv);
     app.setApplicationName(QStringLiteral("Plotbench Qt Graphs C++"));
     app.setApplicationVersion(QStringLiteral(PLOTBENCH_APP_VERSION));

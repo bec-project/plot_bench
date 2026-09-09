@@ -366,9 +366,11 @@ dependencies = [
 requires-dist = [
     { name = "aiohttp", specifier = ">=3.12,<4" },
     { name = "numpy", specifier = ">=2.2,<3" },
+    { name = "playwright", marker = "extra == 'browser'", specifier = ">=1.55,<2" },
     { name = "psutil", specifier = ">=7,<8" },
     { name = "websockets", specifier = ">=15,<17" },
 ]
+provides-extras = ["browser"]
 
 [package.metadata.requires-dev]
 dev = [

@@ -379,7 +379,9 @@ void Controller::recordDisplayMetadata(double ratio) {
                         {QStringLiteral("refresh_source"), QStringLiteral("QScreen::refreshRate; reported nominal rate, not measured presentation")},
                         {QStringLiteral("geometry"), rect(screen->geometry())},
                         {QStringLiteral("available_geometry"), rect(screen->availableGeometry())},
-                        {QStringLiteral("window_geometry"), rect(m_window->geometry())},
+                        {QStringLiteral("window_geometry"), QGuiApplication::platformName() == QLatin1String("wayland")
+                            ? QVariantList{QVariant(), QVariant(), m_window->width(), m_window->height()} : rect(m_window->geometry())},
+                        {QStringLiteral("window_position_available"), QGuiApplication::platformName() != QLatin1String("wayland")},
                         {QStringLiteral("geometry_units"), QStringLiteral("logical pixels; [x, y, width, height]")},
                         {QStringLiteral("device_pixel_ratio"), screen->devicePixelRatio()},
                         {QStringLiteral("window_device_pixel_ratio"), ratio},
@@ -433,7 +435,8 @@ void Controller::updateHud() {
         {QStringLiteral("details"), error.isEmpty() ? m_source->status() : error},
         {QStringLiteral("resources"), QStringLiteral("CPU %1% · %2 MiB · Custom Qt Quick image (C++)")
                                            .arg(m_resources.cpuPercent(), 0, 'f', 0)
-                                           .arg(m_resources.residentMiB(), 0, 'f', 0)},
+                                           .arg([this]() { const double rss = m_resources.residentMiB();
+                                               return std::isfinite(rss) ? QString::number(rss, 'f', 0) : QStringLiteral("N/A"); }())},
         {QStringLiteral("renderer"), graphicsApi},
     };
     emit hudChanged();

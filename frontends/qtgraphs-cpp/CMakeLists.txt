@@ -9,6 +9,9 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Network WebSockets Quick QuickControls2 Graphs Test)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  find_package(Qt6 6.8 REQUIRED COMPONENTS WaylandClient)
+endif()
 qt_standard_project_setup(REQUIRES 6.8)
 
 add_library(plotbench_qtgraphs_core STATIC
@@ -39,3 +42,4 @@ qt_add_executable(plotbench-qtgraphs-cpp-tests tests/test_protocol.cpp)
 set_target_properties(plotbench-qtgraphs-cpp-tests PROPERTIES MACOSX_BUNDLE FALSE)
 target_link_libraries(plotbench-qtgraphs-cpp-tests PRIVATE plotbench_qtgraphs_core Qt6::Test)
 add_test(NAME protocol COMMAND plotbench-qtgraphs-cpp-tests)
+add_test(NAME runtime-info COMMAND plotbench-qtgraphs-cpp --runtime-info)

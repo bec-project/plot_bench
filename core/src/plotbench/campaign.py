@@ -113,9 +113,10 @@ def hardware_summary(host, *, origin):
     os_version = _first(os_record.get("version"))
     if os_version is None and isinstance(platform_text, str) and platform_text.startswith("macOS-"):
         os_version = platform_text.split("-")[1]
-    os_label = None
+    os_label = os_record.get("name")
     if os_version:
-        os_label = f"{os_record.get('name') or 'macOS'} {os_version}"
+        legacy_macos = isinstance(platform_text, str) and platform_text.startswith("macOS-")
+        os_label = f"{os_record.get('name') or ('macOS' if legacy_macos else 'OS')} {os_version}"
         if os_record.get("build"):
             os_label += f" ({os_record['build']})"
     memory = host.get("memory_bytes")
@@ -145,8 +146,8 @@ def hardware_summary(host, *, origin):
             continue
         graphics.append(
             dict(
-                model=gpu.get("sppci_model"),
-                vendor=gpu.get("spdisplays_vendor"),
+                model=_first(gpu.get("model"), gpu.get("sppci_model")),
+                vendor=_first(gpu.get("vendor"), gpu.get("spdisplays_vendor")),
                 cores=gpu.get("sppci_cores"),
                 metal=_first(
                     gpu.get("spdisplays_mtlgpufamilysupport"), gpu.get("spdisplays_metal")

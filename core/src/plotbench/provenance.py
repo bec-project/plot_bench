@@ -55,6 +55,10 @@ _SOURCE_SUFFIXES = {
     ".vert",
     ".frag",
     ".sh",
+    ".cpp",
+    ".h",
+    ".qml",
+    ".cmake",
 }
 
 
@@ -81,6 +85,7 @@ def source_hash(directory, *, checkout=False):
                     ".python-version",
                     ".npmrc",
                     ".nvmrc",
+                    ".node-version",
                     "rust-toolchain",
                     "rust-toolchain.toml",
                     "pyproject.toml",
@@ -99,7 +104,15 @@ def source_hash(directory, *, checkout=False):
                 continue
             if (
                 path.suffix in _SOURCE_SUFFIXES
-                or name in {".npmrc", ".nvmrc", "rust-toolchain", ".python-version"}
+                or name
+                in {
+                    ".npmrc",
+                    ".nvmrc",
+                    ".node-version",
+                    "rust-toolchain",
+                    ".python-version",
+                    "CMakeLists.txt",
+                }
                 or {"src", "assets", "public", "scripts"}.intersection(relative.parts[:-1])
             ):
                 files.append(path)

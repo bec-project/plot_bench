@@ -596,7 +596,7 @@ fn command_output(command: &str, args: &[&str]) -> Option<String> {
 }
 
 fn write_host(output: &std::path::Path, config: &Config) -> Result<()> {
-    let mut host = json!({"recorded_at_ms":now_ms(),"platform":command_output("uname", &["-a"]).unwrap_or_else(||std::env::consts::OS.into()),
+    let mut host = json!({"recorded_at_ms":now_ms(),"platform":command_output("uname", &["-srm"]).unwrap_or_else(||std::env::consts::OS.into()),
         "machine":std::env::consts::ARCH,"logical_cpus":thread::available_parallelism().map(|n|n.get()).ok(),
         "physical_cpus":null,"memory_bytes":null,"backend":"rust","backend_version":env!("CARGO_PKG_VERSION"),
         "rustc":env!("PLOTBENCH_RUSTC_VERSION"),"runtime":"tokio","runtime_version":RUNTIME_VERSION,
@@ -623,11 +623,57 @@ fn write_host(output: &std::path::Path, config: &Config) -> Result<()> {
         host["memory_bytes"] = json!(
             command_output("sysctl", &["-n", "hw.memsize"]).and_then(|s| s.parse::<u64>().ok())
         );
+    } else if cfg!(target_os = "linux") {
+        let data = linux_host_metadata(
+            &std::fs::read_to_string("/proc/cpuinfo").unwrap_or_default(),
+            &std::fs::read_to_string("/proc/meminfo").unwrap_or_default(),
+            &std::fs::read_to_string("/etc/os-release").unwrap_or_default(),
+        );
+        for (key, value) in data.as_object().unwrap() {
+            host[key] = value.clone();
+        }
+        host["display_session"] = json!({
+            "session_type":std::env::var("XDG_SESSION_TYPE").ok(),
+            "desktop":std::env::var("XDG_CURRENT_DESKTOP").ok(),
+        });
     }
     let mut bytes = serde_json::to_vec_pretty(&host)?;
     bytes.push(b'\n');
     std::fs::write(output.join("host.json"), bytes)?;
     Ok(())
+}
+
+fn linux_host_metadata(cpuinfo: &str, meminfo: &str, os_release: &str) -> Value {
+    let mut cores = std::collections::HashSet::new();
+    let mut model = None;
+    for processor in cpuinfo.split("\n\n") {
+        let fields: std::collections::HashMap<_, _> = processor
+            .lines()
+            .filter_map(|line| line.split_once(':'))
+            .map(|(key, value)| (key.trim(), value.trim()))
+            .collect();
+        model = model.or_else(|| fields.get("model name").copied());
+        if let (Some(package), Some(core)) = (fields.get("physical id"), fields.get("core id")) {
+            cores.insert((*package, *core));
+        }
+    }
+    let memory = meminfo.lines().find_map(|line| {
+        let value = line.strip_prefix("MemTotal:")?;
+        let mut fields = value.split_whitespace();
+        let kib = fields.next()?.parse::<u64>().ok()?;
+        (fields.next()? == "kB")
+            .then(|| kib.checked_mul(1024))
+            .flatten()
+    });
+    let release: std::collections::HashMap<_, _> = os_release
+        .lines()
+        .filter_map(|line| line.split_once('='))
+        .map(|(key, value)| (key, value.trim_matches('"')))
+        .collect();
+    json!({"cpu_model":model,"memory_bytes":memory,
+        "physical_cpus":if cores.is_empty() { None } else { Some(cores.len()) },
+        "os":{"name":release.get("NAME").copied().unwrap_or("Linux"),
+              "version":release.get("VERSION_ID")}})
 }
 
 #[cfg(test)]
@@ -636,6 +682,25 @@ mod tests {
     use axum::{body::to_bytes, http::Request};
     use futures_util::{SinkExt, StreamExt};
     use tower::ServiceExt;
+
+    #[test]
+    fn linux_hardware_is_nonidentifying_and_missing_values_stay_null() {
+        let cpu = "model name : Example CPU\nphysical id : 0\ncore id : 0\n\nphysical id : 0\ncore id : 0\n\nphysical id : 0\ncore id : 1\n";
+        let host = linux_host_metadata(
+            cpu,
+            "MemTotal: 1024 kB\n",
+            "NAME=\"Example Linux\"\nVERSION_ID=\"9\"\n",
+        );
+        assert_eq!(host["physical_cpus"], 2);
+        assert_eq!(host["memory_bytes"], 1048576);
+        assert_eq!(host["cpu_model"], "Example CPU");
+        assert_eq!(host["os"]["name"], "Example Linux");
+        let missing = linux_host_metadata("", "", "");
+        assert!(missing["cpu_model"].is_null());
+        assert!(missing["physical_cpus"].is_null());
+        assert!(missing["memory_bytes"].is_null());
+        assert_eq!(missing["os"]["name"], "Linux");
+    }
 
     #[test]
     fn optional_stage_timings_are_nonnegative_and_nullable() {

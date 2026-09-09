@@ -2,10 +2,14 @@
 
 import json
 import platform
+import shlex
 import subprocess
 from datetime import UTC, datetime
+from pathlib import Path
 
 import psutil
+
+from .runtime import display_session
 
 # Identifying serial numbers, vendor/product IDs and display IDs are deliberately excluded.
 _DISPLAY_KEYS = (
@@ -49,6 +53,9 @@ def host_snapshot():
         physical_cpus=psutil.cpu_count(logical=False),
         memory_bytes=psutil.virtual_memory().total,
     )
+    if platform.system() == "Linux":
+        host.update(linux_metadata())
+        return host
     if platform.system() != "Darwin":
         return host
     host["os"] = dict(
@@ -75,3 +82,41 @@ def host_snapshot():
         if isinstance(display, dict)
     ]
     return host
+
+
+def linux_metadata():
+    """Best-effort hardware data; never inspect hostname, serial numbers or EDID."""
+    try:
+        release = platform.freedesktop_os_release()
+    except OSError:
+        release = {}
+    try:
+        fields = dict(
+            line.split(":", 1)
+            for line in Path("/proc/cpuinfo").read_text().splitlines()
+            if ":" in line
+        )
+        fields = {key.strip(): value.strip() for key, value in fields.items()}
+        cpu_model = fields.get("model name") or fields.get("Hardware")
+    except OSError:
+        cpu_model = None
+    graphics = []
+    for line in (command_output(["lspci", "-mm"]) or "").splitlines():
+        try:
+            fields = shlex.split(line)
+        except ValueError:
+            continue
+        if len(fields) >= 4 and any(kind in fields[1] for kind in ("VGA", "3D", "Display")):
+            graphics.append({"model": fields[3], "vendor": fields[2]})
+    return {
+        "os": {
+            "name": release.get("NAME", "Linux"),
+            "version": release.get("VERSION_ID"),
+            "build": platform.release(),
+        },
+        "cpu_model": cpu_model,
+        "graphics": graphics,
+        "displays": [],
+        "display_session": display_session(),
+        "display_metadata_error": "Compositor display configuration is not queried; use frontend display metadata and --display-context.",
+    }

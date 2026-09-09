@@ -1,6 +1,11 @@
 #include "resource_usage.h"
 
 #include <sys/resource.h>
+#include <limits>
+#ifdef __linux__
+#include <fstream>
+#include <unistd.h>
+#endif
 #ifdef __APPLE__
 #include <mach/mach.h>
 #endif
@@ -35,10 +40,16 @@ double ResourceUsage::residentMiB() const {
     if (task_info(mach_task_self(), MACH_TASK_BASIC_INFO, reinterpret_cast<task_info_t>(&info), &count) == KERN_SUCCESS) {
         return double(info.resident_size) / (1024.0 * 1024.0);
     }
+#elif defined(__linux__)
+    // statm reports current resident pages. getrusage reports peak KiB on Linux.
+    std::ifstream statm("/proc/self/statm");
+    unsigned long totalPages = 0, residentPages = 0;
+    const long pageSize = sysconf(_SC_PAGESIZE);
+    if (pageSize > 0 && statm >> totalPages >> residentPages) {
+        return double(residentPages) * double(pageSize) / (1024.0 * 1024.0);
+    }
 #endif
-    rusage usage{};
-    getrusage(RUSAGE_SELF, &usage);
-    return double(usage.ru_maxrss) / (1024.0 * 1024.0);
+    return std::numeric_limits<double>::quiet_NaN();
 }
 
 }  // namespace plotbench

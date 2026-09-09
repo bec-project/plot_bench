@@ -1,4 +1,5 @@
 mod metrics;
+mod opener;
 mod protocol;
 mod readiness;
 mod source;
@@ -299,6 +300,7 @@ impl App {
             "iced_version":"0.14.0", "app_version":env!("CARGO_PKG_VERSION"),
             "build_profile":if cfg!(debug_assertions) { "debug" } else { "release" },
             "os":std::env::consts::OS,"architecture":std::env::consts::ARCH,
+            "display_protocol":if cfg!(target_os = "linux") { "wayland" } else { "native" },
             "pixel_ratio":null,"viewport_logical":[args.width,args.height],
             "viewport_size":[args.width,args.height],"viewport_size_units":"logical pixels",
             "plot_viewport_units":"physical pixels; data drawing area excluding axes",
@@ -710,20 +712,7 @@ impl App {
             Message::OpenControls => {
                 self.controls_error = None;
                 let url = self.args.url.clone();
-                return Task::perform(
-                    async move {
-                        let status = std::process::Command::new("/usr/bin/open")
-                            .arg(url)
-                            .status()
-                            .map_err(|error| error.to_string())?;
-                        if status.success() {
-                            Ok(())
-                        } else {
-                            Err(format!("Source controls could not open: {status}"))
-                        }
-                    },
-                    Message::ControlsOpened,
-                );
+                return Task::perform(async move { opener::open(&url) }, Message::ControlsOpened);
             }
             Message::ControlsOpened(result) => {
                 self.controls_error = result.err();

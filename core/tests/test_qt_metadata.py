@@ -62,6 +62,13 @@ def test_refresh_observes_window_moving_to_another_display():
     assert display["window_device_pixel_ratio"] == 2.0
 
 
+def test_wayland_window_position_is_unavailable_instead_of_artificial():
+    window = make_window(make_screen())
+    display = qt_metadata.qt_window_metadata(window, platform_name="wayland")["display"]
+    assert display["window_geometry"] == [None, None, 1100, 820]
+    assert display["window_position_available"] is False
+
+
 def test_renderer_environment_preserves_overrides_when_screen_unavailable(monkeypatch):
     monkeypatch.setenv("QSG_RENDER_LOOP", "basic")
     monkeypatch.setenv("QSG_RHI_BACKEND", "metal")

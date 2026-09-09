@@ -3,6 +3,8 @@
 #include <QtTest>
 
 #include "protocol.h"
+#include "resource_usage.h"
+#include <cmath>
 
 using namespace plotbench;
 
@@ -35,6 +37,12 @@ QByteArray floats(std::initializer_list<float> values) {
 class ProtocolTest : public QObject {
     Q_OBJECT
 private slots:
+    void residentMemoryUsesCurrentProcessUnits() {
+        ResourceUsage usage;
+        const double memory = usage.residentMiB();
+        QVERIFY(std::isfinite(memory));
+        QVERIFY(memory > 1.0);
+    }
     void decodesWaveformAndImageViews() {
         const QByteArray wave = floats({0.5f, -1.25f, 1.0f});
         const QByteArray image = QByteArray::fromRawData("\x01\x02\x03\x04\x05\x06", 6);

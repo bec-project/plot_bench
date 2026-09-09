@@ -283,3 +283,24 @@ def test_stale_release_is_rejected_before_creating_output_or_starting_processes(
     with pytest.raises(RuntimeError, match="./scripts/setup rust"):
         run(args)
     assert not output.exists()
+
+
+def test_native_artifact_hash_includes_qml_and_cmake_configuration(tmp_path):
+    component = tmp_path / "frontends" / "qtgraphs-cpp"
+    component.mkdir(parents=True)
+    for filename in ("Main.qml", "CMakeLists.txt"):
+        path = component / filename
+        before = provenance.component_source_hash("qtgraphs-cpp", tmp_path)
+        path.write_text("first version")
+        first = provenance.component_source_hash("qtgraphs-cpp", tmp_path)
+        assert first != before
+        path.write_text("second version")
+        assert provenance.component_source_hash("qtgraphs-cpp", tmp_path) != first
+
+
+def test_checkout_hash_includes_declared_node_toolchain(tmp_path):
+    path = tmp_path / ".node-version"
+    path.write_text("24.19.0\n")
+    before = provenance.source_hash(tmp_path, checkout=True)
+    path.write_text("24.20.0\n")
+    assert provenance.source_hash(tmp_path, checkout=True) != before

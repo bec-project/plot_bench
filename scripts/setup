@@ -2,68 +2,96 @@
 set -euo pipefail
 PLOTBENCH_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PLOTBENCH_ROOT"
-export UV_CACHE_DIR="$PLOTBENCH_ROOT/.cache/uv"
-export UV_PYTHON_INSTALL_DIR="$PLOTBENCH_ROOT/.envs/python"
-export PLAYWRIGHT_BROWSERS_PATH="$PLOTBENCH_ROOT/.cache/playwright"
-PLOTBENCH_COMPONENT="${1:-all}"
-case "$PLOTBENCH_COMPONENT" in
-  all|core|rust|pyqtgraph|pyqtgraph-gl|matplotlib|qtgraphs|qtgraphs-cpp|iced|plotly) ;;
-  *) echo "Usage: ./scripts/setup [all|core|rust|pyqtgraph|pyqtgraph-gl|matplotlib|qtgraphs|qtgraphs-cpp|iced|plotly]" >&2; exit 2 ;;
-esac
+export UV_CACHE_DIR="${UV_CACHE_DIR:-$PLOTBENCH_ROOT/.cache/uv}"
+export UV_PYTHON_INSTALL_DIR="${UV_PYTHON_INSTALL_DIR:-$PLOTBENCH_ROOT/.envs/python}"
+export PLAYWRIGHT_BROWSERS_PATH="${PLAYWRIGHT_BROWSERS_PATH:-$PLOTBENCH_ROOT/.cache/playwright}"
+PLOTBENCH_COMPONENTS=()
+PLOTBENCH_DEV=(--no-dev)
+PLOTBENCH_BROWSER=bundled
+usage() {
+  echo 'Usage: ./scripts/setup [core|rust|pyqtgraph|pyqtgraph-gl|matplotlib|qtgraphs|qtgraphs-cpp|iced|plotly|all]... [--dev] [--browser bundled|system]'
+}
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --help|-h) usage; exit 0 ;;
+    --dev) PLOTBENCH_DEV=(--group dev) ;;
+    --browser)
+      [[ $# -ge 2 ]] || { usage >&2; exit 2; }
+      shift; PLOTBENCH_BROWSER="$1"
+      [[ "$1" == bundled || "$1" == system ]] || { usage >&2; exit 2; }
+      ;;
+    all) PLOTBENCH_COMPONENTS+=(core rust pyqtgraph matplotlib qtgraphs qtgraphs-cpp iced plotly) ;;
+    core|rust|pyqtgraph|matplotlib|qtgraphs|qtgraphs-cpp|iced|plotly) PLOTBENCH_COMPONENTS+=("$1") ;;
+    pyqtgraph-gl) PLOTBENCH_COMPONENTS+=(pyqtgraph) ;;
+    *) usage >&2; exit 2 ;;
+  esac
+  shift
+done
+[[ ${#PLOTBENCH_COMPONENTS[@]} -gt 0 ]] || PLOTBENCH_COMPONENTS=(core)
+selected() { [[ " ${PLOTBENCH_COMPONENTS[*]} " == *" $1 "* ]]; }
+PLOTBENCH_PYTHON_VERSION="$(<.python-version)"
+PLOTBENCH_NODE_VERSION="$(<.node-version)"
 command -v uv >/dev/null || { echo 'Install uv first: https://docs.astral.sh/uv/getting-started/installation/' >&2; exit 1; }
-uv python install 3.13.14 --no-bin
-UV_PROJECT_ENVIRONMENT="$PLOTBENCH_ROOT/.envs/plotting-benchmark" uv sync --project core --python 3.13.14 --locked
+uv python install "$PLOTBENCH_PYTHON_VERSION" --no-bin
+PLOTBENCH_CORE_ARGS=(--locked --inexact)
+selected plotly && PLOTBENCH_CORE_ARGS+=(--extra browser)
+# Preserve previously installed optional components when adding another frontend.
+UV_PROJECT_ENVIRONMENT="$PLOTBENCH_ROOT/.envs/plotting-benchmark" uv sync --project core \
+  --python "$PLOTBENCH_PYTHON_VERSION" "${PLOTBENCH_CORE_ARGS[@]}" "${PLOTBENCH_DEV[@]}"
 for PLOTBENCH_PACKAGE in pyqtgraph matplotlib qtgraphs; do
-  if [[ "$PLOTBENCH_COMPONENT" == all || "$PLOTBENCH_COMPONENT" == "$PLOTBENCH_PACKAGE" || ( "$PLOTBENCH_COMPONENT" == pyqtgraph-gl && "$PLOTBENCH_PACKAGE" == pyqtgraph ) ]]; then
-    UV_PROJECT_ENVIRONMENT="$PLOTBENCH_ROOT/.envs/plotting-benchmark-$PLOTBENCH_PACKAGE" uv sync --project "frontends/$PLOTBENCH_PACKAGE" --python 3.13.14 --locked
+  if selected "$PLOTBENCH_PACKAGE"; then
+    UV_PROJECT_ENVIRONMENT="$PLOTBENCH_ROOT/.envs/plotting-benchmark-$PLOTBENCH_PACKAGE" uv sync \
+      --project "frontends/$PLOTBENCH_PACKAGE" --python "$PLOTBENCH_PYTHON_VERSION" --locked --inexact "${PLOTBENCH_DEV[@]}"
   fi
 done
-if [[ "$PLOTBENCH_COMPONENT" == all || "$PLOTBENCH_COMPONENT" == plotly ]]; then
-  command -v npm >/dev/null || { echo 'Node/npm are required to bootstrap the isolated JavaScript toolchain.' >&2; exit 1; }
-  if [[ ! -x "$PLOTBENCH_ROOT/.envs/node/node_modules/node/bin/node" ]]; then
-    npm install --prefix "$PLOTBENCH_ROOT/.envs/node" --cache "$PLOTBENCH_ROOT/.cache/npm" --no-audit --no-fund node@24.19.0
+if selected plotly; then
+  command -v npm >/dev/null || { echo 'Node/npm are required to bootstrap the JavaScript toolchain.' >&2; exit 1; }
+  PLOTBENCH_NODE="$PLOTBENCH_ROOT/.envs/node/node_modules/node/bin/node"
+  if [[ ! -x "$PLOTBENCH_NODE" ]] || [[ "$("$PLOTBENCH_NODE" --version)" != "v$PLOTBENCH_NODE_VERSION" ]]; then
+    npm install --prefix "$PLOTBENCH_ROOT/.envs/node" --cache "$PLOTBENCH_ROOT/.cache/npm" \
+      --no-audit --no-fund "node@$PLOTBENCH_NODE_VERSION"
   fi
-  export PATH="$PLOTBENCH_ROOT/.envs/node/node_modules/node/bin:$PATH"
+  export PATH="$(dirname "$PLOTBENCH_NODE"):$PATH"
   npm ci --prefix frontends/plotly --cache "$PLOTBENCH_ROOT/.cache/npm" --no-audit --no-fund
   npm run build --prefix frontends/plotly
   .envs/plotting-benchmark/bin/python -m plotbench.provenance plotly
-  .envs/plotting-benchmark/bin/python -m playwright install chromium
-fi
-if [[ "$PLOTBENCH_COMPONENT" == all || "$PLOTBENCH_COMPONENT" == iced ]]; then
-  command -v cargo >/dev/null || { echo 'Rust/Cargo is required: https://rustup.rs/' >&2; exit 1; }
-  CARGO_HOME="$PLOTBENCH_ROOT/frontends/iced/.cargo-cache" cargo build --release --locked --manifest-path frontends/iced/Cargo.toml
-  .envs/plotting-benchmark/bin/python -m plotbench.provenance iced
-fi
-if [[ "$PLOTBENCH_COMPONENT" == all || "$PLOTBENCH_COMPONENT" == rust ]]; then
-  command -v cargo >/dev/null || { echo 'Rust/Cargo is required: https://rustup.rs/' >&2; exit 1; }
-  CARGO_HOME="$PLOTBENCH_ROOT/backends/rust/.cargo-cache" cargo build --release --locked --manifest-path backends/rust/Cargo.toml
-  .envs/plotting-benchmark/bin/python -m plotbench.provenance rust
-fi
-if [[ "$PLOTBENCH_COMPONENT" == all || "$PLOTBENCH_COMPONENT" == qtgraphs-cpp ]]; then
-  # A Qt 6 C++ SDK with the Graphs, Quick, QuickControls2, Network and WebSockets modules is a
-  # bootstrap tool like uv/Cargo. Set PLOTBENCH_QT_PREFIX to choose one explicitly.
-  if [[ -z "${PLOTBENCH_QT_PREFIX:-}" ]]; then
-    for PLOTBENCH_QT_CANDIDATE in "$HOME"/Qt/6.*/macos /opt/homebrew/opt/qt; do
-      if [[ -x "$PLOTBENCH_QT_CANDIDATE/bin/qt-cmake" && -d "$PLOTBENCH_QT_CANDIDATE/lib/cmake/Qt6Graphs" ]]; then
-        PLOTBENCH_QT_PREFIX="$PLOTBENCH_QT_CANDIDATE"
-      fi
-    done
-  fi
-  if [[ -z "${PLOTBENCH_QT_PREFIX:-}" || ! -x "$PLOTBENCH_QT_PREFIX/bin/qt-cmake" ]]; then
-    if [[ "$PLOTBENCH_COMPONENT" == all ]]; then
-      echo 'Skipping qtgraphs-cpp: no Qt 6 C++ SDK with Qt Graphs found (set PLOTBENCH_QT_PREFIX).' >&2
-    else
-      echo 'qtgraphs-cpp needs a Qt 6 C++ SDK with Qt Graphs and WebSockets; set PLOTBENCH_QT_PREFIX to its prefix.' >&2
-      exit 1
-    fi
+  if [[ "$PLOTBENCH_BROWSER" == bundled ]]; then
+    .envs/plotting-benchmark/bin/python -m playwright install chromium
   else
-    command -v cmake >/dev/null || { echo 'CMake is required for qtgraphs-cpp.' >&2; exit 1; }
-    PLOTBENCH_GENERATOR=()
-    command -v ninja >/dev/null && PLOTBENCH_GENERATOR=(-G Ninja)
-    "$PLOTBENCH_QT_PREFIX/bin/qt-cmake" -S frontends/qtgraphs-cpp -B frontends/qtgraphs-cpp/build \
-      "${PLOTBENCH_GENERATOR[@]}" -DCMAKE_BUILD_TYPE=Release
-    cmake --build frontends/qtgraphs-cpp/build --config Release
-    .envs/plotting-benchmark/bin/python -m plotbench.provenance qtgraphs-cpp
+    echo 'Use --browser-executable /path/to/chromium with doctor, demo and run.'
   fi
 fi
-echo "Ready. Start a demo: ./scripts/plotbench demo pyqtgraph"
+for PLOTBENCH_NATIVE in iced rust; do
+  if selected "$PLOTBENCH_NATIVE"; then
+    command -v cargo >/dev/null || { echo 'Install Rust/Cargo using https://rustup.rs/' >&2; exit 1; }
+    PLOTBENCH_NATIVE_DIR="frontends/$PLOTBENCH_NATIVE"
+    [[ "$PLOTBENCH_NATIVE" != rust ]] || PLOTBENCH_NATIVE_DIR=backends/rust
+    CARGO_HOME="${CARGO_HOME:-$PLOTBENCH_ROOT/.cache/cargo}" \
+      CARGO_TARGET_DIR="$PLOTBENCH_ROOT/$PLOTBENCH_NATIVE_DIR/target" \
+      cargo build --release --locked --manifest-path "$PLOTBENCH_NATIVE_DIR/Cargo.toml"
+    .envs/plotting-benchmark/bin/python -m plotbench.provenance "$PLOTBENCH_NATIVE"
+  fi
+done
+if selected qtgraphs-cpp; then
+  command -v cmake >/dev/null || { echo 'CMake is required for qtgraphs-cpp.' >&2; exit 1; }
+  PLOTBENCH_CMAKE=(cmake)
+  PLOTBENCH_CMAKE_ARGS=(-DCMAKE_BUILD_TYPE=Release)
+  if [[ -n "${PLOTBENCH_QT_PREFIX:-}" ]]; then
+    [[ -d "$PLOTBENCH_QT_PREFIX" ]] || { echo 'PLOTBENCH_QT_PREFIX must name an installed Qt SDK directory.' >&2; exit 1; }
+    PLOTBENCH_CMAKE_ARGS+=("-DCMAKE_PREFIX_PATH=$PLOTBENCH_QT_PREFIX")
+    [[ ! -x "$PLOTBENCH_QT_PREFIX/bin/qt-cmake" ]] || PLOTBENCH_CMAKE=("$PLOTBENCH_QT_PREFIX/bin/qt-cmake")
+  elif command -v qt-cmake >/dev/null; then
+    PLOTBENCH_CMAKE=(qt-cmake)
+  fi
+  if [[ ! -f frontends/qtgraphs-cpp/build/CMakeCache.txt ]] && command -v ninja >/dev/null; then
+    PLOTBENCH_CMAKE_ARGS+=(-G Ninja)
+  fi
+  if ! "${PLOTBENCH_CMAKE[@]}" -S frontends/qtgraphs-cpp -B frontends/qtgraphs-cpp/build \
+    "${PLOTBENCH_CMAKE_ARGS[@]}"; then
+    echo 'Qt C++ needs Qt 6.8+ with Graphs, Quick, QuickControls2, Network, WebSockets, Test and (on Linux) WaylandClient. Set PLOTBENCH_QT_PREFIX or CMAKE_PREFIX_PATH; see docs/setup.md.' >&2
+    exit 1
+  fi
+  cmake --build frontends/qtgraphs-cpp/build --config Release
+  .envs/plotting-benchmark/bin/python -m plotbench.provenance qtgraphs-cpp
+fi
+echo 'Setup complete. Check selected runtimes with ./scripts/plotbench doctor --frontends <names>.'
