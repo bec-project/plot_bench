@@ -1,5 +1,6 @@
 {
   "name": "Separate waveform and image smoke validation",
+  "description": "Waveform-only and image-only smoke runs kept separate, so a failure points at one plot type. One repetition, stream and replay.",
   "warmup_seconds": 1,
   "measurement_seconds": 3,
   "repetitions": 1,

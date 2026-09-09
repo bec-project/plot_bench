@@ -1,7 +1,8 @@
-"""Loopback-only suite editor. Preview and export never start benchmark processes."""
+"""Loopback-only suite editor. Preview, save and export never start benchmark processes."""
 
 import json
 import math
+import re
 import socket
 import webbrowser
 from pathlib import Path
@@ -14,7 +15,65 @@ from .config import Config
 from .suites import FRONTENDS, MODES, load_suite, prepare_suite
 
 ASSETS = Path(__file__).with_name("matrix_assets")
+ROOT = Path(__file__).resolve().parents[3]
+SCENARIOS_DIR = ROOT / "scenarios"
+CUSTOM_DIR = ROOT / "scenarios_custom"
 MAX_EDITOR_INTEGER = 2**53 - 1
+SLUG_RE = re.compile(r"[^a-z0-9]+")
+
+
+def slugify(name):
+    """Reduce a requested file name to a safe, traversal-proof stem."""
+    return SLUG_RE.sub("-", str(name).strip().lower()).strip("-")
+
+
+def preset_kind(suite):
+    """Suites without frontends or modes are receiver-only probe campaigns."""
+    return "run" if suite.get("frontends") or suite.get("modes") else "probe"
+
+
+def preset_entry(path, source):
+    """Summarize one scenario file for the editor gallery; never raises."""
+    directory = "scenarios_custom" if source == "custom" else "scenarios"
+    entry = dict(filename=path.name, path=f"{directory}/{path.name}", source=source)
+    try:
+        suite = json.loads(path.read_text())
+        kind = preset_kind(suite)
+        data = prepare_suite(suite, kind=kind).to_dict()
+        entry.update(
+            name=suite.get("name", path.stem),
+            description=suite.get("description", ""),
+            kind=kind,
+            case_count=data["case_count"],
+            run_count=data["run_count"],
+            minimum_minutes=data["estimate"]["minimum_seconds"] / 60,
+            suite=suite,
+        )
+    except (ValueError, OSError, UnicodeError) as exc:
+        entry.update(
+            name=path.stem,
+            description="",
+            kind="run",
+            case_count=0,
+            run_count=0,
+            minimum_minutes=0.0,
+            suite={},
+            error=str(exc),
+        )
+    return entry
+
+
+def run_commands(relative_path, kind, slug):
+    """Copy-ready terminal commands for the saved suite. The editor never runs them."""
+    command = "run" if kind == "run" else "probe"
+    return dict(
+        dry_run=f"./scripts/plotbench {command} --suite {relative_path} --dry-run",
+        quick_check=(
+            f"./scripts/plotbench {command} --suite {relative_path} "
+            "--warmup 1 --duration 3 --repetitions 1 --output results/quick-check"
+        ),
+        full=f"./scripts/plotbench {command} --suite {relative_path} --output results/{slug}",
+    )
 
 
 def validate_editor_numbers(value, path="suite"):
@@ -97,6 +156,51 @@ def create_app(suite):
             return web.json_response({"error": str(exc)}, status=400)
         return web.json_response(payload, dumps=lambda value: json.dumps(value, allow_nan=False))
 
+    async def presets(request):
+        items = []
+        for directory, source in ((SCENARIOS_DIR, "bundled"), (CUSTOM_DIR, "custom")):
+            if directory.is_dir():
+                items.extend(
+                    preset_entry(path, source) for path in sorted(directory.glob("*.json"))
+                )
+        return web.json_response(dict(presets=items))
+
+    async def save(request):
+        """Write a validated suite to scenarios_custom. Writing JSON is not a run."""
+        if request.content_type != "application/json":
+            raise web.HTTPUnsupportedMediaType(text="Send suite JSON as application/json.")
+        try:
+            body = await request.json()
+            if not isinstance(body, dict) or set(body) - {"suite", "filename", "kind"}:
+                raise ValueError("request: expected suite, filename and optional kind")
+            if not isinstance(body.get("filename"), str):
+                raise ValueError("filename: must be text")
+            slug = slugify(body["filename"])
+            if not slug:
+                raise ValueError("filename: use letters, digits or hyphens")
+            if len(slug) > 100:
+                raise ValueError("filename: at most 100 characters after simplification")
+            kind = body.get("kind", "run")
+            plan = prepare_suite(body.get("suite"), kind=kind)
+            validate_editor_numbers(body.get("suite"))
+            target = (CUSTOM_DIR / f"{slug}.json").resolve()
+            if target.parent != CUSTOM_DIR.resolve():
+                raise ValueError("filename: refusing to write outside scenarios_custom")
+            CUSTOM_DIR.mkdir(parents=True, exist_ok=True)
+            target.write_text(json.dumps(plan.suite, indent=2) + "\n")
+            data = plan.to_dict()
+            relative = f"scenarios_custom/{slug}.json"
+            payload = dict(
+                path=relative,
+                name=slug,
+                run_count=data["run_count"],
+                minimum_minutes=data["estimate"]["minimum_seconds"] / 60,
+                commands=run_commands(relative, kind, slug),
+            )
+        except (ValueError, UnicodeError) as exc:
+            return web.json_response({"error": str(exc)}, status=400)
+        return web.json_response(payload, dumps=lambda value: json.dumps(value, allow_nan=False))
+
     async def asset(request):
         name = request.match_info.get("name", "index.html")
         if name not in ("index.html", "editor.js", "style.css"):
@@ -108,7 +212,9 @@ def create_app(suite):
             web.get("/", asset),
             web.get("/{name:index.html|editor.js|style.css}", asset),
             web.get("/api/initial", initial),
+            web.get("/api/presets", presets),
             web.post("/api/preview", preview),
+            web.post("/api/save", save),
         ]
     )
     return app

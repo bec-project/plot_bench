@@ -28,6 +28,11 @@ BUILT_COMPONENTS = ("rust", "iced", "plotly", "qtgraphs-cpp")
 ROOT = Path(__file__).resolve().parents[3]
 
 
+def format_duration(seconds):
+    seconds = max(0, int(round(seconds)))
+    return f"{seconds // 60}:{seconds % 60:02d}"
+
+
 def frontend_command(
     name, url, mode, run_id, duration=0, headless=False, screenshot=None, browser_executable=None
 ):
@@ -228,6 +233,15 @@ def run_suite(args):
     failed = 0
     attempted = 0
     completion = "completed"
+    total = len(jobs)
+    per_run = warmup + measurement + cooldown
+    print(
+        f"Running {total} runs · warmup {warmup:g}s + measure {measurement:g}s + "
+        f"cooldown {cooldown:g}s each (~{per_run:g}s/run, plus per-run startup and preload)",
+        flush=True,
+    )
+    print(f"Output: {output}", flush=True)
+    campaign_start = time.monotonic()
     try:
         for number, (case, mode, rep, frontend, backend) in enumerate(jobs, 1):
             attempted = number
@@ -313,10 +327,23 @@ def run_suite(args):
             if manifest["status"] != "ok":
                 failed += 1
                 print(
-                    f"  {manifest['status']}: {manifest.get('error', 'see frontend.log')}",
+                    f"      {manifest['status']}: {manifest.get('error', 'see frontend.log')}",
                     flush=True,
                 )
+            elapsed = time.monotonic() - campaign_start
+            eta = (total - number) * (elapsed / number)
+            mark = "ok" if manifest["status"] == "ok" else manifest["status"]
+            print(
+                f"      {mark} · {number - failed} ok / {failed} failed · "
+                f"elapsed {format_duration(elapsed)} · ETA ~{format_duration(eta)}",
+                flush=True,
+            )
             time.sleep(cooldown)
+        print(
+            f"Completed {attempted} runs · {attempted - failed} ok / {failed} failed · "
+            f"total {format_duration(time.monotonic() - campaign_start)}",
+            flush=True,
+        )
     except KeyboardInterrupt:
         completion = "interrupted"
         raise

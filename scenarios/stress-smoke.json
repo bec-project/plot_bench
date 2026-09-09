@@ -1,5 +1,6 @@
 {
   "name": "Largest preset functional validation at 120 Hz input",
+  "description": "Heaviest workloads (1M points, 2048x2048 images) at 120 Hz, stream only. Checks the extreme cases survive; not a throughput comparison.",
   "warmup_seconds": 1,
   "measurement_seconds": 3,
   "repetitions": 1,

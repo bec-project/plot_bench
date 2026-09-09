@@ -1,5 +1,6 @@
 {
   "name": "Rust streaming comparison: realistic and extreme workloads at 60 and 120 Hz",
+  "description": "Focused Rust streaming comparison across frontends: realistic and extreme waveform and image workloads at 60 and 120 Hz.",
   "warmup_seconds": 5,
   "measurement_seconds": 30,
   "repetitions": 3,

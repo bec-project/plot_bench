@@ -71,9 +71,10 @@ environments, Node 24.19.0, Rust 1.96.1, PySide6/Qt 6.11.2, a Qt C++ 6.11.1 SDK,
 and bundled Chromium 151.0.7922.34. These checks establish functionality on that
 configuration; they are not performance rankings or Linux qualification.
 
-- Core: **313 tests passed**, including Python/Rust source conformance, shared
-  matrix validation, read-only previews, real loopback editor requests and browser
-  import/export interactions. The original core baseline was 187 passing tests.
+- Core: Python/Rust source conformance, shared matrix validation, read-only
+  previews, real loopback editor requests (preview, presets, save-to-custom and the
+  preserved run-free invariant) and opt-in browser import/export/save interactions.
+  The original core baseline was 187 passing tests.
 - Python frontends: **45 tests passed** across PyQtGraph, Matplotlib and Qt Graphs
   in their isolated environments with offscreen Qt.
 - TypeScript: **32 tests passed** and the production bundle built successfully.

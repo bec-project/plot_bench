@@ -31,18 +31,22 @@ Short smoke runs verify operation; they do not establish stable performance rank
 ## Create your own matrix
 
 ```sh
-./scripts/plotbench matrix --suite scenarios/smoke.json
+./scripts/plotbench matrix
 ```
 
-The local browser editor lets you add cases and Cartesian groups, select frontends,
-sources and delivery modes, set timings, inspect the expanded schedule and download
-validated JSON. It does not run benchmarks. Close it and execute the exported file:
+The local browser editor opens with a gallery of the bundled scenarios (each with
+its scope) and a blank option to start from. Pick a starting point, shape the
+workloads — the form shows only the fields relevant to each plot — select
+frontends, sources, delivery modes and timings, inspect the expanded schedule, then
+**Save to scenarios_custom** (a git-ignored folder) or export the JSON. The editor
+never runs benchmarks; it hands you the exact commands to run next:
 
 ```sh
-./scripts/plotbench run --suite my-suite.json --dry-run --json
-./scripts/plotbench run --suite my-suite.json --output results/my-comparison
+./scripts/plotbench run --suite scenarios_custom/my-suite.json --dry-run
+./scripts/plotbench run --suite scenarios_custom/my-suite.json --output results/my-comparison
 ```
 
+`run` prints live progress: `[i/N]`, elapsed time, an ETA and a pass/fail tally.
 CLI filters and timing overrides remain available. See the
 [suite reference](docs/suites.md) before using a large sweep.
 

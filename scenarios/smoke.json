@@ -1,5 +1,6 @@
 {
   "name": "Adapter smoke validation",
+  "description": "Fast sanity check: both plots at 30-60 Hz, one repetition. Confirms every adapter starts and renders before a longer campaign.",
   "warmup_seconds": 1,
   "measurement_seconds": 3,
   "repetitions": 1,

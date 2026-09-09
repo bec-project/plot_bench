@@ -6,6 +6,7 @@ import json
 import pytest
 from aiohttp.test_utils import TestClient, TestServer
 
+from plotbench import matrix
 from plotbench.matrix import create_app
 from plotbench.suites import prepare_suite
 
@@ -143,5 +144,119 @@ def test_preview_handles_overflow_and_unused_probe_selections():
             preview = await response.json()
             assert preview["run_count"] == 1
             assert preview["selected_frontends"] == preview["selected_modes"] == []
+
+    asyncio.run(exercise())
+
+
+def test_presets_gallery_summarizes_scenarios_and_tolerates_broken_files(tmp_path, monkeypatch):
+    scenarios = tmp_path / "scenarios"
+    scenarios.mkdir()
+    (scenarios / "demo.json").write_text(
+        json.dumps(
+            dict(
+                name="Demo",
+                description="Two runs",
+                frontends=["pyqtgraph"],
+                modes=["stream"],
+                backends=["python"],
+                repetitions=1,
+                cases=[dict(name="w", config={"view": "waveform"})],
+            )
+        )
+    )
+    (scenarios / "probe.json").write_text(
+        json.dumps(
+            dict(
+                name="Probe",
+                backends=["rust"],
+                repetitions=1,
+                cases=[dict(name="w", config={"view": "waveform"})],
+            )
+        )
+    )
+    (scenarios / "broken.json").write_text("{ not json")
+    custom = tmp_path / "scenarios_custom"
+    custom.mkdir()
+    (custom / "mine.json").write_text(
+        json.dumps(
+            dict(
+                name="Mine",
+                frontends=["pyqtgraph"],
+                modes=["stream"],
+                backends=["python"],
+                repetitions=1,
+                cases=[dict(name="w", config={"view": "waveform"})],
+            )
+        )
+    )
+    monkeypatch.setattr(matrix, "SCENARIOS_DIR", scenarios)
+    monkeypatch.setattr(matrix, "CUSTOM_DIR", custom)
+
+    async def exercise():
+        async with TestClient(TestServer(create_app(suite()))) as client:
+            data = await (await client.get("/api/presets")).json()
+            by_name = {preset["filename"]: preset for preset in data["presets"]}
+            assert by_name["demo.json"]["kind"] == "run"
+            assert by_name["demo.json"]["source"] == "bundled"
+            assert by_name["demo.json"]["path"] == "scenarios/demo.json"
+            assert by_name["demo.json"]["run_count"] == 1
+            assert by_name["demo.json"]["description"] == "Two runs"
+            assert by_name["demo.json"]["suite"]["cases"][0]["name"] == "w"
+            assert by_name["probe.json"]["kind"] == "probe"
+            assert "error" in by_name["broken.json"]
+            assert by_name["broken.json"]["run_count"] == 0
+            assert by_name["mine.json"]["source"] == "custom"
+            assert by_name["mine.json"]["path"] == "scenarios_custom/mine.json"
+
+    asyncio.run(exercise())
+
+
+def test_save_writes_slugged_suite_inside_custom_dir_and_refuses_traversal(tmp_path, monkeypatch):
+    custom = tmp_path / "scenarios_custom"
+    monkeypatch.setattr(matrix, "CUSTOM_DIR", custom)
+
+    async def exercise():
+        async with TestClient(TestServer(create_app(suite()))) as client:
+            response = await client.post(
+                "/api/save", json={"filename": "My Suite!", "suite": suite()}
+            )
+            body = await response.json()
+            assert response.status == 200
+            assert body["path"] == "scenarios_custom/my-suite.json"
+            assert body["commands"]["dry_run"].endswith("scenarios_custom/my-suite.json --dry-run")
+            assert json.loads((custom / "my-suite.json").read_text())["cases"][0]["name"] == "wave"
+
+            response = await client.post(
+                "/api/save", json={"filename": "../../etc/passwd", "suite": suite()}
+            )
+            body = await response.json()
+            assert response.status == 200
+            assert body["path"] == "scenarios_custom/etc-passwd.json"
+            assert (custom / "etc-passwd.json").resolve().parent == custom.resolve()
+
+            assert (
+                await client.post("/api/save", json={"filename": "...", "suite": suite()})
+            ).status == 400
+            response = await client.post(
+                "/api/save", json={"filename": "bad", "suite": {"cases": "nope"}}
+            )
+            assert response.status == 400
+            assert not (custom / "bad.json").exists()
+            assert (await client.post("/api/save", data="{}")).status == 415
+
+            big = dict(suite(), order_seed=9007199254740993)
+            response = await client.post("/api/save", json={"filename": "big", "suite": big})
+            assert response.status == 400
+            assert "Use the CLI" in (await response.json())["error"]
+            assert not (custom / "big.json").exists()
+
+    asyncio.run(exercise())
+
+
+def test_save_and_preview_stay_run_free():
+    async def exercise():
+        async with TestClient(TestServer(create_app(suite()))) as client:
+            assert (await client.get("/api/run")).status == 404
+            assert (await client.post("/api/run", json={})).status == 404
 
     asyncio.run(exercise())

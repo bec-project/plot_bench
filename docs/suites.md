@@ -3,16 +3,22 @@
 Use the same JSON file from the CLI, a script, or the browser editor:
 
 ```sh
-./scripts/plotbench matrix --suite scenarios/smoke.json
-./scripts/plotbench run --suite my-suite.json --dry-run
-./scripts/plotbench run --suite my-suite.json --dry-run --json
-./scripts/plotbench run --suite my-suite.json --output results/my-comparison
+./scripts/plotbench matrix
+./scripts/plotbench run --suite scenarios_custom/my-suite.json --dry-run
+./scripts/plotbench run --suite scenarios_custom/my-suite.json --dry-run --json
+./scripts/plotbench run --suite scenarios_custom/my-suite.json --output results/my-comparison
 ```
 
-The editor runs on loopback, imports/edits cases and Cartesian groups, previews the
-expanded matrix and downloads validated JSON. It does not execute benchmarks or
-generate input data. `--no-open` prints its URL without opening a browser. Stop it
-with Ctrl+C before formal measurements.
+The editor runs on loopback. Start from a bundled scenario (the gallery shows each
+one's scope) or a blank suite, edit cases and Cartesian groups with a view-aware
+form, select sources, frontends and modes, and preview the expanded matrix. **Save
+to scenarios_custom** writes a validated suite into the git-ignored
+`scenarios_custom/` folder (the file name is simplified to a safe slug); **Export
+JSON** downloads it instead, for an agent or another machine. Either way the editor
+only writes JSON — it never executes benchmarks or generates input data, and after
+saving it shows the exact `dry-run`, quick-check and full-run commands. `--suite`
+opens a specific starting suite; `--no-open` prints the URL without opening a
+browser. Stop the editor with Ctrl+C before formal measurements.
 
 When `backends` is omitted, both `run` and `probe` select Rust only. Explicit
 backend lists in imported or existing suite files remain honored; CLI `--backends`

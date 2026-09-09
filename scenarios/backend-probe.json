@@ -1,5 +1,6 @@
 {
   "name": "Source and WebSocket capacity without plotting",
+  "description": "Receiver-only probe of the Rust source and WebSocket delivery, with no frontend rendering. Measures how fast frames are produced and delivered.",
   "backends": ["rust"],
   "warmup_seconds": 2,
   "measurement_seconds": 10,

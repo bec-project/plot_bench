@@ -19,3 +19,6 @@ test-results/
 .env.local
 plotbench.local.json
 .qa-results/
+
+# Locally generated custom suites from the matrix editor
+scenarios_custom/

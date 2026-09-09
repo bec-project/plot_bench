@@ -1,5 +1,6 @@
 {
   "name": "Full waveform and image sweep",
+  "description": "Large reference sweep across rates, sizes, modes and both delivery modes. Long-running: preview the run count and time before launching.",
   "warmup_seconds": 5,
   "measurement_seconds": 30,
   "repetitions": 3,

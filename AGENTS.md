@@ -48,8 +48,10 @@ backends requires an explicit `--backends python rust` selection.
    directory. Explain which combinations were tested and any limits to comparison.
 
 Use `run --dry-run --json` for machine-readable plans. The matrix editor creates
-the same JSON; it does not execute campaigns. Stop the editor before formal runs.
-Never run a large example sweep merely to validate a documentation change.
+the same JSON — it saves to the git-ignored `scenarios_custom/` or exports a
+download — but it does not execute campaigns and exposes no run endpoint. Stop the
+editor before formal runs. Never run a large example sweep merely to validate a
+documentation change.
 
 ## Measurement invariants
 
