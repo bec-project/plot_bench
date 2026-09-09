@@ -95,6 +95,7 @@ def main():
     matrix.add_argument(
         "--no-open", action="store_true", help="print the URL without opening a browser"
     )
+    sub.add_parser("tui", help="interactive launcher for sources, setup, suites and the editor")
     doctor = sub.add_parser("doctor", help="check selected dependencies, builds and desktop access")
     doctor.add_argument("--frontends", nargs="+", choices=FRONTENDS)
     doctor.add_argument("--backends", nargs="+", choices=BACKENDS)
@@ -147,6 +148,12 @@ def main():
             from .matrix import serve_matrix
 
             serve_matrix(args)
+        elif args.command == "tui":
+            try:
+                from .tui import run_tui
+            except ImportError as exc:
+                raise RuntimeError(f"the TUI requires textual: {exc}") from exc
+            run_tui()
         elif args.command == "doctor":
             from .runtime import doctor
 

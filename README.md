@@ -23,6 +23,14 @@ Close the demo before recording a short functional benchmark:
 ./scripts/plotbench run --suite scenarios/smoke.json --frontends pyqtgraph --modes stream
 ```
 
+Prefer a menu over remembering commands? Launch the interactive terminal UI and
+drive setup, sources, suites, the matrix editor and an environment overview from
+one place:
+
+```sh
+./scripts/plotbench tui
+```
+
 The runner prints the result directory. Open its **report.html** for compact charts
 or **report-extended.html** for complete evidence. Both work offline. Raw samples,
 logs, the selected suite and JSON/CSV summaries remain under `results/`.
