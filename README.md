@@ -6,7 +6,8 @@ frontends decode and render the same protocol. Backend results remain separate.
 
 ## Quick start
 
-Install [uv](https://docs.astral.sh/uv/) and [Rust/Cargo](https://rustup.rs/) and follow
+Install [uv](https://docs.astral.sh/uv/) (minimum version in [.uv-version](.uv-version))
+and [Rust/Cargo](https://rustup.rs/) and follow
 the [platform setup guide](docs/setup.md) for your desktop. Run from the repository root:
 
 ```sh

@@ -298,9 +298,13 @@ def test_native_artifact_hash_includes_qml_and_cmake_configuration(tmp_path):
         assert provenance.component_source_hash("qtgraphs-cpp", tmp_path) != first
 
 
-def test_checkout_hash_includes_declared_node_toolchain(tmp_path):
-    path = tmp_path / ".node-version"
-    path.write_text("24.19.0\n")
+@pytest.mark.parametrize(
+    "filename,initial,updated",
+    [(".node-version", "24.19.0", "24.20.0"), (".uv-version", "0.11.26", "0.12.0")],
+)
+def test_checkout_hash_includes_declared_toolchains(tmp_path, filename, initial, updated):
+    path = tmp_path / filename
+    path.write_text(initial + "\n")
     before = provenance.source_hash(tmp_path, checkout=True)
-    path.write_text("24.20.0\n")
+    path.write_text(updated + "\n")
     assert provenance.source_hash(tmp_path, checkout=True) != before

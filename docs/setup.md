@@ -28,6 +28,8 @@ needs its separate Qt SDK.
 | `plotly` | npm to bootstrap local Node; Chromium or an explicitly selected installed browser |
 | `qtgraphs-cpp` | CMake 3.21+, C++20 compiler, Qt SDK with Graphs, Quick, QuickControls2, Network, WebSockets and Test; WaylandClient on Linux |
 
+The minimum supported uv version is declared in `.uv-version`. Setup checks the
+selected executable before installing anything and prints its version and path.
 Python, Node and Rust versions are declared in `.python-version`, `.node-version`
 and `rust-toolchain.toml`. Python packages currently support Python 3.13. Locks
 describe tested dependency resolutions; update manifests and locks together when
@@ -134,6 +136,33 @@ discovery and `CMAKE_PREFIX_PATH` are also supported; use the SDK path appropria
 for your machine. Qt Graphs has separate [license terms](licenses.md).
 
 ## Troubleshooting
+
+### uv cannot find the pinned Python download
+
+uv's Python download catalog is bundled with each uv release. An older executable
+can report `No download found for request` even when the pinned Python is available.
+Setup requires a tested uv version from `.uv-version` or newer. Check which copy
+your shell uses:
+
+```sh
+uv --version
+type -a uv
+```
+
+For a standalone installation, run `uv self update`; for a Homebrew installation,
+run `brew update` then `brew upgrade uv`. Other package-manager installations should
+be updated through that package manager. See [uv's upgrade instructions](https://docs.astral.sh/uv/getting-started/installation/#upgrading-uv).
+If an older copy still comes first on `PATH`, fix the order or select the current
+executable explicitly (replace the example path):
+
+```sh
+PLOTBENCH_UV=/path/to/uv ./scripts/setup rust pyqtgraph matplotlib
+```
+
+The override applies to all uv operations in setup. Updating uv does not change
+the repository's Python pin or dependency locks. See [uv's Python version documentation](https://docs.astral.sh/uv/concepts/python-versions/#installing-a-python-version).
+
+### Runtime and display checks
 
 Run doctor with the exact component selection before a campaign. Missing
 components should be installed explicitly; unavailable SDKs, stale binaries or

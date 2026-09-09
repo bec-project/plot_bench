@@ -1,8 +1,36 @@
 import os
+import shutil
 import subprocess
 from pathlib import Path
 
 import pytest
+
+
+@pytest.fixture
+def setup_root(tmp_path):
+    source = Path(__file__).resolve().parents[2]
+    root = tmp_path / "checkout"
+    (root / "scripts").mkdir(parents=True)
+    shutil.copy2(source / "scripts/setup", root / "scripts/setup")
+    for name in (".python-version", ".node-version", ".uv-version"):
+        shutil.copy2(source / name, root / name)
+    return root
+
+
+def write_uv(path, version):
+    path.write_text(
+        '#!/bin/sh\nif [ "$1" = "--version" ]; then\n'
+        f'  echo "uv {version} (test)"\n  exit 0\nfi\n'
+        'printf "%s\\n" "$*" >> "$PLOTBENCH_SETUP_LOG"\n'
+    )
+    path.chmod(0o755)
+
+
+def setup_environment(binaries, log):
+    environment = dict(os.environ, PATH=f"{binaries}:/usr/bin:/bin", PLOTBENCH_SETUP_LOG=str(log))
+    environment.pop("PLOTBENCH_UV", None)
+    environment.pop("PLOTBENCH_QT_PREFIX", None)
+    return environment
 
 
 @pytest.mark.parametrize(
@@ -10,14 +38,13 @@ import pytest
     [([], "--no-dev"), (["core"], "--no-dev"), (["core", "--dev"], "--group dev")],
 )
 def test_core_setup_does_not_require_frontend_tools_or_empty_bash_arrays(
-    tmp_path, arguments, dev_flag
+    tmp_path, setup_root, arguments, dev_flag
 ):
-    root = Path(__file__).resolve().parents[2]
+    root = setup_root
     tool = tmp_path / "uv"
     log = tmp_path / "calls"
-    tool.write_text('#!/bin/sh\nprintf "%s\\n" "$*" >> "$PLOTBENCH_SETUP_LOG"\n')
-    tool.chmod(0o755)
-    environment = dict(os.environ, PATH=f"{tmp_path}:/usr/bin:/bin", PLOTBENCH_SETUP_LOG=str(log))
+    write_uv(tool, (root / ".uv-version").read_text().strip())
+    environment = setup_environment(tmp_path, log)
     result = subprocess.run(
         ["bash", "scripts/setup", *arguments],
         cwd=root,
@@ -34,37 +61,90 @@ def test_core_setup_does_not_require_frontend_tools_or_empty_bash_arrays(
     assert "--extra browser" not in calls[1]
 
 
-@pytest.mark.parametrize("existing_cache", [False, True])
-def test_cpp_setup_preserves_existing_cmake_generator(tmp_path, existing_cache):
-    import shutil
+@pytest.mark.parametrize("version", ["0.8.23", "0.11.9", "invalid"])
+def test_setup_rejects_old_or_unrecognized_uv_before_installing(tmp_path, setup_root, version):
+    tool = tmp_path / "uv"
+    log = tmp_path / "calls"
+    write_uv(tool, version)
+    result = subprocess.run(
+        ["bash", "scripts/setup", "rust"],
+        cwd=setup_root,
+        env=setup_environment(tmp_path, log),
+        text=True,
+        capture_output=True,
+    )
+    assert result.returncode == 1
+    assert not log.exists()
+    assert not (setup_root / ".envs").exists()
+    assert (setup_root / ".uv-version").read_text().strip() in result.stderr
+    assert f"found {version} at {tool}" in result.stderr
+    assert "uv self update" in result.stderr
+    assert "PLOTBENCH_UV=/path/to/uv" in result.stderr
 
-    source = Path(__file__).resolve().parents[2]
-    (tmp_path / "scripts").mkdir()
-    shutil.copy2(source / "scripts/setup", tmp_path / "scripts/setup")
-    for name in (".python-version", ".node-version"):
-        shutil.copy2(source / name, tmp_path / name)
+
+@pytest.mark.parametrize("version", ["minimum", "0.12.0", "1.0.0"])
+def test_setup_uv_override_handles_spaces_and_applies_to_every_sync(tmp_path, setup_root, version):
+    write_uv(tmp_path / "uv", "0.8.23")
+    tool = tmp_path / "current uv"
+    if version == "minimum":
+        version = (setup_root / ".uv-version").read_text().strip()
+    write_uv(tool, version)
+    log = tmp_path / "calls"
+    environment = setup_environment(tmp_path, log)
+    environment["PLOTBENCH_UV"] = str(tool)
+    result = subprocess.run(
+        ["bash", "scripts/setup", "pyqtgraph", "matplotlib"],
+        cwd=setup_root,
+        env=environment,
+        text=True,
+        capture_output=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert f"Using uv {version} at {tool}" in result.stdout
+    calls = log.read_text().splitlines()
+    assert len(calls) == 4
+    assert calls[0].startswith("python install ")
+    for call, project in zip(
+        calls[1:], ("core", "frontends/pyqtgraph", "frontends/matplotlib"), strict=True
+    ):
+        assert call.startswith(f"sync --project {project} ")
+
+
+def test_setup_reports_missing_uv_override(tmp_path, setup_root):
+    environment = setup_environment(tmp_path, tmp_path / "calls")
+    environment["PLOTBENCH_UV"] = str(tmp_path / "missing")
+    result = subprocess.run(
+        ["bash", "scripts/setup"], cwd=setup_root, env=environment, text=True, capture_output=True
+    )
+    assert result.returncode == 1
+    assert f"uv executable not found: {environment['PLOTBENCH_UV']}" in result.stderr
+    assert "https://docs.astral.sh/uv/getting-started/installation/" in result.stderr
+
+
+@pytest.mark.parametrize("existing_cache", [False, True])
+def test_cpp_setup_preserves_existing_cmake_generator(tmp_path, setup_root, existing_cache):
     binaries = tmp_path / "bin"
     binaries.mkdir()
     log = tmp_path / "commands"
-    for tool in ("uv", "cmake", "ninja"):
+    write_uv(binaries / "uv", (setup_root / ".uv-version").read_text().strip())
+    for tool in ("cmake", "ninja"):
         executable = binaries / tool
         executable.write_text(
             '#!/bin/sh\nprintf "%s %s\\n" "' + tool + '" "$*" >> "$PLOTBENCH_SETUP_LOG"\n'
         )
         executable.chmod(0o755)
-    python = tmp_path / ".envs/plotting-benchmark/bin/python"
+    python = setup_root / ".envs/plotting-benchmark/bin/python"
     python.parent.mkdir(parents=True)
     python.write_text("#!/bin/sh\nexit 0\n")
     python.chmod(0o755)
     if existing_cache:
-        cache = tmp_path / "frontends/qtgraphs-cpp/build/CMakeCache.txt"
+        cache = setup_root / "frontends/qtgraphs-cpp/build/CMakeCache.txt"
         cache.parent.mkdir(parents=True)
         cache.write_text("CMAKE_GENERATOR:INTERNAL=Unix Makefiles\n")
-    environment = dict(os.environ, PATH=f"{binaries}:/usr/bin:/bin", PLOTBENCH_SETUP_LOG=str(log))
-    environment.pop("PLOTBENCH_QT_PREFIX", None)
+    environment = setup_environment(binaries, log)
     result = subprocess.run(
         ["bash", "scripts/setup", "qtgraphs-cpp"],
-        cwd=tmp_path,
+        cwd=setup_root,
         env=environment,
         text=True,
         capture_output=True,

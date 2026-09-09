@@ -31,16 +31,41 @@ done
 selected() { [[ " ${PLOTBENCH_COMPONENTS[*]} " == *" $1 "* ]]; }
 PLOTBENCH_PYTHON_VERSION="$(<.python-version)"
 PLOTBENCH_NODE_VERSION="$(<.node-version)"
-command -v uv >/dev/null || { echo 'Install uv first: https://docs.astral.sh/uv/getting-started/installation/' >&2; exit 1; }
-uv python install "$PLOTBENCH_PYTHON_VERSION" --no-bin
+PLOTBENCH_UV_MIN_VERSION="$(<.uv-version)"
+PLOTBENCH_UV_BIN="$(command -v "${PLOTBENCH_UV:-uv}")" || {
+  echo "uv executable not found: ${PLOTBENCH_UV:-uv}. Install uv: https://docs.astral.sh/uv/getting-started/installation/" >&2
+  exit 1
+}
+PLOTBENCH_UV_VERSION="$("$PLOTBENCH_UV_BIN" --version)"
+PLOTBENCH_UV_VERSION="${PLOTBENCH_UV_VERSION#uv }"
+PLOTBENCH_UV_VERSION="${PLOTBENCH_UV_VERSION%% *}"
+# uv embeds its Python download catalog; an old uv cannot install a newer pin.
+# Check without Python so this also works before any environments exist.
+if ! awk -v installed="$PLOTBENCH_UV_VERSION" -v required="$PLOTBENCH_UV_MIN_VERSION" '
+  BEGIN {
+    if (installed !~ /^[0-9]+\.[0-9]+\.[0-9]+$/) exit 1
+    split(installed, actual, "."); split(required, minimum, ".")
+    for (i = 1; i <= 3; i++) {
+      if (actual[i] + 0 > minimum[i] + 0) exit 0
+      if (actual[i] + 0 < minimum[i] + 0) exit 1
+    }
+    exit 0
+  }'; then
+  echo "Setup requires uv >= $PLOTBENCH_UV_MIN_VERSION (see .uv-version); found $PLOTBENCH_UV_VERSION at $PLOTBENCH_UV_BIN." >&2
+  echo 'Update standalone uv with "uv self update", or update it through the package manager that installed it.' >&2
+  echo 'If multiple copies exist, check "type -a uv" and select one with PLOTBENCH_UV=/path/to/uv ./scripts/setup ...' >&2
+  exit 1
+fi
+echo "Using uv $PLOTBENCH_UV_VERSION at $PLOTBENCH_UV_BIN"
+"$PLOTBENCH_UV_BIN" python install "$PLOTBENCH_PYTHON_VERSION" --no-bin
 PLOTBENCH_CORE_ARGS=(--locked --inexact)
 selected plotly && PLOTBENCH_CORE_ARGS+=(--extra browser)
 # Preserve previously installed optional components when adding another frontend.
-UV_PROJECT_ENVIRONMENT="$PLOTBENCH_ROOT/.envs/plotting-benchmark" uv sync --project core \
+UV_PROJECT_ENVIRONMENT="$PLOTBENCH_ROOT/.envs/plotting-benchmark" "$PLOTBENCH_UV_BIN" sync --project core \
   --python "$PLOTBENCH_PYTHON_VERSION" "${PLOTBENCH_CORE_ARGS[@]}" "${PLOTBENCH_DEV[@]}"
 for PLOTBENCH_PACKAGE in pyqtgraph matplotlib qtgraphs; do
   if selected "$PLOTBENCH_PACKAGE"; then
-    UV_PROJECT_ENVIRONMENT="$PLOTBENCH_ROOT/.envs/plotting-benchmark-$PLOTBENCH_PACKAGE" uv sync \
+    UV_PROJECT_ENVIRONMENT="$PLOTBENCH_ROOT/.envs/plotting-benchmark-$PLOTBENCH_PACKAGE" "$PLOTBENCH_UV_BIN" sync \
       --project "frontends/$PLOTBENCH_PACKAGE" --python "$PLOTBENCH_PYTHON_VERSION" --locked --inexact "${PLOTBENCH_DEV[@]}"
   fi
 done

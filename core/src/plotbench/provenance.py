@@ -83,6 +83,7 @@ def source_hash(directory, *, checkout=False):
                 if name
                 in {
                     ".python-version",
+                    ".uv-version",
                     ".npmrc",
                     ".nvmrc",
                     ".node-version",
@@ -111,6 +112,7 @@ def source_hash(directory, *, checkout=False):
                     ".node-version",
                     "rust-toolchain",
                     ".python-version",
+                    ".uv-version",
                     "CMakeLists.txt",
                 }
                 or {"src", "assets", "public", "scripts"}.intersection(relative.parts[:-1])
