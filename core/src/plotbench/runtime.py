@@ -18,6 +18,9 @@ from .suites import FRONTENDS
 ROOT = Path(__file__).resolve().parents[3]
 PYTHON_FRONTENDS = ("pyqtgraph", "matplotlib", "qtgraphs")
 QT_FRONTENDS = (*PYTHON_FRONTENDS, "pyqtgraph-gl", "qtgraphs-cpp")
+# Cold imports can discover system fonts and initialize native libraries.
+# This work happens before measurements and needs more time than version queries.
+FRONTEND_IMPORT_TIMEOUT_SECONDS = 120
 
 
 def display_session():
@@ -104,10 +107,19 @@ def _executable(component):
     }[component]
 
 
-def _run_check(command, *, environment=None):
-    result = subprocess.run(
-        command, capture_output=True, text=True, timeout=15, env=environment, check=False
-    )
+def _run_check(command, *, environment=None, timeout=15):
+    try:
+        result = subprocess.run(
+            command, capture_output=True, text=True, timeout=timeout, env=environment, check=False
+        )
+    except subprocess.TimeoutExpired as exc:
+        detail = exc.stderr or exc.stdout or ""
+        if isinstance(detail, bytes):
+            detail = detail.decode(errors="replace")
+        message = f"Runtime check timed out after {timeout:g} seconds: {command[0]}"
+        if detail.strip():
+            message += f"\n{detail.strip()}"
+        raise ValueError(message) from exc
     if result.returncode:
         raise ValueError(result.stderr.strip() or result.stdout.strip() or "command failed")
     return result.stdout.strip()
@@ -195,7 +207,10 @@ def preflight(*, frontends=(), backends=(), browser_executable=None, headless=Fa
                     "'wayland_plugins':[str(p) for p in (Path(QLibraryInfo.path(QLibraryInfo.PluginsPath)) / 'platforms').glob('*qwayland*.so')]}))"
                 )
                 details = json.loads(
-                    _run_check([str(executable.with_name("python")), "-c", script])
+                    _run_check(
+                        [str(executable.with_name("python")), "-c", script],
+                        timeout=FRONTEND_IMPORT_TIMEOUT_SECONDS,
+                    )
                 )
                 runtime.setdefault("components", {})[component] = details
                 if details["python"] != (ROOT / ".python-version").read_text().strip():

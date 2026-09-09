@@ -164,6 +164,14 @@ the repository's Python pin or dependency locks. See [uv's Python version docume
 
 ### Runtime and display checks
 
+Python frontend checks import the actual adapter before measurements. A fresh
+Matplotlib installation may spend time discovering system fonts and building its
+local font cache (on macOS this invokes `system_profiler`). These imports have a
+120-second timeout; short tool/version checks retain a 15-second timeout. If an
+import still times out, doctor reports captured diagnostic output. Check that the
+frontend's `.cache/` directory is writable, or the directory selected by an
+explicit `MPLCONFIGDIR`, then retry doctor before starting the campaign.
+
 Run doctor with the exact component selection before a campaign. Missing
 components should be installed explicitly; unavailable SDKs, stale binaries or
 missing display access should be fixed before retrying into a new result directory.

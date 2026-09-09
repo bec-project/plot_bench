@@ -1,8 +1,66 @@
+import json
+import subprocess
+import sys
 from types import SimpleNamespace
 
 import pytest
 
 from plotbench import runtime
+
+
+@pytest.mark.parametrize("frontend", runtime.PYTHON_FRONTENDS)
+def test_cold_frontend_import_gets_longer_timeout(monkeypatch, tmp_path, frontend):
+    monkeypatch.setattr(runtime.platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(runtime, "ROOT", tmp_path)
+    (tmp_path / ".python-version").write_text(runtime.platform.python_version())
+    executable = runtime._executable(frontend)
+    executable.parent.mkdir(parents=True)
+    executable.touch(mode=0o755)
+    commands = []
+
+    def slow_import(command, **options):
+        commands.append(command)
+        # Model a successful cold import taking longer than the old deadline.
+        if options["timeout"] < 20:
+            raise subprocess.TimeoutExpired(command, options["timeout"])
+        return SimpleNamespace(
+            returncode=0,
+            stdout=json.dumps(
+                {"python": runtime.platform.python_version(), "qt": "6.11.2", "wayland_plugins": []}
+            ),
+        )
+
+    monkeypatch.setattr(runtime.subprocess, "run", slow_import)
+    result = runtime.preflight(frontends=[frontend])
+    assert result["ok"], result["checks"]
+    assert len(commands) == 1
+    assert commands[0][:2] == [str(executable.with_name("python")), "-c"]
+    assert f"import plotbench_{frontend}.app" in commands[0][2]
+    assert result["runtime"]["components"][frontend]["qt"] == "6.11.2"
+
+
+def test_short_runtime_queries_keep_short_timeout(monkeypatch):
+    def version_query(command, **options):
+        assert options["timeout"] == 15
+        return SimpleNamespace(returncode=0, stdout="version\n")
+
+    monkeypatch.setattr(runtime.subprocess, "run", version_query)
+    assert runtime._run_check(["tool", "--version"]) == "version"
+
+
+@pytest.mark.parametrize("stream", ["stdout", "stderr"])
+def test_runtime_timeout_stops_process_and_reports_captured_output(stream):
+    command = [
+        sys.executable,
+        "-c",
+        f"import sys, time; print('initializing font cache', file=sys.{stream}, flush=True); time.sleep(5)",
+    ]
+    with pytest.raises(ValueError) as error:
+        runtime._run_check(command, timeout=0.5)
+    message = str(error.value)
+    assert "timed out after 0.5 seconds" in message
+    assert "initializing font cache" in message
+    assert "time.sleep" not in message
 
 
 def linux(monkeypatch):
