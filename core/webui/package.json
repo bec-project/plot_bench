@@ -1,5 +1,5 @@
 {
-  "name": "@plotbench/matrix-editor",
+  "name": "@plotbench/webui",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -8,7 +8,9 @@
   },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "vite build",
+    "build": "npm run build:matrix && npm run build:controls",
+    "build:matrix": "vite build",
+    "build:controls": "vite build --config vite.controls.config.ts && cp dist/controls.html ../src/plotbench/controls.html",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview --host 127.0.0.1"
   },
@@ -19,7 +21,8 @@
     "@preact/preset-vite": "2.10.6",
     "@types/node": "^22.10.0",
     "typescript": "^5.7.0",
-    "vite": "6.4.3"
+    "vite": "6.4.3",
+    "vite-plugin-singlefile": "^2.3.3"
   },
   "license": "BSD-3-Clause"
 }

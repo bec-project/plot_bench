@@ -88,6 +88,18 @@ export interface Preset {
   error?: string;
 }
 
+export interface SourceHealth {
+  backend?: string;
+  status: string;
+  error?: string | null;
+  generated: number;
+  deadline_misses: number;
+  mailbox_drops: number;
+  clients: number;
+  output: string;
+  config: Config;
+}
+
 export interface ComponentStatus {
   installed: boolean;
   setup: string | null;

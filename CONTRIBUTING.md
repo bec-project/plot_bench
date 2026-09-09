@@ -23,11 +23,12 @@ Python follows the root Ruff configuration and Black's 100-character line length
 Rust uses `cargo fmt` and Clippy; TypeScript uses its strict compiler and test suite.
 Prefer simple functions and existing abstractions over a new plugin framework.
 
-The matrix editor is a Preact + Vite app in [`core/matrix-editor`](core/matrix-editor);
-its built bundle is committed under `core/src/plotbench/matrix_assets/` so
-`plotbench matrix` needs no Node at runtime. After changing the editor, run
-`npm run build` there and commit the regenerated bundle. See its
-[README](core/matrix-editor/README.md).
+The web UI (matrix editor and source controls) is a Preact + Vite app in
+[`core/webui`](core/webui). Its built output is committed — `plotbench matrix`
+serves `core/src/plotbench/matrix_assets/` and both sources serve the single-file
+`core/src/plotbench/controls.html` — so neither needs Node at runtime. After
+changing the UI, run `npm run build` there and commit the regenerated output. See
+its [README](core/webui/README.md).
 
 See [adding a frontend](docs/frontends.md) before introducing a renderer. Its
 limitations and custom rendering work must be explicit, and frontend code must
