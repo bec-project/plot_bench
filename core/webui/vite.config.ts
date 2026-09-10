@@ -18,7 +18,9 @@ export default defineConfig({
     host: '127.0.0.1',
     port: 5273,
     strictPort: true,
-    proxy: { '/api': 'http://127.0.0.1:8799' },
+    // Preserve Host alongside Origin so the editor's same-origin check also
+    // works through Vite. Its string proxy shorthand rewrites Host by default.
+    proxy: { '/api': { target: 'http://127.0.0.1:8799', changeOrigin: false } },
   },
   build: {
     outDir: resolve(here, '../src/plotbench/matrix_assets'),

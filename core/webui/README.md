@@ -52,7 +52,9 @@ npm --prefix core/webui run dev
 ```
 
 Vite proxies `/api` to the editor on port 8799. The editor server's own URL serves
-the last production build. Stop both processes before formal benchmarks.
+the last production build. The proxy preserves Host and Origin together so the
+editor's same-origin validation works in development. Stop both processes before
+formal benchmarks.
 
 For source controls, start a Python source (no Rust build needed):
 
@@ -68,11 +70,13 @@ its port.
 ## Build and validate
 
 ```sh
+npm --prefix core/webui test
 npm --prefix core/webui run typecheck
 npm --prefix core/webui run build
 ```
 
-Type checking is separate from the Vite build. To rebuild just one page, use
+The Node test checks development proxy headers; type checking is separate from
+the Vite build. To rebuild just one page, use
 `npm --prefix core/webui run build:matrix` or
 `npm --prefix core/webui run build:controls`.
 
