@@ -2,6 +2,8 @@
 
 Plotbench's original code is licensed under the [BSD 3-Clause License](../LICENSE),
 Copyright (c) 2026 Jan Wyzula. This license does not replace dependency licenses.
+A per-component list of third-party components and their licenses is in
+[THIRD-PARTY-LICENSES.md](../THIRD-PARTY-LICENSES.md).
 
 Dependencies are independently installed through their package managers; the
 repository does not redistribute a bundled Python/Qt/browser runtime. Consult the

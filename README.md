@@ -59,7 +59,7 @@ is the tour; the guides below go deeper.
   [Adding a frontend](docs/frontends.md) · [Agent guide](AGENTS.md) ·
   [Web UI: matrix editor & source controls](core/webui/README.md)
 - **Reference** — [Core package](core/README.md) ·
-  [Licenses & third-party notices](docs/licenses.md) ·
+  [Third-party licenses](THIRD-PARTY-LICENSES.md) ·
   [Presentation style](docs/presentation.md) · [Demo gallery](docs/demo-gallery.html)
 
 ## Create your own matrix
@@ -159,4 +159,5 @@ and one shared measurement contract.
 
 Project code is [BSD-3-Clause licensed](LICENSE), Copyright (c) 2026 Jan Wyzula.
 Dependencies retain their own licenses; Qt Graphs is GPLv3 or commercially licensed.
-See [third-party notices](docs/licenses.md).
+See [third-party licenses](THIRD-PARTY-LICENSES.md) and the
+[licensing notes](docs/licenses.md).

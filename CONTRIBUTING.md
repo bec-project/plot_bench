@@ -34,5 +34,6 @@ See [adding a frontend](docs/frontends.md) before introducing a renderer. Its
 limitations and custom rendering work must be explicit, and frontend code must
 never replace the common data generator.
 
-Contributions are made under the repository's [BSD 3-Clause license](LICENSE). Dependencies
-keep their separate licensing terms; see [third-party notices](docs/licenses.md).
+Contributions are made under the repository's [BSD 3-Clause license](LICENSE).
+Dependencies keep their separate licensing terms; see
+[third-party licenses](THIRD-PARTY-LICENSES.md).
