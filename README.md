@@ -1,15 +1,26 @@
 # Plotbench
 
-Compare streaming waveform and image rendering across independently packaged
-plotting frontends. Rust/Tokio and Python/NumPy sources generate the shared input;
-frontends decode and render the same protocol. Backend results remain separate.
+Compare how plotting frontends handle streaming waveforms and images under a
+shared workload. A unified source generates the data; every frontend decodes and
+renders the same protocol instead of running its own data generator.
+
+**Plotbench primarily tests frontend capabilities:** each adapter's data conversion,
+plot-update APIs, rendering implementation and ability to sustain the requested
+update rate. It compares the implemented adapters under controlled conditions;
+it does not establish a library's maximum possible performance or feature coverage.
+
+Choose the Rust/Tokio source (default) or Python/NumPy and hold it fixed when
+comparing frontends. Streaming can still be limited by source generation or
+transport. Receiver-only probes help identify those limits; replay removes live
+generation and transport from the timed path. Results from different sources and
+modes remain separate. Submitted updates/s is not displayed FPS.
 
 ## Quick start
 
 **Plotbench runs from a git clone — there is no PyPI package.** It builds and
 drives independent Rust, Qt and npm components through repo-local tooling
-(`./scripts/setup`), so every command runs from the checkout rather than a
-`pip install`. Clone the repository and work inside it.
+(`./scripts/setup`). Clone the repository and work inside it. In the command
+below, replace `REPOSITORY_URL` with this repository's clone URL.
 
 Install [uv](https://docs.astral.sh/uv/) (minimum version in [.uv-version](.uv-version))
 and [Rust/Cargo](https://rustup.rs/), then follow the
@@ -17,7 +28,7 @@ and [Rust/Cargo](https://rustup.rs/), then follow the
 repository root:
 
 ```sh
-git clone <repository-url> plotbench
+git clone "REPOSITORY_URL" plotbench
 cd plotbench
 ./scripts/setup rust pyqtgraph
 ./scripts/plotbench doctor --frontends pyqtgraph
@@ -68,17 +79,21 @@ is the tour; the guides below go deeper.
 ./scripts/plotbench matrix
 ```
 
-The local browser editor opens with a gallery of the bundled scenarios (each with
-its scope) and a blank option to start from. Pick a starting point, shape the
+The local Preact browser editor opens with a gallery of bundled scenarios (each
+with its scope) and a blank option to start from. Pick a starting point, shape the
 workloads — the form shows only the fields relevant to each plot — select
 frontends, sources, delivery modes and timings, inspect the expanded schedule, then
 **Save to scenarios_custom** (a git-ignored folder) or export the JSON. The editor
-never runs benchmarks; it hands you the exact commands to run next:
+never runs benchmarks; it hands you the commands to run next. Save a suite as
+`my-suite` before using this example, then stop the editor with Ctrl+C:
 
 ```sh
 ./scripts/plotbench run --suite scenarios_custom/my-suite.json --dry-run
 ./scripts/plotbench run --suite scenarios_custom/my-suite.json --output results/my-comparison
 ```
+
+Use a new output directory for each attempt; directories containing an existing
+campaign's `suite.json` are rejected to preserve its measurements.
 
 `run` prints live progress: `[i/N]`, elapsed time, an ETA and a pass/fail tally.
 CLI filters and timing overrides remain available. See the
@@ -96,9 +111,10 @@ CLI filters and timing overrides remain available. See the
 | [Plotly/React](frontends/plotly/README.md) | Production TypeScript bundle; scattergl, heatmap and image |
 
 Install only selected components with `./scripts/setup COMPONENT`. Include `rust`
-to build the default source. npm and the C++ Qt SDK are required only for their
-respective frontends. Local Python environments are isolated; no BEC, Redis,
-credentials or shared conda setup is needed.
+to build the default source. npm is needed to build the Plotly frontend or develop
+the Preact web UI; the C++ Qt SDK is needed for `qtgraphs-cpp`. The matrix editor
+and source controls ship prebuilt and need no Node at runtime. Local Python
+environments are isolated; no BEC, Redis, credentials or shared conda setup is needed.
 See the [core](core/README.md) and [Rust source](backends/rust/README.md).
 
 Rust is the default source for `serve`, `demo`, `run`, `probe` and `doctor`.
@@ -106,15 +122,15 @@ Explicit suite backend choices remain in effect unless overridden on the CLI.
 A default demo requires a Rust source and refuses to attach to an existing Python source;
 select `--backend python` to use that source.
 
-Run `./scripts/plotbench serve` to start just a source and open its URL
-(`http://127.0.0.1:8765`) for a live browser control panel that adjusts the rate,
-waveform and image workload while demos stream from it.
+Run `./scripts/plotbench serve` to start just a source, then open
+[its URL](http://127.0.0.1:8765) manually for a live browser control panel that
+adjusts the rate, waveform and image workload while demos stream from it.
 
 For a Python-only source, install just the chosen frontend (for example,
 `./scripts/setup pyqtgraph`) and select `--backend python` for `serve`/`demo` or
 `--backends python` for `run`/`probe`/`doctor`. This needs no Rust toolchain unless
 the frontend itself uses Rust. To compare both sources, select `--backends python rust`
-explicitly. Use `plotbench probe` to measure source and decoded-delivery capacity
+explicitly. Use `./scripts/plotbench probe` to measure source and decoded-delivery capacity
 without plotting. See [backends](docs/backends.md).
 
 ## Understand the measurements

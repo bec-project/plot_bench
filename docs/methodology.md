@@ -2,6 +2,14 @@
 
 ## Shared input
 
+The unified source makes this primarily a comparison of frontend implementations:
+receiving and decoding frames, converting them for a renderer, submitting updates,
+and sustaining a workload in a live GUI. Holding the source and workload constant
+removes per-demo data generation as a variable. It does not remove source or
+transport bottlenecks from streaming results, or make every adapter's API timing
+boundary equivalent. Results describe these adapters, not every possible use of
+the underlying libraries.
+
 The Python/NumPy and Rust/Tokio sources implement the same
 [binary protocol](protocol.md). Backend selection is a benchmark dimension: their
 results are never pooled. Numerical fixtures validate documented floating-point

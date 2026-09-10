@@ -62,8 +62,12 @@ and perform conversions/uploads for each adopted update. Do not preload GPU reso
 for every frame. Time synchronous preparation, record asynchronous completion separately
 where observable, and document deferred/unobserved work. Report payload count and memory. This bounded cyclic replay is a
 cache-warm diagnostic, not an unlimited unique-data stream.
-The preloaded configuration remains fixed until the replay frontend is restarted;
-there are no source HTTP requests on the replay scheduling path after preload.
+The preloaded configuration remains fixed until a supported interactive control
+reloads the central dataset or the frontend restarts. External source changes do
+not update an existing replay automatically. Ordinary replay scheduling makes no
+frame/configuration HTTP requests after preload; telemetry still posts to the
+source. Interactive reloads run outside that scheduling path, and workload controls
+are disabled during recorded runs.
 
 ## Measurements
 
@@ -105,7 +109,8 @@ to poll its mailbox, but timer callbacks alone do not count as rendered frames.
 ## Executables and frontend arguments
 
 Python console scripts: `plotbench-pyqtgraph`, `plotbench-matplotlib`,
-`plotbench-qtgraphs`. Rust binary: `plotbench-iced`.
+`plotbench-qtgraphs`. Rust binary: `plotbench-iced`. C++ binary:
+`plotbench-qtgraphs-cpp`.
 All accept `--url`, `--mode stream|replay`, `--run-id`, `--duration` (seconds;
 0 means until closed), `--width` and `--height` (logical window size; defaults
 1100 and 820). PyQtGraph additionally accepts `--opengl`.
