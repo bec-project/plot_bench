@@ -18,14 +18,26 @@ attaching to an existing source. If a Python source is already running, select
 `--backend python` explicitly; the default demo reports the mismatch. Explicit
 suite `backends` choices remain honored, and CLI `--backends` overrides them.
 
-To run Python without installing the Rust source, use `./scripts/setup core` or
-install the chosen frontend, then select Python explicitly. For example, start a
-Python source in one terminal and attach the demo from another:
+To run Python without installing the Rust source, install the chosen frontend
+and select Python explicitly. For example:
+
+```sh
+./scripts/setup pyqtgraph
+```
+
+Start the Python source in terminal A:
 
 ```sh
 ./scripts/plotbench serve --backend python --port 8766
+```
+
+Attach the demo from terminal B:
+
+```sh
 ./scripts/plotbench demo pyqtgraph --backend python --url http://127.0.0.1:8766
 ```
+
+For source-only use, install just `core`.
 
 The source control page at the chosen URL changes streaming workload settings.
 Replay clients retain preloaded input until their supported reload action or a

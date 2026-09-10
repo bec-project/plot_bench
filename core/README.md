@@ -10,11 +10,18 @@ the repository root:
 
 ```sh
 ./scripts/setup core --dev
-./scripts/plotbench serve --backend python
 .envs/plotting-benchmark/bin/python -m pytest core/tests
 ```
 
+Start an interactive Python source and open [its controls](http://127.0.0.1:8765):
+
+```sh
+./scripts/plotbench serve --backend python
+```
+
 Install frontends separately before running a suite. Tests use ephemeral loopback
-ports. Stop the interactive source with Ctrl+C before running the tests above.
+ports. Stop the interactive source with Ctrl+C when finished. The matrix editor
+and source controls ship as prebuilt Preact assets; see the
+[web UI development guide](webui/README.md).
 See the [protocol and client API](../docs/protocol.md) and
 [root README](../README.md).

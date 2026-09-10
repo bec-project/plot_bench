@@ -19,18 +19,22 @@ For Python input, install just `plotly` and select
 this does not require Rust/Cargo. See [platform setup](../../docs/setup.md) for
 browser prerequisites and explicit browser selection.
 
-For a direct browser launch, use Node.js 22.12 or later (Node 24 LTS recommended)
-and npm. Start the shared source using the monorepo instructions (`serve` defaults
-to Rust; use `serve --backend python` for Python), then run from this directory:
+For a direct browser launch, use Node/npm compatible with
+[`package.json`](package.json); [`.node-version`](../../.node-version) records the
+repository's tested Node version. Start the shared source in another terminal
+(`serve` defaults to Rust; use `serve --backend python` for Python), then run from
+the repository root. The provenance command needs the core installed by setup:
 
 ```sh
-npm ci
-npm test
-npm run build
-npm run preview
+npm ci --prefix frontends/plotly --cache "$PWD/.cache/npm" --no-audit --no-fund
+npm --prefix frontends/plotly test
+npm --prefix frontends/plotly run build
+.envs/plotting-benchmark/bin/python -m plotbench.provenance plotly
+npm --prefix frontends/plotly run preview
 ```
 
-Open <http://127.0.0.1:4173/>. `npm run dev` is available at port 5173 for development; benchmark
+Open [the preview](http://127.0.0.1:4173/). Use
+`npm --prefix frontends/plotly run dev` at port 5173 for development; benchmark
 the production build to exclude development-server instrumentation. Vite binds only to localhost.
 The default source address is `http://127.0.0.1:8765`; the core must allow this origin through CORS.
 
@@ -179,13 +183,15 @@ process tree.
 
 ## Validation
 
-`npm test` covers packet alignment, byte bounds, descriptors, replay containers, bounded scheduling,
+`npm --prefix frontends/plotly test` covers packet alignment, byte bounds,
+descriptors, replay containers, bounded scheduling,
 asynchronous-update serialization and completion timing, skipped-frame accounting, bounded clock
 observation and metrics retry/drop/final-metadata behavior. Tests also cover the complete
 plot-selection transition matrix, the final-enabled-plot guard,
 configuration/pending/recorded-run locks, confirmed selection after a failed request, sparse
 configuration patches, active-edit preservation, edits during requests and dynamic metric hints.
-`npm run build` runs strict TypeScript checking and creates the production bundle.
+`npm --prefix frontends/plotly run build` runs strict TypeScript checking and creates
+the production bundle.
 Core `tests/test_browser_worker.py` checks lifecycle completion, failure/timeout handling and
 post-completion capture order using a Playwright substitute without opening a browser.
 

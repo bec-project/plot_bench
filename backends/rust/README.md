@@ -8,28 +8,44 @@ Rust is Plotbench's default source. For the root CLI workflow, install Rust/Carg
 and run `./scripts/setup rust` from the repository root before `./scripts/plotbench serve`.
 The Python source remains available through an explicit `--backend python` choice.
 
-Build from this directory:
+All commands below run from the repository root. For a direct build:
 
 ```sh
-CARGO_HOME="$PWD/.cargo-cache" cargo build --locked --release
+export CARGO_HOME="$PWD/.cache/cargo"
+cargo build --manifest-path backends/rust/Cargo.toml --locked --release
 ```
 
-The root launcher supplies the shared configuration and controls page:
+Before using a manual build through `./scripts/plotbench`, record its provenance
+with `.envs/plotting-benchmark/bin/python -m plotbench.provenance rust`.
+`./scripts/setup rust` performs both steps automatically.
+
+The root launcher supplies the shared configuration and generated Preact controls
+page. A direct launch requires `--config`, `--output` and `--controls`. First create
+a JSON configuration file in a fresh result directory (an empty object uses all
+shared defaults). Use a new directory name for subsequent attempts:
 
 ```sh
-./target/release/plotbench-source-rust \
+mkdir -p results/manual-source
+printf '{}\n' > results/manual-source/source-config.json
+```
+
+Then launch the source with that configuration and output directory:
+
+```sh
+backends/rust/target/release/plotbench-source-rust \
   --host 127.0.0.1 --port 8765 \
-  --config /path/to/source-config.json \
-  --output /path/to/results \
-  --controls ../../core/src/plotbench/controls.html
+  --config results/manual-source/source-config.json \
+  --output results/manual-source \
+  --controls core/src/plotbench/controls.html
 ```
 
 `--config` is a JSON **file path**. Omitted fields use the same defaults as the
 Python source. `--controls` is a UTF-8 HTML file served at `/`. The native
 256-entry colormap exactly matches the shared blue/cyan/yellow table; no palette
-file is needed. Cache and build output stay under this package when using the
-command above. SIGINT and SIGTERM stop generation, close active streaming
-connections, cancel queued/stalled replay delivery, and finish source-file writes.
+file is needed. Dependencies are cached under the root `.cache/cargo/`; builds
+stay in `backends/rust/target/`. Both directories are ignored by Git. SIGINT and
+SIGTERM stop generation, close active streaming connections, cancel queued/stalled
+replay delivery, and finish source-file writes.
 HTTP connections get up to three seconds to drain before stalled connections
 are forcibly closed. Work already executing in a bounded generation job finishes
 before the Tokio runtime exits.
@@ -110,9 +126,10 @@ library. Native Rust is not assumed to be faster for every workload.
 ## Validation
 
 ```sh
-CARGO_HOME="$PWD/.cargo-cache" cargo fmt --all --check
-CARGO_HOME="$PWD/.cargo-cache" cargo test --locked --release -- --nocapture
-CARGO_HOME="$PWD/.cargo-cache" cargo clippy --locked --all-targets -- -D warnings
+export CARGO_HOME="$PWD/.cache/cargo"
+cargo fmt --manifest-path backends/rust/Cargo.toml --all --check
+cargo test --manifest-path backends/rust/Cargo.toml --locked --release -- --nocapture
+cargo clippy --manifest-path backends/rust/Cargo.toml --locked --all-targets -- -D warnings
 ```
 
 Tests cover patch atomicity and validation, frame/replay layouts, exact append
@@ -122,7 +139,7 @@ release/client cleanup. Regenerate numerical fixtures only after deliberately
 reviewing source-formula changes:
 
 ```sh
-../../.envs/plotting-benchmark/bin/python tests/create_fixtures.py
+.envs/plotting-benchmark/bin/python backends/rust/tests/create_fixtures.py
 ```
 
 Implementation references: [Axum WebSockets](https://docs.rs/axum/0.8.9/axum/extract/ws/index.html)

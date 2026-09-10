@@ -16,16 +16,24 @@ To use Python input, install just `iced` and select
 `./scripts/plotbench demo iced --backend python`.
 Rust/Cargo is still required to build the Iced frontend.
 
-For a direct build and launch from this directory, with a Rust toolchain installed:
+For a direct build and launch, keep working from the repository root with a Rust
+toolchain installed:
 
 ```bash
-CARGO_HOME="$PWD/.cargo-cache" cargo build --locked --release
-./target/release/plotbench-iced --url http://127.0.0.1:8765
-./target/release/plotbench-iced --mode replay --run-id iced-replay --duration 35
+export CARGO_HOME="$PWD/.cache/cargo"
+cargo build --manifest-path frontends/iced/Cargo.toml --locked --release
+frontends/iced/target/release/plotbench-iced --url http://127.0.0.1:8765
+# Close the streaming demo before launching replay:
+frontends/iced/target/release/plotbench-iced --mode replay --run-id iced-replay --duration 35
 ```
 
-Start the shared source first for a direct launch, using the root project's
-instructions. `serve` defaults to Rust; use `serve --backend python` for Python.
+Before using a manual build through `./scripts/plotbench`, record its provenance
+with `.envs/plotting-benchmark/bin/python -m plotbench.provenance iced`.
+`./scripts/setup iced` performs both steps automatically.
+
+Start the shared source in another terminal before a direct launch, using the
+root project's instructions. `serve` defaults to Rust; use `serve --backend python`
+for Python.
 All frame generation and workload configuration belong to that source. Change its
 configuration through the shared controller or `POST /api/config`. Stream mode
 adopts the next frame's configuration. The **1D** and **2D** buttons under **PLOTS**
@@ -46,10 +54,11 @@ The standard options are `--url`, `--mode stream|replay`, `--run-id`, `--duratio
 `--width`, and `--height`. Duration is measured from the first successful frame
 submission; zero leaves the window open. The resizable window defaults to
 1100 × 820 logical pixels and enforces a minimum of 860 × 640. Use **release**
-binaries for every comparison. Build output remains in `target/`; the command
-above also keeps the dependency download cache local and ignored by Git.
+binaries for every comparison. Build output remains in `frontends/iced/target/`;
+the commands above keep dependency downloads in the root `.cache/cargo/`. Both
+are ignored by Git.
 
-For visual QA, add `--screenshot target/iced.png --duration 6` to capture the
+For visual QA, add `--screenshot frontends/iced/target/iced.png --duration 6` to capture the
 actual Iced window to PNG after four seconds of data, between HUD refreshes. This
 causes extra GPU readback and PNG encoding; omit it from benchmark measurements. Screenshot use
 is recorded in metadata.
@@ -173,10 +182,12 @@ necessary after changing the source. These fields do not establish image present
 ## Validation
 
 ```bash
-CARGO_HOME="$PWD/.cargo-cache" cargo fmt --all --check
-CARGO_HOME="$PWD/.cargo-cache" cargo test --locked --release
-CARGO_HOME="$PWD/.cargo-cache" cargo clippy --locked --all-targets -- -D warnings
-CARGO_HOME="$PWD/.cargo-cache" cargo test --locked --release live_shared_source_protocol_and_mailboxes -- --ignored
+export CARGO_HOME="$PWD/.cache/cargo"
+cargo fmt --manifest-path frontends/iced/Cargo.toml --all --check
+cargo test --manifest-path frontends/iced/Cargo.toml --locked --release
+cargo clippy --manifest-path frontends/iced/Cargo.toml --locked --all-targets -- -D warnings
+# Start a shared source separately before this optional live test:
+cargo test --manifest-path frontends/iced/Cargo.toml --locked --release live_shared_source_protocol_and_mailboxes -- --ignored
 ```
 
 Protocol tests cover little-endian arrays and aligned headers, authoritative

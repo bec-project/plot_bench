@@ -27,8 +27,10 @@ The web UI (matrix editor and source controls) is a Preact + Vite app in
 [`core/webui`](core/webui). Its built output is committed — `plotbench matrix`
 serves `core/src/plotbench/matrix_assets/` and both sources serve the single-file
 `core/src/plotbench/controls.html` — so neither needs Node at runtime. After
-changing the UI, run `npm run build` there and commit the regenerated output. See
-its [README](core/webui/README.md).
+changing the UI, run `npm --prefix core/webui run typecheck` and
+`npm --prefix core/webui run build` from the repository root and commit the
+regenerated output. CI checks bundle reproducibility and browser interactions for
+both pages. See its [README](core/webui/README.md).
 
 See [adding a frontend](docs/frontends.md) before introducing a renderer. Its
 limitations and custom rendering work must be explicit, and frontend code must

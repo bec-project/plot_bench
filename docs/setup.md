@@ -17,6 +17,11 @@ arguments, setup installs the core. Setup never adds the Rust source unless `rus
 or `all` is selected. `all` explicitly selects every component; the C++ frontend
 needs its separate Qt SDK.
 
+The matrix editor and source controls are included as prebuilt Preact pages in
+the core package. They need no npm/Node installation to run. Developing those
+pages uses the separate [web UI workflow](../core/webui/README.md); `setup plotly`
+builds the plotting adapter, not the matrix editor or source controls.
+
 ## Components and toolchains
 
 | Component | Additional requirements |
@@ -31,7 +36,8 @@ needs its separate Qt SDK.
 The minimum supported uv version is declared in `.uv-version`. Setup checks the
 selected executable before installing anything and prints its version and path.
 Python, Node and Rust versions are declared in `.python-version`, `.node-version`
-and `rust-toolchain.toml`. Python packages currently support Python 3.13. Locks
+and `rust-toolchain.toml`. Python packages support the Python 3.13 series; setup
+selects an available patch release rather than fixing one exact patch. Locks
 describe tested dependency resolutions; update manifests and locks together when
 changing a supported version. Record actual tool versions in benchmark provenance.
 

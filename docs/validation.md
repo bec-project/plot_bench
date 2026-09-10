@@ -19,6 +19,11 @@ on configuring the public repository. A configured workflow is not a passed run.
 
 ## Local checks
 
+Run commands from the repository root. Install and test only the components you
+changed; the block below is the full component check list, not a prerequisite for
+editing documentation or the web UI. For core/docs work, start with
+`./scripts/setup core --dev`, then run the core tests and Python quality checks.
+
 ```sh
 ./scripts/setup core pyqtgraph matplotlib qtgraphs plotly rust iced --dev
 export CARGO_HOME="$PWD/.cache/cargo"
@@ -39,11 +44,70 @@ Use the local Node binary installed by setup if system Node does not satisfy the
 frontend's engine requirement. Rust checks use the repository-pinned toolchain.
 For C++, run `./scripts/setup qtgraphs-cpp --dev`, then
 `ctest --test-dir frontends/qtgraphs-cpp/build --output-on-failure`.
-Each component README includes its additional formatting/lint commands.
+The Rust component READMEs include formatting/Clippy commands. After manually
+rebuilding a compiled or bundled component, record its provenance before using it
+through the harness, or run its setup command to rebuild and record it together.
 
 Core integration tests start ephemeral loopback servers and exercise both sources
 when the Rust source is built. A sandbox that blocks loopback cannot run those
 checks. Do not change tests or measurement logic to accommodate such restrictions.
+
+### Matrix editor and source controls
+
+Both pages are Preact apps with committed production assets. After installing
+Node/npm compatible with `core/webui/package.json`:
+
+```sh
+./scripts/setup core --dev
+npm ci --prefix core/webui --cache "$PWD/.cache/npm" --no-audit --no-fund
+npm --prefix core/webui test
+npm --prefix core/webui run typecheck
+npm --prefix core/webui run build
+```
+
+Install Chromium into the repository cache and select its executable for the
+opt-in browser tests:
+
+```sh
+export PLAYWRIGHT_BROWSERS_PATH="$PWD/.cache/playwright"
+.envs/plotting-benchmark/bin/python -m playwright install chromium
+PLOTBENCH_TEST_BROWSER="$(.envs/plotting-benchmark/bin/python - <<'PY'
+from playwright.sync_api import sync_playwright
+with sync_playwright() as playwright:
+    print(playwright.chromium.executable_path)
+PY
+)"
+export PLOTBENCH_TEST_BROWSER
+.envs/plotting-benchmark/bin/python -m pytest core/tests/test_matrix_browser.py core/tests/test_source_controls.py
+```
+
+On Ubuntu, install the [browser system dependencies](setup.md#ubuntu-2404-x86-64-wayland)
+as well. On RHEL-compatible systems, select an installed Chromium executable as
+described in [setup](setup.md#rhel-compatible-linux-9-x86-64-wayland).
+Without `PLOTBENCH_TEST_BROWSER`, the interaction tests skip. They are headless
+functional checks and do not qualify rendering performance. CI also rebuilds the
+UI and checks that it matches the committed assets. The HTML entry points, packaged
+pages and offline reports have different roles; see the
+[web UI guide](../core/webui/README.md).
+
+### Documentation examples
+
+```sh
+.envs/plotting-benchmark/bin/python -m pytest core/tests/test_documentation.py
+./scripts/plotbench --help
+./scripts/plotbench run --help
+./scripts/plotbench serve --help
+```
+
+The documentation tests parse complete `./scripts/plotbench` examples against the
+current CLI, verify npm script names, check shell-block syntax and expand suite
+examples. They
+never install packages or execute campaigns. Local links and bundled scenario
+previews should also be checked after documentation changes. Replace explicitly
+marked clone URLs, browser/SDK paths and result-directory examples with values
+for your checkout. Successful parsing does not establish that every system package,
+graphics driver or toolchain is installed; use doctor and target-platform checks
+for that evidence.
 
 ## Desktop qualification
 

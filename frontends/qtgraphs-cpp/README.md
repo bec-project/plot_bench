@@ -5,10 +5,11 @@ C++ controller instead of PySide6. It helps measure how much of the
 Python adapter's cost is the binding and NumPy path, and how much is Qt Graphs itself.
 
 Requirements: a Qt 6 C++ SDK (6.8 or newer) with the Graphs, Quick, QuickControls2,
-Network and WebSockets modules, CMake 3.21+ and a C++20 compiler. The SDK is a bootstrap
+Network, WebSockets and Test modules (plus WaylandClient on Linux), CMake 3.21+
+and a C++20 compiler. The SDK is a bootstrap
 tool like uv or Cargo. Setup accepts normal CMake discovery, `CMAKE_PREFIX_PATH`,
 or an explicit `PLOTBENCH_QT_PREFIX`. See [platform setup](../../docs/setup.md).
-The build lands in `build/` and setup records its identity for provenance.
+Run commands from the repository root. The build lands in `frontends/qtgraphs-cpp/build/` and setup records its identity for provenance.
 
 ```sh
 ./scripts/setup rust qtgraphs-cpp

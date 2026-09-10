@@ -102,3 +102,16 @@ def test_doctor_json_failure_is_machine_readable_and_nonzero(monkeypatch, capsys
         cli.main()
     assert error.value.code == 1
     assert json.loads(capsys.readouterr().out) == result
+
+
+def test_missing_tui_dependencies_point_to_repo_setup(monkeypatch, capsys):
+    import sys
+
+    monkeypatch.setitem(sys.modules, "plotbench.tui", None)
+    monkeypatch.setattr(sys, "argv", ["plotbench", "tui"])
+    with pytest.raises(SystemExit) as error:
+        cli.main()
+    assert error.value.code == 1
+    message = capsys.readouterr().err
+    assert "./scripts/setup core" in message
+    assert "pip install" not in message

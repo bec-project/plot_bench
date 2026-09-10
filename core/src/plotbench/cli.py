@@ -153,7 +153,7 @@ def main():
                 from .tui import run_tui
             except ImportError as exc:
                 raise RuntimeError(
-                    f'the TUI needs the "tui" extra: pip install "plotbench-core[tui]" ({exc})'
+                    f"the TUI dependencies are unavailable; run ./scripts/setup core ({exc})"
                 ) from exc
             run_tui()
         elif args.command == "doctor":

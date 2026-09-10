@@ -1,9 +1,16 @@
 # Configure a benchmark matrix
 
-Use the same JSON file from the CLI, a script, or the browser editor:
+Use the same JSON file from the CLI, a script, or the browser editor. Start the
+editor from the repository root:
 
 ```sh
 ./scripts/plotbench matrix
+```
+
+Save a suite with the file name `my-suite`, stop the editor with Ctrl+C, then
+preview and run the saved file:
+
+```sh
 ./scripts/plotbench run --suite scenarios_custom/my-suite.json --dry-run
 ./scripts/plotbench run --suite scenarios_custom/my-suite.json --dry-run --json
 ./scripts/plotbench run --suite scenarios_custom/my-suite.json --output results/my-comparison
@@ -16,7 +23,10 @@ to scenarios_custom** writes a validated suite into the git-ignored
 `scenarios_custom/` folder (the file name is simplified to a safe slug); **Export
 JSON** downloads it instead, for an agent or another machine. Either way the editor
 only writes JSON — it never executes benchmarks or generates input data, and after
-saving it shows the exact `dry-run`, quick-check and full-run commands. `--suite`
+saving it shows `dry-run`, quick-check and full-run commands. A quick check uses
+one repetition with a one-second warmup and three measured seconds for every
+selected combination; it can still be large. Preview that command with `--dry-run`
+and use a fresh `--output` directory for each attempt. `--suite`
 opens a specific starting suite; `--no-open` prints the URL without opening a
 browser. Stop the editor with Ctrl+C before formal measurements.
 
@@ -49,6 +59,8 @@ select `"backends": ["python", "rust"]` or `--backends python rust` explicitly.
 ```
 
 Install each selected component first. This example expands to 12 sequential runs.
+Save it as `scenarios_custom/small-waveform.json`, then preview with
+`./scripts/plotbench run --suite scenarios_custom/small-waveform.json --dry-run`.
 Timing estimates include configured warmup, measurement and cooldown; startup and
 replay preload add overhead. The dry-run output distinguishes these costs.
 
@@ -117,4 +129,5 @@ starting services, building artifacts or creating result directories.
 Examples: `smoke.json` (short combined views), `isolated-smoke.json` (separate
 plots), `stress-smoke.json` (large functional checks), `standard.json` (large sweep),
 `streaming-comparison.json` (focused streaming comparison), and
-`backend-probe.json` (receiver-only source comparison). Always preview large suites.
+`backend-probe.json` (receiver-only Rust source probe; select both backends
+explicitly for a source comparison). Always preview large suites.

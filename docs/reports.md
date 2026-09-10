@@ -11,9 +11,12 @@ Both use the same collected statistics. Inline SVG, styles and scripts require n
 CDN or network connection. The compact file omits verbose evidence rather than
 embedding it in hidden tables. CSV and JSON exports remain available separately.
 
+To regenerate existing results, replace these example paths with the result
+directories printed by your completed `run` or `probe` command:
+
 ```sh
 ./scripts/plotbench report results/my-comparison
-./scripts/plotbench report results/my-source-probe --probe
+./scripts/plotbench report results/source-probe --probe
 ```
 
 Regeneration does not overwrite raw measurements. Source-only probes also produce

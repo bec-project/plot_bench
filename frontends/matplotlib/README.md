@@ -17,7 +17,6 @@ input, install just `matplotlib` and use `./scripts/plotbench demo matplotlib --
 See [platform setup](../../docs/setup.md) for system requirements and
 [validation](../../docs/validation.md) for test coverage.
 
-
 Use the shared producer controls for source frequency/dimensions, waveform
 replace/append, scalar/RGB images and waveform/image/both. Every waveform update
 uses `set_data` on the full authoritative source window. Append mode is a rolling
@@ -56,7 +55,7 @@ overrides. These values refresh at the 2 Hz HUD cadence, including screen change
 frequency. Physical image dimensions use the aspect-adjusted axes bounding box.
 
 Offscreen smoke tests verify source integration and the software draw path; real
-Visible windows are required for comparable desktop benchmark runs.
+visible windows are required for comparable desktop benchmark runs.
 
 Tests: `QT_QPA_PLATFORM=offscreen .envs/plotting-benchmark-matplotlib/bin/python -m pytest frontends/matplotlib/tests`.
 `--duration` starts after the first successful submission and excludes replay preload.
