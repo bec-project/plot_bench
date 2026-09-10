@@ -44,6 +44,9 @@ def test_source_controls_apply_preset_and_live_status(tmp_path):
                 await page.goto(str(server.make_url("/")))
 
                 await expect(page.locator(".backend-badge")).to_contain_text("Python")
+                await expect(page.locator(".controls-footer code")).to_have_text(
+                    f"./scripts/plotbench demo plotly --backend python --url '{server.make_url('/').origin()}'"
+                )
                 await expect(page.get_by_label("Target rate", exact=True)).to_have_value("30")
                 await expect(page.locator(".stat").filter(has_text="Status")).to_contain_text("OK")
 
@@ -78,6 +81,12 @@ def test_source_controls_apply_preset_and_live_status(tmp_path):
 
                 # Option tooltips are present.
                 assert await page.locator(".infotip").count() > 0
+                await page.screenshot(path=str(tmp_path / "controls-desktop.png"), full_page=True)
+                await page.set_viewport_size({"width": 390, "height": 844})
+                await page.screenshot(path=str(tmp_path / "controls-mobile.png"), full_page=True)
+                assert await page.evaluate(
+                    "() => document.documentElement.scrollWidth <= innerWidth"
+                )
                 assert not errors, errors
                 await browser.close()
 

@@ -744,6 +744,8 @@ function ControlsApp() {
   const resolutionValue = RESOLUTION_PRESETS.flatMap((group) => group.items).some(
     (item) => item.value === resolution
   ) ? resolution : "";
+  const backend = health?.backend === "rust" ? "rust" : "python";
+  const sourceUrl = `'${window.location.origin.replaceAll("'", "'\\''")}'`;
   const apply = async () => {
     if (!dirty.length || applying) return;
     const patch = {};
@@ -854,8 +856,14 @@ function ControlsApp() {
     ] }),
     /* @__PURE__ */ u$1("footer", { class: "controls-footer", children: [
       /* @__PURE__ */ u$1("span", { children: [
-        "Start a frontend with ",
-        /* @__PURE__ */ u$1("code", { children: "./scripts/plotbench demo plotly" }),
+        "With Plotly installed, connect to this source with",
+        " ",
+        /* @__PURE__ */ u$1("code", { children: [
+          "./scripts/plotbench demo plotly --backend ",
+          backend,
+          " --url ",
+          sourceUrl
+        ] }),
         "."
       ] }),
       /* @__PURE__ */ u$1("span", { children: "Source rate is independent of display refresh." })

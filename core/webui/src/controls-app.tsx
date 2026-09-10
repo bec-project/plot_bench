@@ -136,6 +136,8 @@ export function ControlsApp() {
   )
     ? resolution
     : '';
+  const backend = health?.backend === 'rust' ? 'rust' : 'python';
+  const sourceUrl = `'${window.location.origin.replaceAll("'", "'\\''")}'`;
 
   const apply = async () => {
     if (!dirty.length || applying) return;
@@ -266,7 +268,8 @@ export function ControlsApp() {
 
       <footer class="controls-footer">
         <span>
-          Start a frontend with <code>./scripts/plotbench demo plotly</code>.
+          With Plotly installed, connect to this source with{' '}
+          <code>./scripts/plotbench demo plotly --backend {backend} --url {sourceUrl}</code>.
         </span>
         <span>Source rate is independent of display refresh.</span>
       </footer>

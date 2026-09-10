@@ -773,7 +773,7 @@ function Launcher(props) {
         CommandLine,
         {
           label: "2 · Quick check",
-          note: "Four short runs to confirm every component works.",
+          note: "One short repetition of every selected workload, source, frontend and mode.",
           command: result.commands.quick_check
         }
       ),

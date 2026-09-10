@@ -42,7 +42,14 @@ jobs:
         run: .envs/plotting-benchmark/bin/python -m playwright install-deps chromium
       - name: Core and source conformance
         run: .envs/plotting-benchmark/bin/python -m pytest core/tests
-      - name: Matrix editor browser interactions
+      - name: Web UI type checking and committed bundle verification
+        run: |
+          export PATH="$PWD/.envs/node/node_modules/node/bin:$PATH"
+          npm ci --prefix core/webui --cache "$PWD/.cache/npm" --no-audit --no-fund
+          npm --prefix core/webui run typecheck
+          npm --prefix core/webui run build
+          git diff --exit-code -- core/src/plotbench/matrix_assets core/src/plotbench/controls.html
+      - name: Matrix editor and source controls browser interactions
         env:
           PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.cache/playwright
         run: |
@@ -53,7 +60,7 @@ jobs:
           PY
           )"
           export PLOTBENCH_TEST_BROWSER
-          .envs/plotting-benchmark/bin/python -m pytest core/tests/test_matrix_browser.py
+          .envs/plotting-benchmark/bin/python -m pytest core/tests/test_matrix_browser.py core/tests/test_source_controls.py
       - name: Python quality checks
         run: |
           .envs/plotting-benchmark/bin/python -m ruff check core
