@@ -4,6 +4,22 @@ Plotbench is a standalone benchmark, with no BEC, Redis, conda, credentials, or
 external services required. Run commands from this repository root. Use its local
 environments; never modify a user's shared Python environment.
 
+## Skills
+
+Step-by-step procedures for the common tasks live in `.agents/skills/<name>/SKILL.md`
+(the Agent Skills format). Gemini CLI reads `.agents/skills` directly; Claude Code
+and Codex find the same files through the `.claude/skills` and `.codex/skills`
+links. Read the matching skill before starting:
+
+- `run-benchmark` — turn a request into a suite, preflight, dry-run, smoke-check,
+  run the campaign and deliver the reports.
+- `interpret-results` — read a `results/` directory and explain it without
+  over-claiming.
+- `environment-doctor` — find, install and verify the components a task needs, and
+  map doctor/setup failures to fixes.
+- `validate-change` — the right checks for what you changed, before committing.
+- `add-frontend` — implement and register a new frontend adapter end to end.
+
 ## Setup and checks
 
 ```sh

@@ -179,7 +179,10 @@ are outside the initial release.
 
 ## Use an agent or contribute
 
-Agents should start with [AGENTS.md](AGENTS.md). Example requests:
+Agents should start with [AGENTS.md](AGENTS.md). Ready-made procedures — running
+a benchmark, interpreting results, fixing the environment, validating a change and
+adding a frontend — live in [`.agents/skills/`](.agents/skills) in the Agent
+Skills format and are wired for Claude Code, Codex and Gemini CLI. Example requests:
 
 > Preview a matrix comparing PyQtGraph and Matplotlib with the Rust source,
 > 10k and 100k waveform points at 60 Hz, streaming, three 30-second repetitions.

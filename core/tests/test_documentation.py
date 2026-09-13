@@ -21,6 +21,7 @@ DOCS = sorted(
         *ROOT.glob("core/webui/README.md"),
         *ROOT.glob("frontends/*/README.md"),
         *ROOT.glob("backends/*/README.md"),
+        *ROOT.glob(".agents/skills/*/SKILL.md"),
     ]
 )
 
