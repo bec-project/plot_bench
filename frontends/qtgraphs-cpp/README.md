@@ -7,8 +7,9 @@ Python adapter's cost is the binding and NumPy path, and how much is Qt Graphs i
 Requirements: a Qt 6 C++ SDK (6.8 or newer) with the Graphs, Quick, QuickControls2,
 Network, WebSockets and Test modules (plus WaylandClient on Linux), CMake 3.21+
 and a C++20 compiler. The SDK is a bootstrap
-tool like uv or Cargo. Setup accepts normal CMake discovery, `CMAKE_PREFIX_PATH`,
-or an explicit `PLOTBENCH_QT_PREFIX`. See [platform setup](../../docs/setup.md).
+tool like uv or Cargo. Setup accepts normal CMake discovery, `CMAKE_PREFIX_PATH`
+or an explicit `PLOTBENCH_QT_PREFIX`, and otherwise uses the newest Qt
+online-installer SDK under `~/Qt`. See [platform setup](../../docs/setup.md).
 Run commands from the repository root. The build lands in `frontends/qtgraphs-cpp/build/` and setup records its identity for provenance.
 
 ```sh

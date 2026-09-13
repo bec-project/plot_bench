@@ -130,16 +130,29 @@ See [Playwright requirements](https://playwright.dev/python/docs/intro#system-re
 
 ## C++ Qt SDK
 
-Distribution Qt packages may be too old or omit Qt Graphs. Provide a compatible
-Qt 6 SDK (6.8 or later; the Python adapters use Qt 6.11) and record the actual version:
+Distribution Qt packages may be too old or omit Qt Graphs. The `qtgraphs-cpp`
+frontend needs a Qt 6 SDK, 6.8 or later, with the Graphs, Quick, QuickControls2,
+Network, WebSockets and Test modules, plus WaylandClient on Linux; the Python
+adapters use Qt 6.11. The [Qt online installer](https://www.qt.io/download-open-source)
+places such an SDK under `~/Qt/<version>/macos` on macOS or `~/Qt/<version>/gcc_64`
+on Linux x86-64. When nothing else selects a Qt, setup uses the newest of those and
+prints `Using the Qt SDK at …`, so `./scripts/setup qtgraphs-cpp` and the TUI
+installer work as soon as the SDK is installed.
+
+To select a particular SDK, name its prefix, the directory containing `bin/` and
+`lib/cmake/`:
 
 ```sh
-PLOTBENCH_QT_PREFIX="$HOME/Qt/6.11.2/gcc_64" ./scripts/setup qtgraphs-cpp
+PLOTBENCH_QT_PREFIX="$HOME/Qt/6.11.1/macos" ./scripts/setup qtgraphs-cpp
 ```
 
-The SDK prefix is the directory containing `bin/` and `lib/cmake/`. Normal CMake
-discovery and `CMAKE_PREFIX_PATH` are also supported; use the SDK path appropriate
-for your machine. Qt Graphs has separate [license terms](licenses.md).
+Normal CMake discovery, `CMAKE_PREFIX_PATH`, `Qt6_DIR` and a `qt-cmake` on `PATH`
+are respected and switch the automatic search off. If CMake reports
+`Could not find a package configuration file provided by "Qt6"`, no SDK was
+visible: install one or set `PLOTBENCH_QT_PREFIX`. An SDK that CMake rejects is
+usually older than 6.8 or missing a module; the CMake output names it. Build
+provenance records the actual Qt version. Qt Graphs has separate
+[license terms](licenses.md).
 
 ## Troubleshooting
 

@@ -26,11 +26,61 @@ def write_uv(path, version):
     path.chmod(0o755)
 
 
+def write_tool(path, name):
+    path.write_text('#!/bin/sh\nprintf "%s %s\\n" "' + name + '" "$*" >> "$PLOTBENCH_SETUP_LOG"\n')
+    path.chmod(0o755)
+
+
 def setup_environment(binaries, log):
-    environment = dict(os.environ, PATH=f"{binaries}:/usr/bin:/bin", PLOTBENCH_SETUP_LOG=str(log))
-    environment.pop("PLOTBENCH_UV", None)
-    environment.pop("PLOTBENCH_QT_PREFIX", None)
+    # An isolated HOME keeps a developer's own ~/Qt SDKs out of the tests.
+    home = Path(log).with_name("home")
+    home.mkdir(exist_ok=True)
+    environment = dict(
+        os.environ, PATH=f"{binaries}:/usr/bin:/bin", PLOTBENCH_SETUP_LOG=str(log), HOME=str(home)
+    )
+    for name in ("PLOTBENCH_UV", "PLOTBENCH_QT_PREFIX", "CMAKE_PREFIX_PATH", "Qt6_DIR"):
+        environment.pop(name, None)
     return environment
+
+
+@pytest.fixture
+def cpp_toolchain(tmp_path, setup_root):
+    binaries = tmp_path / "bin"
+    binaries.mkdir()
+    write_uv(binaries / "uv", (setup_root / ".uv-version").read_text().strip())
+    for tool in ("cmake", "ninja"):
+        write_tool(binaries / tool, tool)
+    python = setup_root / ".envs/plotting-benchmark/bin/python"
+    python.parent.mkdir(parents=True)
+    python.write_text("#!/bin/sh\nexit 0\n")
+    python.chmod(0o755)
+    return binaries
+
+
+def write_qt_sdk(home, version, platform, qt_cmake=True):
+    prefix = home / "Qt" / version / platform
+    (prefix / "lib/cmake/Qt6").mkdir(parents=True)
+    (prefix / "lib/cmake/Qt6/Qt6Config.cmake").write_text("")
+    if qt_cmake:
+        (prefix / "bin").mkdir()
+        write_tool(prefix / "bin/qt-cmake", str(prefix / "bin/qt-cmake"))
+    return prefix
+
+
+def run_cpp_setup(setup_root, environment):
+    return subprocess.run(
+        ["bash", "scripts/setup", "qtgraphs-cpp"],
+        cwd=setup_root,
+        env=environment,
+        text=True,
+        capture_output=True,
+    )
+
+
+def configure_call(log):
+    return next(
+        line for line in log.read_text().splitlines() if " -S frontends/qtgraphs-cpp " in line
+    )
 
 
 @pytest.mark.parametrize(
@@ -122,33 +172,89 @@ def test_setup_reports_missing_uv_override(tmp_path, setup_root):
 
 
 @pytest.mark.parametrize("existing_cache", [False, True])
-def test_cpp_setup_preserves_existing_cmake_generator(tmp_path, setup_root, existing_cache):
-    binaries = tmp_path / "bin"
-    binaries.mkdir()
-    log = tmp_path / "commands"
-    write_uv(binaries / "uv", (setup_root / ".uv-version").read_text().strip())
-    for tool in ("cmake", "ninja"):
-        executable = binaries / tool
-        executable.write_text(
-            '#!/bin/sh\nprintf "%s %s\\n" "' + tool + '" "$*" >> "$PLOTBENCH_SETUP_LOG"\n'
-        )
-        executable.chmod(0o755)
-    python = setup_root / ".envs/plotting-benchmark/bin/python"
-    python.parent.mkdir(parents=True)
-    python.write_text("#!/bin/sh\nexit 0\n")
-    python.chmod(0o755)
+def test_cpp_setup_preserves_existing_cmake_generator(
+    tmp_path, setup_root, cpp_toolchain, existing_cache
+):
     if existing_cache:
         cache = setup_root / "frontends/qtgraphs-cpp/build/CMakeCache.txt"
         cache.parent.mkdir(parents=True)
         cache.write_text("CMAKE_GENERATOR:INTERNAL=Unix Makefiles\n")
-    environment = setup_environment(binaries, log)
-    result = subprocess.run(
-        ["bash", "scripts/setup", "qtgraphs-cpp"],
-        cwd=setup_root,
-        env=environment,
-        text=True,
-        capture_output=True,
-    )
+    log = tmp_path / "commands"
+    result = run_cpp_setup(setup_root, setup_environment(cpp_toolchain, log))
     assert result.returncode == 0, result.stderr
-    configure = next(line for line in log.read_text().splitlines() if line.startswith("cmake -S"))
+    configure = configure_call(log)
+    assert configure.startswith("cmake -S")
     assert ("-G Ninja" in configure) is not existing_cache
+
+
+def test_cpp_setup_uses_the_newest_qt_installer_sdk_when_nothing_selects_qt(
+    tmp_path, setup_root, cpp_toolchain
+):
+    log = tmp_path / "commands"
+    environment = setup_environment(cpp_toolchain, log)
+    home = Path(environment["HOME"])
+    write_qt_sdk(home, "6.8.3", "macos")  # lexically "newer" than 6.11.1
+    newest = write_qt_sdk(home, "6.11.1", "macos")
+    (home / "Qt/6.12.0/Src").mkdir(parents=True)  # sources only, no SDK
+    write_qt_sdk(home, "6.12.0", "ios")  # not a desktop SDK
+    result = run_cpp_setup(setup_root, environment)
+    assert result.returncode == 0, result.stderr
+    assert f"Using the Qt SDK at {newest}" in result.stdout
+    configure = configure_call(log)
+    assert configure.startswith(f"{newest}/bin/qt-cmake -S")
+    assert f"-DCMAKE_PREFIX_PATH={newest}" in configure
+
+
+@pytest.mark.parametrize(
+    "selection", ["PLOTBENCH_QT_PREFIX", "CMAKE_PREFIX_PATH", "Qt6_DIR", "qt-cmake"]
+)
+def test_cpp_setup_respects_an_explicit_qt_selection(
+    tmp_path, setup_root, cpp_toolchain, selection
+):
+    log = tmp_path / "commands"
+    environment = setup_environment(cpp_toolchain, log)
+    write_qt_sdk(Path(environment["HOME"]), "6.11.1", "macos")  # must stay unused
+    chosen = write_qt_sdk(tmp_path / "elsewhere", "6.9.0", "gcc_64")
+    if selection == "qt-cmake":
+        write_tool(cpp_toolchain / "qt-cmake", "qt-cmake")
+    else:
+        environment[selection] = str(chosen)
+    result = run_cpp_setup(setup_root, environment)
+    assert result.returncode == 0, result.stderr
+    assert "Using the Qt SDK" not in result.stdout
+    configure = configure_call(log)
+    assert "6.11.1" not in configure
+    if selection == "PLOTBENCH_QT_PREFIX":
+        assert configure.startswith(f"{chosen}/bin/qt-cmake -S")
+        assert f"-DCMAKE_PREFIX_PATH={chosen}" in configure
+    else:
+        # CMake reads CMAKE_PREFIX_PATH and Qt6_DIR itself; qt-cmake carries its own SDK.
+        assert configure.startswith("qt-cmake -S" if selection == "qt-cmake" else "cmake -S")
+        assert "-DCMAKE_PREFIX_PATH" not in configure
+
+
+@pytest.mark.parametrize("sdk_present", [False, True])
+def test_cpp_setup_failure_explains_how_to_select_a_qt_sdk(
+    tmp_path, setup_root, cpp_toolchain, sdk_present
+):
+    (cpp_toolchain / "cmake").write_text(
+        '#!/bin/sh\ncase " $* " in *" -S "*) echo "Could not find Qt6" >&2; exit 1 ;; esac\n'
+    )
+    log = tmp_path / "commands"
+    environment = setup_environment(cpp_toolchain, log)
+    prefix = None
+    if sdk_present:
+        prefix = write_qt_sdk(Path(environment["HOME"]), "6.11.1", "gcc_64", qt_cmake=False)
+    result = run_cpp_setup(setup_root, environment)
+    assert result.returncode == 1
+    assert "Could not find Qt6" in result.stderr
+    assert (
+        "PLOTBENCH_QT_PREFIX=/path/to/Qt/6.11.1/macos ./scripts/setup qtgraphs-cpp" in result.stderr
+    )
+    assert 'See "C++ Qt SDK" in docs/setup.md.' in result.stderr
+    if sdk_present:
+        assert f"CMake did not accept the SDK at {prefix}" in result.stderr
+    else:
+        assert (
+            f"no Qt online-installer SDK under {environment['HOME']}/Qt/<version>" in result.stderr
+        )

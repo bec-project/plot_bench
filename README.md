@@ -35,7 +35,9 @@ Windows and Linux ARM are outside the initial release.
 - **Node/npm**, only to build the Plotly frontend or to develop the Preact web UI.
   Setup installs a pinned Node 24 ([.node-version](.node-version)) under `.envs/node`;
   the shipped matrix editor and source controls need no Node at runtime.
-- **A Qt 6 C++ SDK and CMake**, only for the `qtgraphs-cpp` frontend.
+- **A Qt 6.8+ C++ SDK with Qt Graphs, and CMake**, only for the `qtgraphs-cpp`
+  frontend. Setup finds an SDK from the Qt online installer under `~/Qt` on its
+  own; see the [C++ Qt SDK notes](docs/setup.md#c-qt-sdk) for other installations.
 - **A visible desktop session** for demos and formal benchmarks. Headless and
   offscreen runs are diagnostics, not measurements.
 

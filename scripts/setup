@@ -29,6 +29,17 @@ while [[ $# -gt 0 ]]; do
 done
 [[ ${#PLOTBENCH_COMPONENTS[@]} -gt 0 ]] || PLOTBENCH_COMPONENTS=(core)
 selected() { [[ " ${PLOTBENCH_COMPONENTS[*]} " == *" $1 "* ]]; }
+# The Qt online installer keeps SDKs under ~/Qt/<version>/<platform>; report the newest usable one.
+qt_installer_sdk() {
+  local release prefix
+  for release in "${HOME:-}"/Qt/6.*/; do
+    for prefix in "${release}macos" "${release}gcc_64" "${release}gcc_arm64"; do
+      if [[ -f "$prefix/lib/cmake/Qt6/Qt6Config.cmake" ]]; then
+        printf '%s %s\n' "$(basename "$release")" "$prefix"
+      fi
+    done
+  done | sort -t. -k1,1n -k2,2n -k3,3n | tail -n 1 | cut -d ' ' -f 2-
+}
 PLOTBENCH_PYTHON_VERSION="$(<.python-version)"
 PLOTBENCH_NODE_VERSION="$(<.node-version)"
 PLOTBENCH_UV_MIN_VERSION="$(<.uv-version)"
@@ -102,8 +113,16 @@ if selected qtgraphs-cpp; then
   command -v cmake >/dev/null || { echo 'CMake is required for qtgraphs-cpp.' >&2; exit 1; }
   PLOTBENCH_CMAKE=(cmake)
   PLOTBENCH_CMAKE_ARGS=(-DCMAKE_BUILD_TYPE=Release)
-  if [[ -n "${PLOTBENCH_QT_PREFIX:-}" ]]; then
+  PLOTBENCH_QT_PREFIX="${PLOTBENCH_QT_PREFIX:-}"
+  if [[ -n "$PLOTBENCH_QT_PREFIX" ]]; then
     [[ -d "$PLOTBENCH_QT_PREFIX" ]] || { echo 'PLOTBENCH_QT_PREFIX must name an installed Qt SDK directory.' >&2; exit 1; }
+  elif [[ -z "${CMAKE_PREFIX_PATH:-}${Qt6_DIR:-}" ]] && ! command -v qt-cmake >/dev/null; then
+    # Nothing tells CMake where Qt is. Distribution packages are often too old or
+    # lack Qt Graphs, so prefer the newest SDK from the Qt online installer.
+    PLOTBENCH_QT_PREFIX="$(qt_installer_sdk)"
+    [[ -z "$PLOTBENCH_QT_PREFIX" ]] || echo "Using the Qt SDK at $PLOTBENCH_QT_PREFIX (select another with PLOTBENCH_QT_PREFIX)."
+  fi
+  if [[ -n "$PLOTBENCH_QT_PREFIX" ]]; then
     PLOTBENCH_CMAKE_ARGS+=("-DCMAKE_PREFIX_PATH=$PLOTBENCH_QT_PREFIX")
     [[ ! -x "$PLOTBENCH_QT_PREFIX/bin/qt-cmake" ]] || PLOTBENCH_CMAKE=("$PLOTBENCH_QT_PREFIX/bin/qt-cmake")
   elif command -v qt-cmake >/dev/null; then
@@ -114,7 +133,17 @@ if selected qtgraphs-cpp; then
   fi
   if ! "${PLOTBENCH_CMAKE[@]}" -S frontends/qtgraphs-cpp -B frontends/qtgraphs-cpp/build \
     "${PLOTBENCH_CMAKE_ARGS[@]}"; then
-    echo 'Qt C++ needs Qt 6.8+ with Graphs, Quick, QuickControls2, Network, WebSockets, Test and (on Linux) WaylandClient. Set PLOTBENCH_QT_PREFIX or CMAKE_PREFIX_PATH; see docs/setup.md.' >&2
+    {
+      echo 'The Qt C++ frontend needs a Qt 6.8+ SDK with the Graphs, Quick, QuickControls2, Network, WebSockets and Test modules (plus WaylandClient on Linux).'
+      if [[ -n "$PLOTBENCH_QT_PREFIX" ]]; then
+        echo "CMake did not accept the SDK at $PLOTBENCH_QT_PREFIX; its output above names the missing module or version."
+      else
+        echo "CMake found no Qt on its own, and there is no Qt online-installer SDK under ${HOME:-~}/Qt/<version>/{macos,gcc_64,gcc_arm64}."
+      fi
+      echo 'Install one (https://www.qt.io/download-open-source, including Qt Graphs) or select an installed SDK by its prefix, the directory holding bin/ and lib/cmake/:'
+      echo '  PLOTBENCH_QT_PREFIX=/path/to/Qt/6.11.1/macos ./scripts/setup qtgraphs-cpp'
+      echo 'See "C++ Qt SDK" in docs/setup.md.'
+    } >&2
     exit 1
   fi
   cmake --build frontends/qtgraphs-cpp/build --config Release

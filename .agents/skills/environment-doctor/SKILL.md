@@ -47,6 +47,7 @@ Nothing touches the system Python. Run everything from the repository root.
 | `Python ... is not in the 3.13 series` | wrong interpreter in the environment | `./scripts/setup core` — uv installs the pinned Python |
 | Qt Wayland platform plugin missing, or `ldd` reports missing libraries (Linux) | platform packages absent | install the packages listed in `docs/setup.md` for your distribution, then rerun setup |
 | `Plotly build missing`, Playwright or browser missing | the Plotly component is not set up | `./scripts/setup plotly`; on RHEL pass `--browser-executable` to doctor, run and demo |
+| `Could not find a package configuration file provided by "Qt6"` from `setup qtgraphs-cpp` | CMake sees no Qt 6.8+ SDK; setup only finds Qt online-installer SDKs under `~/Qt` by itself | install Qt 6.8+ with Qt Graphs, or name the SDK prefix: `PLOTBENCH_QT_PREFIX=/path/to/Qt/6.11.1/macos ./scripts/setup qtgraphs-cpp` ("C++ Qt SDK" in `docs/setup.md`) |
 | `Build tool unavailable` warning (rustc, cmake, node) | a toolchain is not on `PATH` | install it per the README Requirements; already-built verified artifacts still run |
 | `scripts/setup not found` in the TUI | not a repository checkout | clone the repository — there is no PyPI package |
 
