@@ -14,10 +14,13 @@ import asyncio
 import os
 import signal
 import sys
+import time
 from pathlib import Path
 
+import psutil
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
+from textual.css.query import NoMatches
 from textual.screen import ModalScreen
 from textual.widgets import (
     Button,
@@ -50,7 +53,27 @@ SLOTS = {
     "run": ("Run a suite", "Stop suite"),
     "matrix": ("Matrix editor", "Stop matrix editor"),
 }
-STATE_MARK = {"live": "● live", "done": "○ done", "failed": "✗ failed"}
+STATE_MARK = {
+    "live": "● live",
+    "stopping": "◐ stopping",
+    "done": "○ done",
+    "stopped": "○ stopped",
+    "failed": "✗ failed",
+}
+# Command-line markers of plotbench processes launched from this checkout.
+MARKERS = (
+    "plotbench-source-rust",
+    "plotbench-iced",
+    "plotbench-qtgraphs-cpp",
+    "/bin/plotbench-",
+    "plotbench.cli",
+    "plotbench.browser_worker",
+)
+STOP_GRACE = 8.0  # seconds after the Ctrl+C-style SIGINT before escalating
+QUIT_GRACE = 3.0  # shorter on quit so exiting never hangs for long
+KILL_GRACE = 3.0
+# Leftover detection only considers processes launched from this checkout.
+SCOPE = str(ROOT)
 
 
 def _cli(*args):
@@ -92,7 +115,8 @@ class PlotbenchTUI(App):
     #sidebar Button { width: 100%; margin-bottom: 1; }
     #main { padding: 1 2; }
     .section-title { text-style: bold; color: $accent; margin-bottom: 1; }
-    #env { height: auto; max-height: 45%; margin-bottom: 1; }
+    #env { height: auto; max-height: 35%; margin-bottom: 1; }
+    #running { height: auto; max-height: 30%; margin-bottom: 1; }
     #tabs { height: 1fr; }
     RichLog { background: $surface; padding: 0 1; }
     .spacer { height: 1fr; }
@@ -106,6 +130,10 @@ class PlotbenchTUI(App):
     def __init__(self):
         super().__init__()
         self.procs = {}
+        self.labels = {}
+        self.started = {}
+        self.stopping = set()
+        self.leftovers = []
         self._panes = set()
 
     def compose(self) -> ComposeResult:
@@ -117,10 +145,14 @@ class PlotbenchTUI(App):
                     yield Button(idle, id=slot)
                 yield Button("Launch demo", id="demo")
                 yield Static("", classes="spacer")
+                yield Button("Stop all", id="stopall", variant="error")
+                yield Button("Stop leftovers", id="leftovers", variant="error", disabled=True)
                 yield Button("Refresh", id="refresh")
             with Vertical(id="main"):
                 yield Static("Environments", classes="section-title")
                 yield DataTable(id="env", cursor_type="row", zebra_stripes=True)
+                yield Static("Running", classes="section-title")
+                yield DataTable(id="running", cursor_type="none")
                 yield Static(
                     "Output — each action gets a tab; several can run at once",
                     classes="section-title",
@@ -134,6 +166,18 @@ class PlotbenchTUI(App):
         if not SCRIPTS.exists():
             self.query_one("#install", Button).disabled = True
         self.refresh_env()
+        self.query_one("#running", DataTable).add_columns(
+            "Process", "PID", "Owner", "Uptime", "Children"
+        )
+        self.refresh_running()
+        if self.leftovers:
+            self.notify(
+                f"{len(self.leftovers)} plotbench process(es) from an earlier session are "
+                "still running — use Stop leftovers.",
+                severity="warning",
+                timeout=10,
+            )
+        self.set_interval(2.0, self.refresh_running)
 
     # -- environment table ---------------------------------------------------
     def refresh_env(self) -> None:
@@ -157,6 +201,10 @@ class PlotbenchTUI(App):
             self.action_refresh()
         elif slot == "demo":
             self.choose_demo()
+        elif slot == "stopall":
+            self.stop_all()
+        elif slot == "leftovers":
+            self.stop_leftovers()
         elif slot in SLOTS:
             self.toggle(slot)
 
@@ -280,8 +328,10 @@ class PlotbenchTUI(App):
             log = self.query_one(f"#{log_id}", RichLog)
             log.clear()
         tabs.active = pane_id
+        self.labels[slot] = label
+        self.stopping.discard(slot)
         self._set_button(slot, running=True)
-        self._set_tab(slot, label, "live")
+        self._set_tab(slot, "live")
         log.write(f"$ {' '.join(str(part) for part in argv)}")
         try:
             proc = await asyncio.create_subprocess_exec(
@@ -294,9 +344,11 @@ class PlotbenchTUI(App):
         except OSError as exc:
             log.write(f"Failed to start: {exc}")
             self._set_button(slot, running=False)
-            self._set_tab(slot, label, "failed")
+            self._set_tab(slot, "failed")
             return
         self.procs[slot] = proc
+        self.started[slot] = time.monotonic()
+        self.refresh_running()
         assert proc.stdout is not None
         async for raw in proc.stdout:
             log.write(raw.decode(errors="replace").rstrip())
@@ -304,18 +356,72 @@ class PlotbenchTUI(App):
         log.write(f"[exited with code {code}]")
         self.procs[slot] = None
         self._set_button(slot, running=False)
-        self._set_tab(slot, label, "done" if code == 0 else "failed")
+        if slot in self.stopping:
+            self._set_tab(slot, "stopped")
+        else:
+            self._set_tab(slot, "done" if code == 0 else "failed")
+        self.stopping.discard(slot)
+        self.refresh_running()
         if slot == "install":
             self.refresh_env()
+
+    # Every stop works on the whole process tree, snapshotted before the first
+    # signal: a demo or a suite run spawns its source and frontend in their own
+    # sessions, so signalling only the direct child would orphan them. Ctrl+C
+    # semantics come first (SIGINT lets a run finalize its report and a demo stop
+    # what it started), then SIGTERM, then SIGKILL for anything still alive.
+    @staticmethod
+    def _tree(pid):
+        try:
+            root = psutil.Process(pid)
+            return [root, *root.children(recursive=True)]
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            return []
+
+    @staticmethod
+    def _stop_trees_blocking(pids, first_grace, grace) -> None:
+        alive = [proc for pid in pids for proc in PlotbenchTUI._tree(pid)]
+        for sig, wait in ((signal.SIGINT, first_grace), (signal.SIGTERM, grace)):
+            if not alive:
+                return
+            for proc in alive:
+                try:
+                    proc.send_signal(sig)
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    pass
+            _, alive = psutil.wait_procs(alive, timeout=wait)
+        for proc in alive:
+            try:
+                proc.kill()
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+        psutil.wait_procs(alive, timeout=grace)
 
     def terminate(self, slot) -> None:
         proc = self.procs.get(slot)
         if proc is None or proc.returncode is not None:
             return
-        try:
-            os.killpg(proc.pid, signal.SIGTERM)
-        except (ProcessLookupError, OSError):
-            pass
+        self.stopping.add(slot)
+        self._set_tab(slot, "stopping")
+        self.run_worker(
+            asyncio.to_thread(self._stop_trees_blocking, [proc.pid], STOP_GRACE, KILL_GRACE),
+            exclusive=False,
+        )
+
+    def stop_all(self) -> None:
+        for slot in list(self.procs):
+            self.terminate(slot)
+
+    def stop_leftovers(self) -> None:
+        pids = [proc.pid for proc in self.leftovers]
+        if not pids:
+            return
+
+        async def stop():
+            await asyncio.to_thread(self._stop_trees_blocking, pids, QUIT_GRACE, KILL_GRACE)
+            self.refresh_running()
+
+        self.run_worker(stop(), exclusive=False)
 
     def action_stop(self) -> None:
         active = self.query_one("#tabs", TabbedContent).active
@@ -323,12 +429,78 @@ class PlotbenchTUI(App):
             self.terminate(active[len("pane-") :])
 
     def on_unmount(self) -> None:
-        for proc in self.procs.values():
-            if proc is not None and proc.returncode is None:
-                try:
-                    os.killpg(proc.pid, signal.SIGKILL)
-                except (ProcessLookupError, OSError):
-                    pass
+        # Quitting must not leak anything: stop every owned tree, blocking briefly.
+        pids = [
+            proc.pid for proc in self.procs.values() if proc is not None and proc.returncode is None
+        ]
+        if pids:
+            self._stop_trees_blocking(pids, QUIT_GRACE, KILL_GRACE)
+
+    # -- running-process tracker ---------------------------------------------
+    def refresh_running(self) -> None:
+        try:
+            table = self.query_one("#running", DataTable)
+        except NoMatches:
+            return
+        table.clear()
+        owned = set()
+        for slot, proc in list(self.procs.items()):
+            if proc is None or proc.returncode is not None:
+                continue
+            tree = self._tree(proc.pid)
+            owned.update(member.pid for member in tree)
+            children = ", ".join(sorted({self._describe(member) for member in tree[1:]})) or "—"
+            uptime = _uptime(time.monotonic() - self.started.get(slot, time.monotonic()))
+            table.add_row(self.labels.get(slot, slot), str(proc.pid), "this TUI", uptime, children)
+        self.leftovers = self._find_leftovers(owned)
+        for proc in self.leftovers:
+            uptime = _uptime(time.time() - proc.create_time())
+            table.add_row(self._describe(proc), str(proc.pid), "leftover", uptime, "—")
+        button = self.query_one("#leftovers", Button)
+        button.disabled = not self.leftovers
+        button.label = (
+            f"Stop leftovers ({len(self.leftovers)})" if self.leftovers else "Stop leftovers"
+        )
+
+    @staticmethod
+    def _find_leftovers(owned):
+        """Plotbench processes from this checkout that this TUI does not own."""
+        found = []
+        me = os.getpid()
+        for proc in psutil.process_iter(["pid", "cmdline"]):
+            try:
+                pid = proc.info["pid"]
+                cmdline = " ".join(proc.info["cmdline"] or [])
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                continue
+            if pid == me or pid in owned or SCOPE not in cmdline:
+                continue
+            if cmdline.rstrip().endswith("plotbench tui"):
+                continue  # another TUI session owns and stops its own processes
+            if any(marker in cmdline for marker in MARKERS):
+                found.append(proc)
+        return found
+
+    @staticmethod
+    def _describe(proc) -> str:
+        try:
+            cmdline = " ".join(proc.cmdline())
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            return "?"
+        if "plotbench-source-rust" in cmdline:
+            return "rust source"
+        if "plotbench.browser_worker" in cmdline:
+            return "plotly frontend"
+        if "plotbench.cli" in cmdline:
+            tail = cmdline.split("plotbench.cli", 1)[1].split()
+            return " ".join(tail[:2]) or "plotbench"
+        for name in FRONTENDS:
+            if f"plotbench-{name}" in cmdline:
+                return f"{name} frontend"
+        try:
+            return proc.name()
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            return "?"
 
     # -- helpers --------------------------------------------------------------
     def _set_button(self, slot, running) -> None:
@@ -338,10 +510,16 @@ class PlotbenchTUI(App):
         button.label = SLOTS[slot][1 if running else 0]
         button.variant = "error" if running else "default"
 
-    def _set_tab(self, slot, label, state) -> None:
+    def _set_tab(self, slot, state) -> None:
+        label = self.labels.get(slot, slot)
         self.query_one("#tabs", TabbedContent).get_tab(
             f"pane-{slot}"
         ).label = f"{label}  {STATE_MARK[state]}"
+
+
+def _uptime(seconds) -> str:
+    seconds = max(0, int(seconds))
+    return f"{seconds // 60}:{seconds % 60:02d}"
 
 
 def run_tui() -> None:

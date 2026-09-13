@@ -1,6 +1,7 @@
 """The interactive launcher, exercised headlessly with Textual's test harness."""
 
 import asyncio
+import subprocess
 import sys
 
 import pytest
@@ -147,6 +148,116 @@ def test_demos_run_concurrently_in_their_own_tabs_and_picking_again_stops_one():
             assert not app._slot_running("demo-plotly")
 
     asyncio.run(exercise())
+
+
+# A child that spawns a grandchild in its OWN session, exactly like `demo` and
+# `run` spawn their source and frontend. Signalling the child's group alone would
+# orphan the grandchild — the leak this guards against.
+GRANDCHILD_SPAWNER = (
+    "import subprocess, sys, time; "
+    "subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'], "
+    "start_new_session=True); time.sleep(60)"
+)
+
+
+def _gone(proc):
+    import psutil
+
+    return not proc.is_running() or proc.status() == psutil.STATUS_ZOMBIE
+
+
+async def _launch_tree(app, pilot, slot, label):
+    """Launch the spawner under a slot and return the (child, grandchild) psutil procs."""
+    import psutil
+
+    app.run_worker(app._launch(slot, [sys.executable, "-c", GRANDCHILD_SPAWNER], label))
+    for _ in range(600):
+        await pilot.pause()
+        if app._slot_running(slot):
+            child = psutil.Process(app.procs[slot].pid)
+            kids = child.children(recursive=True)
+            if kids:
+                return child, kids[0]
+    raise AssertionError("grandchild never appeared")
+
+
+def test_stopping_a_slot_also_stops_grandchildren_in_other_sessions():
+    async def exercise():
+        import os
+
+        app = PlotbenchTUI()
+        async with app.run_test() as pilot:
+            child, grandchild = await _launch_tree(app, pilot, "demo-iced", "demo iced (rust)")
+            assert os.getsid(grandchild.pid) != os.getsid(child.pid)  # separate session
+            app.terminate("demo-iced")
+            for _ in range(900):
+                await pilot.pause()
+                if not app._slot_running("demo-iced") and _gone(grandchild):
+                    break
+            assert not app._slot_running("demo-iced")
+            assert _gone(grandchild), "grandchild leaked after stopping its slot"
+
+    asyncio.run(exercise())
+
+
+def test_quitting_the_tui_stops_everything_it_started_including_grandchildren():
+    async def exercise():
+        app = PlotbenchTUI()
+        async with app.run_test() as pilot:
+            child, grandchild = await _launch_tree(app, pilot, "run", "suite smoke.json")
+        # Leaving the context quits the app; on_unmount must have reaped both.
+        assert _gone(child)
+        assert _gone(grandchild), "grandchild leaked after quitting the TUI"
+
+    asyncio.run(exercise())
+
+
+def test_tracker_lists_owned_processes_and_detects_and_stops_leftovers(monkeypatch, tmp_path):
+    import plotbench.tui as tui
+
+    # Narrow detection to a fake checkout so the real plotbench processes on this
+    # machine are neither listed nor stopped by the test.
+    monkeypatch.setattr(tui, "SCOPE", str(tmp_path))
+    marker = str(tmp_path / "backends/rust/target/release/plotbench-source-rust")
+    leftover = subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(60)", marker], start_new_session=True
+    )
+    try:
+
+        async def exercise():
+            app = PlotbenchTUI()
+            sleeper = [sys.executable, "-c", "import time; time.sleep(60)"]
+            async with app.run_test() as pilot:
+                app.run_worker(app._launch("python", sleeper, "Python source"))
+                for _ in range(600):
+                    await pilot.pause()
+                    app.refresh_running()
+                    if app._slot_running("python") and any(
+                        proc.pid == leftover.pid for proc in app.leftovers
+                    ):
+                        break
+                assert any(proc.pid == leftover.pid for proc in app.leftovers)
+                assert app.query_one("#running", DataTable).row_count >= 2
+                assert not app.query_one("#leftovers", Button).disabled
+
+                app.stop_leftovers()
+                for _ in range(900):
+                    await pilot.pause()
+                    if leftover.poll() is not None:
+                        break
+                assert leftover.poll() is not None, "leftover was not stopped"
+
+                app.terminate("python")
+                for _ in range(600):
+                    await pilot.pause()
+                    if not app._slot_running("python"):
+                        break
+                assert not app._slot_running("python")
+
+        asyncio.run(exercise())
+    finally:
+        if leftover.poll() is None:
+            leftover.kill()
 
 
 def test_run_tui_requires_an_interactive_terminal(monkeypatch):

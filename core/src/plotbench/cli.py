@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import signal
 from datetime import datetime
 from pathlib import Path
 
@@ -21,6 +22,10 @@ def add_suite_options(parser):
     parser.add_argument(
         "--json", action="store_true", help="machine-readable preview; requires --dry-run"
     )
+
+
+def _raise_keyboard_interrupt(signum, frame):
+    raise KeyboardInterrupt
 
 
 def main():
@@ -103,6 +108,10 @@ def main():
     doctor.add_argument("--headless", action="store_true", help="check a Plotly diagnostic runtime")
     doctor.add_argument("--json", action="store_true", help="emit machine-readable check results")
     args = parser.parse_args()
+    if args.command in ("run", "demo", "probe"):
+        # A SIGTERM (from the TUI, a service manager or `kill`) must clean up the
+        # child source and frontend exactly like Ctrl+C does.
+        signal.signal(signal.SIGTERM, _raise_keyboard_interrupt)
     try:
         if args.command == "serve":
             config = Config(**(json.loads(args.config.read_text()) if args.config else {}))
