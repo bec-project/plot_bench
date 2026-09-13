@@ -69,6 +69,86 @@ def test_tui_runs_actions_concurrently_in_separate_tabs_and_toggles_buttons():
     asyncio.run(exercise())
 
 
+def test_demo_launches_the_chosen_frontend_against_the_chosen_source():
+    async def exercise():
+        app = PlotbenchTUI()
+        calls = []
+
+        async def fake_launch(slot, argv, label):
+            calls.append((slot, list(argv), label))
+
+        app._launch = fake_launch
+        async with app.run_test() as pilot:
+            app.start_demo("pyqtgraph", "rust")
+            app.start_demo("plotly", "python")
+            await pilot.pause()
+
+        assert [slot for slot, _, _ in calls] == ["demo-pyqtgraph", "demo-plotly"]
+        assert calls[0][1][-4:] == ["demo", "pyqtgraph", "--backend", "rust"]
+        assert calls[1][1][-4:] == ["demo", "plotly", "--backend", "python"]
+        assert calls[0][2] == "demo pyqtgraph (rust)"
+
+    asyncio.run(exercise())
+
+
+def test_demo_is_refused_for_a_frontend_that_is_not_installed(monkeypatch):
+    import plotbench.tui as tui
+
+    monkeypatch.setattr(tui, "component_installed", lambda name: False)
+
+    async def exercise():
+        app = PlotbenchTUI()
+        calls = []
+
+        async def fake_launch(slot, argv, label):
+            calls.append(slot)
+
+        app._launch = fake_launch
+        async with app.run_test() as pilot:
+            app.demo_action("iced")
+            await pilot.pause()
+        assert calls == []
+
+    asyncio.run(exercise())
+
+
+def test_demos_run_concurrently_in_their_own_tabs_and_picking_again_stops_one():
+    async def exercise():
+        app = PlotbenchTUI()
+        sleeper = [sys.executable, "-c", "import time; time.sleep(30)"]
+        async with app.run_test() as pilot:
+            app.run_worker(app._launch("demo-iced", sleeper, "demo iced (rust)"))
+            app.run_worker(app._launch("demo-plotly", sleeper, "demo plotly (rust)"))
+            for _ in range(200):
+                await pilot.pause()
+                if app._slot_running("demo-iced") and app._slot_running("demo-plotly"):
+                    break
+            # Two demos at once, each in its own tab; no toggle button is involved.
+            assert app._slot_running("demo-iced") and app._slot_running("demo-plotly")
+            assert {pane.id for pane in app.query(TabPane)} >= {
+                "pane-demo-iced",
+                "pane-demo-plotly",
+            }
+
+            # Choosing a running demo again stops just that one.
+            app.demo_action("iced")
+            for _ in range(400):
+                await pilot.pause()
+                if not app._slot_running("demo-iced"):
+                    break
+            assert not app._slot_running("demo-iced")
+            assert app._slot_running("demo-plotly")
+
+            app.terminate("demo-plotly")
+            for _ in range(400):
+                await pilot.pause()
+                if not app._slot_running("demo-plotly"):
+                    break
+            assert not app._slot_running("demo-plotly")
+
+    asyncio.run(exercise())
+
+
 def test_run_tui_requires_an_interactive_terminal(monkeypatch):
     import plotbench.tui as tui
 

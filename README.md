@@ -71,8 +71,9 @@ once with `./scripts/setup core`, then start it:
 ```
 
 The TUI shows which frontends and sources are installed, installs the missing ones
-(it runs `./scripts/setup` for you), starts a source, runs suites and opens the
-matrix editor, with each action's output in its own tab.
+(it runs `./scripts/setup` for you), starts a source, launches frontend demos
+(several at once, sharing that source), runs suites and opens the matrix editor,
+with each action's output in its own tab.
 
 The runner prints the result directory. Open its **report.html** for compact charts
 or **report-extended.html** for complete evidence. Both work offline. Raw samples,

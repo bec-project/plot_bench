@@ -2,8 +2,9 @@
 component setup, benchmark suites and the matrix editor from one place.
 
 Each action runs as an independent process with its own output tab, so a source,
-a suite run, a setup and the matrix editor can all run at once. A launch button
-toggles to Stop while its action is running. The TUI orchestrates the same
+a suite run, a setup, the matrix editor and several frontend demos can all run at
+once. A launch button toggles to Stop while its action is running; a running demo
+is stopped by choosing it again in the demo picker. The TUI orchestrates the same
 commands you would run by hand (`./scripts/setup` for installs, `python -m
 plotbench.cli ...` otherwise); it expects a repository checkout and never measures
 anything itself.
@@ -114,6 +115,7 @@ class PlotbenchTUI(App):
                 yield Static("Actions", classes="section-title")
                 for slot, (idle, _) in SLOTS.items():
                     yield Button(idle, id=slot)
+                yield Button("Launch demo", id="demo")
                 yield Static("", classes="spacer")
                 yield Button("Refresh", id="refresh")
             with Vertical(id="main"):
@@ -153,6 +155,8 @@ class PlotbenchTUI(App):
         slot = event.button.id
         if slot == "refresh":
             self.action_refresh()
+        elif slot == "demo":
+            self.choose_demo()
         elif slot in SLOTS:
             self.toggle(slot)
 
@@ -206,6 +210,56 @@ class PlotbenchTUI(App):
                 self.run_worker(self._launch("run", _cli("run", "--suite", value), label))
 
         self.push_screen(ChooseScreen("Run which suite?", suites), picked)
+
+    def choose_demo(self) -> None:
+        options = []
+        for name in FRONTENDS:
+            if self._slot_running(f"demo-{name}"):
+                state = "running — select to stop"
+            else:
+                state = "installed" if component_installed(name) else "missing"
+            options.append((f"{name}  {state}", name))
+
+        def picked(frontend):
+            if frontend:
+                self.demo_action(frontend)
+
+        self.push_screen(
+            ChooseScreen("Demo which frontend? Running demos share one source.", options), picked
+        )
+
+    def demo_action(self, frontend) -> None:
+        """Stop this frontend's running demo, or choose a source and launch one."""
+        slot = f"demo-{frontend}"
+        if self._slot_running(slot):
+            self.terminate(slot)
+            return
+        if not component_installed(frontend):
+            self.notify(f"{frontend} is not installed; use Install component first.")
+            return
+        options = sorted(
+            (
+                (f"{name}  {'installed' if component_installed(name) else 'missing'}", name)
+                for name in BACKENDS
+            ),
+            key=lambda item: item[1] != "rust",  # Rust first: the CLI's default source
+        )
+
+        def picked(backend):
+            if backend:
+                self.start_demo(frontend, backend)
+
+        self.push_screen(ChooseScreen(f"Source for the {frontend} demo?", options), picked)
+
+    def start_demo(self, frontend, backend) -> None:
+        """Each demo gets its own slot and tab, so several can run against one source."""
+        self.run_worker(
+            self._launch(
+                f"demo-{frontend}",
+                _cli("demo", frontend, "--backend", backend),
+                f"demo {frontend} ({backend})",
+            )
+        )
 
     # -- process management ---------------------------------------------------
     def _slot_running(self, slot) -> bool:
@@ -278,6 +332,8 @@ class PlotbenchTUI(App):
 
     # -- helpers --------------------------------------------------------------
     def _set_button(self, slot, running) -> None:
+        if slot not in SLOTS:  # demos have no toggle button; each lives in its own tab
+            return
         button = self.query_one(f"#{slot}", Button)
         button.label = SLOTS[slot][1 if running else 0]
         button.variant = "error" if running else "default"
