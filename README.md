@@ -1,35 +1,35 @@
 # Plotbench
 
-Compare how plotting frontends handle streaming waveforms and images under a
-shared workload. A unified source generates the data; every frontend decodes and
-renders the same protocol instead of running its own data generator.
+Plotbench measures how well plotting libraries keep up with streaming data. One
+source generates identical waveform and image frames, and every frontend adapter —
+PyQtGraph, Matplotlib, Qt Graphs (Python and C++), Iced and Plotly — receives those
+same frames over the same protocol and renders them. Because none of the frontends
+generate their own data, what you compare is each library's update path: its data
+conversion, plot-update API and rendering, and whether it can sustain the requested
+rate.
 
-**Plotbench primarily tests frontend capabilities:** each adapter's data conversion,
-plot-update APIs, rendering implementation and ability to sustain the requested
-update rate. It compares the implemented adapters under controlled conditions;
-it does not establish a library's maximum possible performance or feature coverage.
+The comparison is between the adapters as implemented here, under controlled
+conditions. It does not claim a library's best-case performance or full feature set.
 
-Choose the Rust/Tokio source (default) or Python/NumPy and hold it fixed when
-comparing frontends. Streaming can still be limited by source generation or
-transport. Receiver-only probes help identify those limits; replay removes live
-generation and transport from the timed path. Results from different sources and
-modes remain separate. Submitted updates/s is not displayed FPS.
+The source is written in Rust (the default) or Python. Keep it fixed when comparing
+frontends. Streaming can be limited by data generation or transport rather than
+rendering, so a receiver-only probe measures the source alone, and replay mode takes
+live generation and transport out of the timed window. Results from different
+sources and modes are always reported separately. The headline number is submitted
+updates per second, which is not the same as displayed frames per second.
 
 ## Quick start
 
-**Plotbench runs from a git clone — there is no PyPI package.** It builds and
-drives independent Rust, Qt and npm components through repo-local tooling
-(`./scripts/setup`). Clone the repository and work inside it. In the command
-below, replace `REPOSITORY_URL` with this repository's clone URL.
+Plotbench runs from a git clone; there is no PyPI package. It builds and drives
+independent Rust, Qt and npm components through repo-local tooling
+(`./scripts/setup`), so everything happens inside the checkout. Clone the
+repository and run every command from its root.
 
 Install [uv](https://docs.astral.sh/uv/) (minimum version in [.uv-version](.uv-version))
 and [Rust/Cargo](https://rustup.rs/), then follow the
-[platform setup guide](docs/setup.md) for your desktop. Run every command from the
-repository root:
+[platform setup guide](docs/setup.md) for your desktop:
 
 ```sh
-git clone "REPOSITORY_URL" plotbench
-cd plotbench
 ./scripts/setup rust pyqtgraph
 ./scripts/plotbench doctor --frontends pyqtgraph
 ./scripts/plotbench demo pyqtgraph
@@ -42,13 +42,16 @@ Close the demo before recording a short functional benchmark:
 ./scripts/plotbench run --suite scenarios/smoke.json --frontends pyqtgraph --modes stream
 ```
 
-Prefer a menu over remembering commands? Launch the interactive terminal UI and
-drive setup, sources, suites, the matrix editor and an environment overview from
-one place:
+You can also drive everything from an interactive terminal UI. Bootstrap the core
+once with `./scripts/setup core`, then start it:
 
 ```sh
 ./scripts/plotbench tui
 ```
+
+The TUI shows which frontends and sources are installed, installs the missing ones
+(it runs `./scripts/setup` for you), starts a source, runs suites and opens the
+matrix editor, with each action's output in its own tab.
 
 The runner prints the result directory. Open its **report.html** for compact charts
 or **report-extended.html** for complete evidence. Both work offline. Raw samples,
