@@ -18,16 +18,37 @@ live generation and transport out of the timed window. Results from different
 sources and modes are always reported separately. The headline number is submitted
 updates per second, which is not the same as displayed frames per second.
 
+## Requirements
+
+Plotbench runs from a git clone on **macOS** or **Linux x86-64** with a native
+Wayland desktop (Ubuntu 24.04 and RHEL-compatible 9+ are the qualification targets).
+Windows and Linux ARM are outside the initial release.
+
+- **Git and a POSIX shell.** Everything is driven by the helpers in `scripts/`, run
+  from the repository root.
+- **[uv](https://docs.astral.sh/uv/) 0.11.26 or newer** ([.uv-version](.uv-version)).
+  uv installs the pinned Python 3.13 ([.python-version](.python-version)) and every
+  isolated environment under `.envs/`; no system Python, pip or conda is needed.
+- **[Rust/Cargo](https://rustup.rs/)** with the pinned toolchain 1.96.1
+  ([rust-toolchain.toml](rust-toolchain.toml)), for the default Rust source and the
+  Iced frontend. A Python-only workflow can skip it.
+- **Node/npm**, only to build the Plotly frontend or to develop the Preact web UI.
+  Setup installs a pinned Node 24 ([.node-version](.node-version)) under `.envs/node`;
+  the shipped matrix editor and source controls need no Node at runtime.
+- **A Qt 6 C++ SDK and CMake**, only for the `qtgraphs-cpp` frontend.
+- **A visible desktop session** for demos and formal benchmarks. Headless and
+  offscreen runs are diagnostics, not measurements.
+
+Each platform also needs a few system packages (Qt and Wayland libraries, browser
+dependencies). Install those from the [platform setup guide](docs/setup.md) before
+running setup.
+
 ## Quick start
 
 Plotbench runs from a git clone; there is no PyPI package. It builds and drives
-independent Rust, Qt and npm components through repo-local tooling
-(`./scripts/setup`), so everything happens inside the checkout. Clone the
-repository and run every command from its root.
-
-Install [uv](https://docs.astral.sh/uv/) (minimum version in [.uv-version](.uv-version))
-and [Rust/Cargo](https://rustup.rs/), then follow the
-[platform setup guide](docs/setup.md) for your desktop:
+independent Rust, Qt and npm components through repo-local tooling, so everything
+happens inside the checkout. Clone the repository and run every command from its
+root. With the requirements above in place:
 
 ```sh
 ./scripts/setup rust pyqtgraph
