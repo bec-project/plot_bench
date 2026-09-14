@@ -5,7 +5,7 @@ import { MAX_SUBMISSION_BYTES, validateCatalog } from './validation';
 import { groupObservations, inDateRange } from './aggregation';
 import { GroupedResults } from './grouped-results';
 import { WinnersPage } from './winners-page';
-import { Badge, date, format } from './presentation';
+import { Field, Pill, date, format } from './presentation';
 import {
   REPOSITORY,
   observations,
@@ -16,6 +16,32 @@ import {
   type Submission,
 } from './model';
 import './style.css';
+
+const PAGE_SIZE = 25;
+const VIEWS = [
+  ['results', 'Results'],
+  ['winners', 'Winners'],
+  ['hosts', 'Hosts'],
+  ['contribute', 'Contribute'],
+] as const;
+const HEADINGS: Record<string, { title: string; lede: string }> = {
+  results: {
+    title: 'Plotting performance, in context.',
+    lede: 'Explore community measurements across plotting libraries, machines, and platforms.',
+  },
+  winners: {
+    title: 'The best results, across hosts.',
+    lede: 'Find the best balance of update rate, memory and CPU for each workload, wherever it was measured.',
+  },
+  hosts: {
+    title: 'Explore the hosts',
+    lede: 'Hardware and platforms behind the submitted campaigns.',
+  },
+  contribute: {
+    title: 'Add your measurements',
+    lede: 'Contribute a campaign from your machine. Every submission keeps its own context.',
+  },
+};
 
 const distinct = (values: string[]) => [...new Set(values)].sort();
 function download(campaign: Submission) {
@@ -101,10 +127,10 @@ function App() {
   const itemCount = grouped ? groups.length : visible.length;
   const [page, setPage] = useState(0);
   useEffect(() => setPage(0), [route]);
-  const pageSize = 25;
   const workloads = [
     ...new Map(all.map(({ run: r }) => [workloadKey(r.config), workloadLabel(r.config)])).entries(),
   ];
+  const heading = HEADINGS[route.view];
   return (
     <>
       <a href="#main" className="skip">
@@ -119,12 +145,7 @@ function App() {
           <span>/ results</span>
         </a>
         <nav aria-label="Main navigation">
-          {[
-            ['results', 'Results'],
-            ['winners', 'Winners'],
-            ['hosts', 'Hosts'],
-            ['contribute', 'Contribute'],
-          ].map(([v, label]) => (
+          {VIEWS.map(([v, label]) => (
             <a
               key={v}
               className={route.view === v ? 'active' : ''}
@@ -140,30 +161,14 @@ function App() {
         </a>
       </header>
       <main id="main">
-        <div className="page-heading">
+        <div className="app-header page-heading">
           <div>
             <p className="eyebrow">OPEN BENCHMARK COLLECTION</p>
-            <h1>
-              {route.view === 'hosts'
-                ? 'Explore the hosts'
-                : route.view === 'winners'
-                  ? 'The best results, across hosts.'
-                  : route.view === 'contribute'
-                    ? 'Add your measurements'
-                    : 'Plotting performance, in context.'}
-            </h1>
-            <p className="lede">
-              {route.view === 'hosts'
-                ? 'Hardware and platforms behind the submitted campaigns.'
-                : route.view === 'winners'
-                  ? 'Find the best balance of update rate, memory and CPU for each workload, wherever it was measured.'
-                  : route.view === 'contribute'
-                    ? 'Contribute a campaign from your machine. Every submission keeps its own context.'
-                    : 'Explore community measurements across plotting libraries, machines, and platforms.'}
-            </p>
+            <h1>{heading.title}</h1>
+            <p className="lede">{heading.lede}</p>
           </div>
           {route.view !== 'contribute' && (
-            <a className="button primary" href="#contribute">
+            <a className="btn-primary" href="#contribute">
               Contribute results <span aria-hidden="true">↗</span>
             </a>
           )}
@@ -171,49 +176,20 @@ function App() {
         {route.view === 'contribute' ? (
           <Contribute />
         ) : loading ? (
-          <section className="empty" role="status">
+          <section className="empty muted" role="status">
             Loading benchmark catalogue…
           </section>
         ) : error ? (
-          <section className="empty error" role="alert">
+          <section className="empty" role="alert">
             <h2>Couldn’t load the results</h2>
-            <p>{error}</p>
-            <button onClick={() => location.reload()}>Try again</button>
+            <p className="alert">{error}</p>
+            <button className="btn-soft" onClick={() => location.reload()}>
+              Try again
+            </button>
           </section>
         ) : (
           <>
-            <div className="stats">
-              <div>
-                <span>Hosts</span>
-                <strong>{hosts.length.toLocaleString()}</strong>
-                <small>
-                  {distinct(campaigns.map((c) => c.host.architecture)).join(' · ') ||
-                    'Awaiting contributions'}
-                </small>
-              </div>
-              <div>
-                <span>Campaigns</span>
-                <strong>{campaigns.length.toLocaleString()}</strong>
-                <small>
-                  {campaigns.length
-                    ? 'Latest ' + date(campaigns[0].recorded_at)
-                    : 'No campaigns yet'}
-                </small>
-              </div>
-              <div>
-                <span>Recorded runs</span>
-                <strong>{all.length.toLocaleString()}</strong>
-                <small>
-                  {all.filter((o) => o.run.status === 'ok').length} valid ·{' '}
-                  {all.filter((o) => o.run.status !== 'ok').length} flagged
-                </small>
-              </div>
-              <div>
-                <span>Frontends</span>
-                <strong>{distinct(all.map((o) => o.run.frontend)).length}</strong>
-                <small>Each rendering path measured separately</small>
-              </div>
-            </div>
+            <Collection campaigns={campaigns} all={all} hosts={hosts} />
             {route.view === 'winners' ? (
               <WinnersPage
                 key={route.filters.toString()}
@@ -223,49 +199,11 @@ function App() {
                 select={setSelected}
               />
             ) : route.view === 'hosts' ? (
-              <section className="host-grid" aria-label="Benchmark hosts">
-                {hosts.length ? (
-                  hosts.map((id) => {
-                    const cs = campaigns.filter((c) => c.host.id === id),
-                      h = cs[0].host;
-                    return (
-                      <article className="host-card" key={id}>
-                        <div className="host-icon" aria-hidden="true">
-                          ▤
-                        </div>
-                        <Badge>{h.architecture}</Badge>
-                        <h2>{h.label}</h2>
-                        <p>{h.cpu}</p>
-                        <dl>
-                          <dt>Graphics</dt>
-                          <dd>{h.gpu ?? 'Not recorded'}</dd>
-                          <dt>Memory</dt>
-                          <dd>{format(h.memory_gib)} GiB</dd>
-                          <dt>Latest OS</dt>
-                          <dd>{h.os}</dd>
-                          <dt>History</dt>
-                          <dd>
-                            {cs.length} campaign{cs.length === 1 ? '' : 's'} ·{' '}
-                            {cs.reduce((n, c) => n + c.runs.length, 0)} runs
-                          </dd>
-                        </dl>
-                        <p className="muted">
-                          {distinct(cs.flatMap((c) => c.runs.map((r) => r.frontend))).join(' · ')}
-                        </p>
-                        <a className="button" href={'#results?host=' + encodeURIComponent(id)}>
-                          Explore results <span aria-hidden="true">→</span>
-                        </a>
-                      </article>
-                    );
-                  })
-                ) : (
-                  <Empty />
-                )}
-              </section>
+              <Hosts campaigns={campaigns} hosts={hosts} />
             ) : (
               <div className="workspace">
-                <aside className="filters">
-                  <div className="section-line">
+                <aside className="panel filters" aria-label="Filters">
+                  <div className="panel-head">
                     <h2>Explore</h2>
                     {route.filters.size > 0 && <a href="#results">Reset</a>}
                   </div>
@@ -308,24 +246,22 @@ function App() {
                     onChange={(v) => filter('kind', v)}
                     options={distinct(campaigns.map((c) => c.classification)).map((x) => [x, x])}
                   />
-                  <label className="select-label">
-                    Acquired from (UTC)
+                  <Field label="Acquired from (UTC)">
                     <input
                       aria-label="Acquired from (UTC)"
                       type="date"
                       value={route.filters.get('from') ?? ''}
                       onChange={(e) => filter('from', e.target.value)}
                     />
-                  </label>
-                  <label className="select-label">
-                    Acquired through (UTC)
+                  </Field>
+                  <Field label="Acquired through (UTC)">
                     <input
                       aria-label="Acquired through (UTC)"
                       type="date"
                       value={route.filters.get('to') ?? ''}
                       onChange={(e) => filter('to', e.target.value)}
                     />
-                  </label>
+                  </Field>
                   <div className="filter-note">
                     <strong>Keep the context.</strong>
                     <p>
@@ -334,38 +270,50 @@ function App() {
                     </p>
                   </div>
                 </aside>
-                <section className="results-panel">
-                  <div className="section-line">
+                <section className="panel results-panel" aria-label="Measurements">
+                  <div className="panel-head">
                     <div>
                       <h2>Measurements</h2>
-                      <p className="muted">
+                      <p className="muted small">
                         {grouped ? `${groups.length} groups · ` : ''}
                         {visible.length} individual run{visible.length === 1 ? '' : 's'} · submitted
                         updates, not displayed FPS
                       </p>
                     </div>
-                  </div>
-                  <div className="view-toggle" role="group" aria-label="Results view">
-                    <button aria-pressed={grouped} onClick={() => filter('layout', '')}>
-                      Grouped
-                    </button>
-                    <button aria-pressed={!grouped} onClick={() => filter('layout', 'runs')}>
-                      Individual runs
-                    </button>
+                    <div className="segmented" role="group" aria-label="Results view">
+                      <button
+                        type="button"
+                        className={grouped ? 'seg seg-on' : 'seg'}
+                        aria-pressed={grouped}
+                        onClick={() => filter('layout', '')}
+                      >
+                        Grouped
+                      </button>
+                      <button
+                        type="button"
+                        className={grouped ? 'seg' : 'seg seg-on'}
+                        aria-pressed={!grouped}
+                        onClick={() => filter('layout', 'runs')}
+                      >
+                        Individual runs
+                      </button>
+                    </div>
                   </div>
                   {grouped && (
-                    <p className="aggregation-note">
+                    <p className="muted small aggregation-note">
                       Median of campaign medians, with each campaign weighted equally. Middle 50%
                       shows the spread of campaign medians. Expand a group to inspect campaigns and
                       repetitions.
                     </p>
                   )}
-                  <Select
-                    label="Workload"
-                    value={route.filters.get('workload') ?? ''}
-                    onChange={(v) => filter('workload', v)}
-                    options={workloads}
-                  />
+                  <div className="workload-filter">
+                    <Select
+                      label="Workload"
+                      value={route.filters.get('workload') ?? ''}
+                      onChange={(v) => filter('workload', v)}
+                      options={workloads}
+                    />
+                  </div>
                   {campaigns.some((c) => c.classification === 'smoke') && (
                     <div className="notice">
                       <span className="notice-dot" />
@@ -381,11 +329,11 @@ function App() {
                       {grouped ? (
                         <GroupedResults
                           key={route.filters.toString()}
-                          groups={groups.slice(page * pageSize, (page + 1) * pageSize)}
+                          groups={groups.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)}
                           select={setSelected}
                         />
                       ) : (
-                        <div className="table-scroll">
+                        <div className="table-wrap">
                           <table>
                             <thead>
                               <tr>
@@ -399,7 +347,7 @@ function App() {
                               </tr>
                             </thead>
                             <tbody>
-                              {visible.slice(page * pageSize, (page + 1) * pageSize).map((o) => {
+                              {visible.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((o) => {
                                 const { campaign: c, run: r } = o;
                                 const valid = r.status === 'ok',
                                   ratio =
@@ -410,11 +358,7 @@ function App() {
                                   <tr key={c.id + '/' + r.id}>
                                     <td>
                                       <strong className="frontend">
-                                        <i
-                                          className={
-                                            'dot ' + (r.frontend === 'matplotlib' ? 'violet' : '')
-                                          }
-                                        />
+                                        <i className="dot" />
                                         {r.frontend}
                                       </strong>
                                       <span className="cell-sub">{c.host.label}</span>
@@ -458,15 +402,15 @@ function App() {
                                       </div>
                                     </td>
                                     <td>
-                                      <div className="badges">
-                                        <Badge>
+                                      <div className="pills">
+                                        <Pill>
                                           {r.backend} · {r.mode}
-                                        </Badge>
-                                        <Badge tone={valid ? 'muted' : 'danger'}>
+                                        </Pill>
+                                        <Pill tone={valid ? undefined : 'danger'}>
                                           {valid ? c.classification : r.status}
-                                        </Badge>
+                                        </Pill>
                                         {sourceLimited(r) && (
-                                          <Badge tone="amber">Source limits</Badge>
+                                          <Pill tone="amber">Source limits</Pill>
                                         )}
                                       </div>
                                       <span className="cell-sub">
@@ -476,7 +420,7 @@ function App() {
                                     </td>
                                     <td>
                                       <button
-                                        className="icon-button"
+                                        className="btn-soft btn-icon"
                                         aria-label={`Details for ${r.frontend} ${r.id} in ${c.id}`}
                                         onClick={() => setSelected(o)}
                                       >
@@ -492,15 +436,20 @@ function App() {
                       )}
                       <div className="pagination">
                         <span>
-                          {page * pageSize + 1}–{Math.min((page + 1) * pageSize, itemCount)} of{' '}
+                          {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, itemCount)} of{' '}
                           {itemCount} {grouped ? 'groups' : 'runs'}
                         </span>
                         <div>
-                          <button disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+                          <button
+                            className="btn-soft"
+                            disabled={page === 0}
+                            onClick={() => setPage((p) => p - 1)}
+                          >
                             Previous
                           </button>
                           <button
-                            disabled={(page + 1) * pageSize >= itemCount}
+                            className="btn-soft"
+                            disabled={(page + 1) * PAGE_SIZE >= itemCount}
                             onClick={() => setPage((p) => p + 1)}
                           >
                             Next
@@ -527,6 +476,94 @@ function App() {
     </>
   );
 }
+function Collection({
+  campaigns,
+  all,
+  hosts,
+}: {
+  campaigns: Submission[];
+  all: Observation[];
+  hosts: string[];
+}) {
+  const valid = all.filter((o) => o.run.status === 'ok').length;
+  return (
+    <section className="panel" aria-label="Collection">
+      <div className="panel-head">
+        <h2>Collection</h2>
+        <span className="muted small">Submitted updates per second, not displayed FPS</span>
+      </div>
+      <div className="status-grid">
+        <div className="stat">
+          <span className="stat-label">Hosts</span>
+          <strong className="stat-value">{hosts.length.toLocaleString()}</strong>
+          <small className="stat-note">
+            {distinct(campaigns.map((c) => c.host.architecture)).join(' · ') ||
+              'Awaiting contributions'}
+          </small>
+        </div>
+        <div className="stat">
+          <span className="stat-label">Campaigns</span>
+          <strong className="stat-value">{campaigns.length.toLocaleString()}</strong>
+          <small className="stat-note">
+            {campaigns.length ? 'Latest ' + date(campaigns[0].recorded_at) : 'No campaigns yet'}
+          </small>
+        </div>
+        <div className="stat">
+          <span className="stat-label">Recorded runs</span>
+          <strong className="stat-value">{all.length.toLocaleString()}</strong>
+          <small className="stat-note">
+            {valid} valid · {all.length - valid} flagged
+          </small>
+        </div>
+        <div className="stat">
+          <span className="stat-label">Frontends</span>
+          <strong className="stat-value">{distinct(all.map((o) => o.run.frontend)).length}</strong>
+          <small className="stat-note">Each rendering path measured separately</small>
+        </div>
+      </div>
+    </section>
+  );
+}
+function Hosts({ campaigns, hosts }: { campaigns: Submission[]; hosts: string[] }) {
+  return (
+    <section className="host-grid" aria-label="Benchmark hosts">
+      {hosts.length ? (
+        hosts.map((id) => {
+          const cs = campaigns.filter((c) => c.host.id === id),
+            h = cs[0].host;
+          return (
+            <article className="host-card" key={id}>
+              <div className="card-head">
+                <h2>{h.label}</h2>
+                <Pill>{h.architecture}</Pill>
+              </div>
+              <p>{h.cpu}</p>
+              <dl className="kv">
+                <dt>Graphics</dt>
+                <dd>{h.gpu ?? 'Not recorded'}</dd>
+                <dt>Memory</dt>
+                <dd>{format(h.memory_gib)} GiB</dd>
+                <dt>Latest OS</dt>
+                <dd>{h.os}</dd>
+                <dt>History</dt>
+                <dd>
+                  {cs.length} campaign{cs.length === 1 ? '' : 's'} ·{' '}
+                  {cs.reduce((n, c) => n + c.runs.length, 0)} runs
+                </dd>
+              </dl>
+              <p>{distinct(cs.flatMap((c) => c.runs.map((r) => r.frontend))).join(' · ')}</p>
+              <a className="btn-soft" href={'#results?host=' + encodeURIComponent(id)}>
+                Explore results <span aria-hidden="true">→</span>
+              </a>
+            </article>
+          );
+        })
+      ) : (
+        <Empty />
+      )}
+    </section>
+  );
+}
 function Select({
   label,
   value,
@@ -539,8 +576,7 @@ function Select({
   onChange: (v: string) => void;
 }) {
   return (
-    <label className="select-label">
-      {label}
+    <Field label={label}>
       <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value)}>
         <option value="">
           All {label.toLowerCase() === 'delivery' ? 'modes' : label.toLowerCase() + 's'}
@@ -551,7 +587,7 @@ function Select({
           </option>
         ))}
       </select>
-    </label>
+    </Field>
   );
 }
 function Empty({ filtered = false }: { filtered?: boolean }) {
@@ -563,7 +599,7 @@ function Empty({ filtered = false }: { filtered?: boolean }) {
           ? 'Try a different workload or clear the filters.'
           : 'Add a campaign from your machine to start building a cross-platform picture.'}
       </p>
-      <a className="button" href={filtered ? '#results' : '#contribute'}>
+      <a className="btn-soft" href={filtered ? '#results' : '#contribute'}>
         {filtered ? 'Clear filters' : 'Contribute results'}
       </a>
     </div>
@@ -591,24 +627,24 @@ function RunDetails({
       aria-labelledby="detail-title"
     >
       <div className="dialog-content">
-        <div className="section-line">
+        <div className="panel-head">
           <p className="eyebrow">RUN DETAILS · {r.id}</p>
-          <button className="icon-button" onClick={close} aria-label="Close run details">
+          <button className="btn-soft btn-icon" onClick={close} aria-label="Close run details">
             ×
           </button>
         </div>
         <h2 id="detail-title">
           {r.frontend} on {c.host.label}
         </h2>
-        <div className="badges">
-          <Badge>
+        <div className="pills">
+          <Pill>
             {r.backend} · {r.mode}
-          </Badge>
-          <Badge>{c.classification}</Badge>
-          <Badge tone={r.status === 'ok' ? 'success' : 'danger'}>{r.status}</Badge>
+          </Pill>
+          <Pill>{c.classification}</Pill>
+          <Pill tone={r.status === 'ok' ? 'success' : 'danger'}>{r.status}</Pill>
         </div>
         <p>{workloadLabel(r.config)}</p>
-        <dl className="detail-grid">
+        <dl className="kv detail-grid">
           <dt>Submitted</dt>
           <dd>
             {format(r.metrics.submitted_hz)} updates/s / {r.config.hz} target
@@ -672,11 +708,11 @@ function RunDetails({
             .map(([k, v]) => `${k} ${v}`)
             .join(' · ') || 'Versions not recorded'}
         </p>
-        <dl className="detail-grid">
+        <dl className="kv detail-grid">
           <dt>Source commit</dt>
           <dd>
-            <code>{x.commit ?? 'Not recorded'}</code>
-            {x.dirty && <Badge tone="amber">Modified checkout</Badge>}
+            <code>{x.commit ?? 'Not recorded'}</code>{' '}
+            {x.dirty && <Pill tone="amber">Modified checkout</Pill>}
           </dd>
           <dt>Source fingerprint</dt>
           <dd>
@@ -694,12 +730,14 @@ function RunDetails({
         </p>
         {c.notes && <p>{c.notes}</p>}
         <div className="actions">
-          <button onClick={() => download(c)}>Download submission</button>
+          <button className="btn-soft" onClick={() => download(c)}>
+            Download submission
+          </button>
           {Object.entries(c.links)
             .filter(([, url]) => url)
             .map(([label, url]) => (
               <a
-                className="button"
+                className="btn-soft"
                 key={label}
                 href={url!}
                 target="_blank"
@@ -710,7 +748,7 @@ function RunDetails({
             ))}
         </div>
         {!Object.values(c.links).some(Boolean) && (
-          <p className="muted">Full report and raw-data links have not been submitted.</p>
+          <p className="muted small">Full report and raw-data links have not been submitted.</p>
         )}
       </div>
     </dialog>
@@ -766,26 +804,25 @@ function Contribute() {
   }
   return (
     <div className="contribute-layout">
-      <section className="submission-form">
+      <section className="panel submission-form" aria-label="Prepare a submission">
         <h2>Prepare a submission</h2>
-        <p>
+        <p className="muted small">
           Choose the <code>summary.json</code> from a completed Plotbench campaign. Processing
           happens in your browser; choosing a file does not upload it.
         </p>
         <form onSubmit={prepare}>
           <label className="file-picker">
-            Campaign summary
+            Campaign summary{filename ? ` · ${filename}` : ''}
             <input
               aria-label="Campaign summary"
               type="file"
               accept=".json,application/json"
               onChange={(e) => void fileChanged(e.target.files?.[0])}
             />
-            <span>{filename || 'Choose summary.json'}</span>
           </label>
-          <label>
-            Campaign ID
+          <Field label="Campaign ID">
             <input
+              aria-label="Campaign ID"
               required
               pattern="[a-z0-9][a-z0-9-]{0,79}"
               value={id}
@@ -795,11 +832,11 @@ function Contribute() {
                 invalidate();
               }}
             />
-          </label>
-          <div className="form-pair">
-            <label>
-              Public host ID
+          </Field>
+          <div className="field-grid">
+            <Field label="Public host ID">
               <input
+                aria-label="Public host ID"
                 required
                 pattern="[a-z0-9][a-z0-9-]{0,79}"
                 value={hostId}
@@ -809,10 +846,10 @@ function Contribute() {
                   invalidate();
                 }}
               />
-            </label>
-            <label>
-              Host label
+            </Field>
+            <Field label="Host label">
               <input
+                aria-label="Host label"
                 required
                 maxLength={200}
                 value={hostLabel}
@@ -822,11 +859,11 @@ function Contribute() {
                   invalidate();
                 }}
               />
-            </label>
+            </Field>
           </div>
-          <label>
-            Operating conditions <span className="muted">optional</span>
+          <Field label="Operating conditions" hint="optional">
             <textarea
+              aria-label="Operating conditions"
               value={notes}
               maxLength={2000}
               placeholder="For example: connected to power, native desktop, no other benchmark windows."
@@ -835,26 +872,28 @@ function Contribute() {
                 invalidate();
               }}
             />
-          </label>
-          <button className="primary" type="submit" disabled={!raw || busy}>
-            {busy ? 'Preparing…' : 'Preview public submission'}
-          </button>
+          </Field>
+          <div>
+            <button className="btn-primary" type="submit" disabled={!raw || busy}>
+              {busy ? 'Preparing…' : 'Preview public submission'}
+            </button>
+          </div>
         </form>
         {error && (
-          <div className="notice error" role="alert">
-            <p>{error}</p>
-          </div>
+          <p className="alert" role="alert">
+            {error}
+          </p>
         )}
         {result && (
           <section className="submission-preview" aria-label="Submission preview">
-            <div className="section-line">
+            <div className="panel-head">
               <h3>Ready to review</h3>
-              <Badge>{result.classification}</Badge>
+              <Pill>{result.classification}</Pill>
             </div>
-            <p>
+            <p className="muted small">
               {result.host.cpu} · {result.host.os} · {result.runs.length} runs
             </p>
-            <details>
+            <details className="disclosure">
               <summary>Inspect the exact JSON to publish</summary>
               <pre>{JSON.stringify(result, null, 2)}</pre>
             </details>
@@ -866,43 +905,52 @@ function Contribute() {
               />
               I reviewed this JSON and want to share these details publicly.
             </label>
-            <button disabled={!reviewed} onClick={() => download(result)}>
+            <button className="btn-soft" disabled={!reviewed} onClick={() => download(result)}>
               Download {result.id}.json
             </button>
           </section>
         )}
       </section>
-      <aside className="contribution-guide">
+      <aside className="panel guide" aria-label="How contributions work">
         <p className="eyebrow">HOW CONTRIBUTIONS WORK</p>
         <ol>
           <li>
-            <strong>Run a campaign</strong>
-            <p>
-              Use a visible desktop, keep the workload fixed, and retain every attempt. For longer
-              measurements, repeat the same cases.
-            </p>
+            <span className="step-no">1</span>
+            <div>
+              <strong>Run a campaign</strong>
+              <p>
+                Use a visible desktop, keep the workload fixed, and retain every attempt. For longer
+                measurements, repeat the same cases.
+              </p>
+            </div>
           </li>
           <li>
-            <strong>Review the export</strong>
-            <p>
-              Raw logs, local paths, command lines and environment values are omitted. Check
-              hardware labels, notes, and all public fields before sharing.
-            </p>
+            <span className="step-no">2</span>
+            <div>
+              <strong>Review the export</strong>
+              <p>
+                Raw logs, local paths, command lines and environment values are omitted. Check
+                hardware labels, notes, and all public fields before sharing.
+              </p>
+            </div>
           </li>
           <li>
-            <strong>Open a pull request</strong>
-            <p>
-              Add the downloaded JSON to <code>website/results/</code>. Validation runs in CI;
-              maintainers review the evidence before merging.
-            </p>
-            <a
-              className="button"
-              href={REPOSITORY + '/upload/main/website/results'}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Add file on GitHub ↗
-            </a>
+            <span className="step-no">3</span>
+            <div>
+              <strong>Open a pull request</strong>
+              <p>
+                Add the downloaded JSON to <code>website/results/</code>. Validation runs in CI;
+                maintainers review the evidence before merging.
+              </p>
+              <a
+                className="btn-soft"
+                href={REPOSITORY + '/upload/main/website/results'}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Add file on GitHub ↗
+              </a>
+            </div>
           </li>
         </ol>
         <div className="filter-note">
