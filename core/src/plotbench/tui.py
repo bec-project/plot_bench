@@ -43,7 +43,16 @@ ROOT = Path(__file__).resolve().parents[3]
 SCRIPTS = ROOT / "scripts" / "setup"
 SCENARIOS = ROOT / "scenarios"
 CUSTOM = ROOT / "scenarios_custom"
-INSTALLABLE = ["rust", "pyqtgraph", "matplotlib", "qtgraphs", "qtgraphs-cpp", "iced", "plotly"]
+INSTALLABLE = [
+    "rust",
+    "pyqtgraph",
+    "matplotlib",
+    "qtgraphs",
+    "qtgraphs-cpp",
+    "iced",
+    "fyne",
+    "plotly",
+]
 
 # Each launch slot: sidebar button labels for idle and running states.
 SLOTS = {
@@ -64,6 +73,7 @@ STATE_MARK = {
 MARKERS = (
     "plotbench-source-rust",
     "plotbench-iced",
+    "plotbench-fyne",
     "plotbench-qtgraphs-cpp",
     "/bin/plotbench-",
     "plotbench.cli",

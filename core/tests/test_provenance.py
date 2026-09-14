@@ -308,3 +308,14 @@ def test_checkout_hash_includes_declared_toolchains(tmp_path, filename, initial,
     before = provenance.source_hash(tmp_path, checkout=True)
     path.write_text(updated + "\n")
     assert provenance.source_hash(tmp_path, checkout=True) != before
+
+
+@pytest.mark.parametrize("filename", ["main.go", "go.mod", "go.sum"])
+def test_fyne_go_sources_and_dependencies_invalidate_native_build(tmp_path, filename):
+    write(tmp_path, "frontends/fyne/build/plotbench-fyne", "compiled")
+    source = write(tmp_path, f"frontends/fyne/{filename}", "before")
+    provenance.record_build("fyne", tmp_path)
+    provenance.require_current_artifact("fyne", tmp_path)
+    source.write_text("after")
+    with pytest.raises(RuntimeError, match="unverified"):
+        provenance.require_current_artifact("fyne", tmp_path)

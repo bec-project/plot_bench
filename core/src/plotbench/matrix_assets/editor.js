@@ -429,6 +429,7 @@ const OPTION_TIPS = {
   qtgraphs: "Qt Graphs (QML/Quick) renderer.",
   "qtgraphs-cpp": "Qt Graphs via the native C++ SDK.",
   iced: "Iced — native Rust GUI on wgpu.",
+  fyne: "Fyne — Go GUI with custom CPU waveform rasterization and RGBA canvas images.",
   plotly: "Plotly.js in a controlled browser.",
   // backends
   python: "The built-in Python source. Always available with a core install.",

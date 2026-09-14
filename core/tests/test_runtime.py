@@ -216,3 +216,27 @@ def test_preflight_rejects_stale_native_build(monkeypatch, tmp_path):
     result = runtime.preflight(backends=["rust"])
     assert not result["ok"]
     assert any("unverified" in item["detail"] for item in result["checks"])
+
+
+@pytest.mark.parametrize("protocol,ok", [("wayland", True), ("unverified", False)])
+def test_fyne_doctor_rejects_non_wayland_linux_build(monkeypatch, tmp_path, protocol, ok):
+    linux(monkeypatch)
+    monkeypatch.setattr(runtime, "ROOT", tmp_path)
+    monkeypatch.setattr(runtime, "require_wayland", lambda: None)
+    monkeypatch.setattr(runtime, "require_current_artifact", lambda *args: {})
+    monkeypatch.setattr(runtime.shutil, "which", lambda name: None)
+    (tmp_path / ".python-version").write_text(runtime.platform.python_version())
+    exe = runtime._executable("fyne")
+    exe.parent.mkdir(parents=True)
+    exe.touch(mode=0o755)
+    monkeypatch.setattr(
+        runtime,
+        "_run_check",
+        lambda command, **kwargs: (
+            json.dumps({"display_protocol": protocol})
+            if command[-1] == "--runtime-info"
+            else "go version go1.26 linux/amd64"
+        ),
+    )
+    result = runtime.preflight(frontends=["fyne"])
+    assert result["ok"] is ok, result["checks"]

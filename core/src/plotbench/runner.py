@@ -24,7 +24,7 @@ from .suites import FRONTENDS as FRONTENDS
 from .suites import expand_cases as expand_cases
 from .suites import plan_from_args, print_plan
 
-BUILT_COMPONENTS = ("rust", "iced", "plotly", "qtgraphs-cpp")
+BUILT_COMPONENTS = ("rust", "iced", "fyne", "plotly", "qtgraphs-cpp")
 ROOT = Path(__file__).resolve().parents[3]
 
 
@@ -39,6 +39,8 @@ def frontend_command(
     args = ["--url", url, "--mode", mode, "--run-id", run_id, "--duration", str(duration)]
     if name == "iced":
         executable = ROOT / "frontends/iced/target/release/plotbench-iced"
+    elif name == "fyne":
+        executable = ROOT / "frontends/fyne/build/plotbench-fyne"
     elif name == "qtgraphs-cpp":
         executable = ROOT / "frontends/qtgraphs-cpp/build/plotbench-qtgraphs-cpp"
     elif name == "plotly":

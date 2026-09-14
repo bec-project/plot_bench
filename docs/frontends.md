@@ -51,6 +51,10 @@ custom waveform/image/axis rendering in both the UI and README.
 5. Add a small scenario example, README entry and CI coverage. Keep expensive or
    optional SDK frontends out of the single-component quick start.
 
+Go adapters use an independent `go.mod` / `go.sum`; keep module/build caches local,
+use read-only dependency resolution for builds, and register `.go`, `.mod` and
+`.sum` files in provenance. Fyne provides a reference at `frontends/fyne/`.
+
 ## Acceptance
 
 Test malformed frames, array layout, append/replay behavior, bounded delivery,

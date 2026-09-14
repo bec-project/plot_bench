@@ -29,6 +29,7 @@ builds the plotting adapter, not the matrix editor or source controls.
 | `core` | uv; Python is installed locally |
 | `pyqtgraph`, `pyqtgraph-gl`, `matplotlib`, `qtgraphs` | Graphical desktop and Qt runtime system libraries |
 | `rust` | Rust/Cargo and a native linker/compiler |
+| `fyne` | Go 1.26+, native C compiler, OpenGL; native Wayland development libraries on Linux |
 | `iced` | Rust/Cargo, native linker/compiler, graphics drivers and Wayland libraries on Linux |
 | `plotly` | npm to bootstrap local Node; Chromium or an explicitly selected installed browser |
 | `qtgraphs-cpp` | CMake 3.21+, C++20 compiler, Qt SDK with Graphs, Quick, QuickControls2, Network, WebSockets and Test; WaylandClient on Linux |
@@ -204,3 +205,18 @@ The source defaults to loopback port 8765. Stop an existing source or choose ano
 port if it is occupied. Recorded suites start their own sources on ephemeral ports.
 Use `--display-context` for refresh/scaling/placement details unavailable from the
 desktop API. Never infer physical refresh or absolute placement from missing data.
+
+## Go / Fyne frontend
+
+Install Go 1.26 or newer, then run `./scripts/setup rust fyne`. Fyne uses the
+platform C compiler and OpenGL. On macOS install Xcode command-line tools. On
+Ubuntu the additional build packages are `libgl1-mesa-dev`, `libegl1-mesa-dev`,
+`libwayland-dev`, `libxkbcommon-dev` and `wayland-protocols`; on RHEL-compatible
+systems use `mesa-libGL-devel`, `mesa-libEGL-devel`, `wayland-devel`,
+`libxkbcommon-devel` and `wayland-protocols-devel` with the toolchain above.
+Setup selects `-tags release,no_animations,wayland` on Linux; it does not fall
+back to X11. Doctor rejects a Fyne build without the Wayland identity on Linux.
+Go modules/build caches live in `.cache/go` and `.cache/go-build`; the executable
+and provenance live in `frontends/fyne/build`. Dependencies are built with
+`-mod=readonly` to preserve `go.mod`/`go.sum`. See the
+[Fyne adapter](../frontends/fyne/README.md) for rendering and validation limits.

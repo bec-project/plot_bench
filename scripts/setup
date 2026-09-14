@@ -9,7 +9,7 @@ PLOTBENCH_COMPONENTS=()
 PLOTBENCH_DEV=(--no-dev)
 PLOTBENCH_BROWSER=bundled
 usage() {
-  echo 'Usage: ./scripts/setup [core|rust|pyqtgraph|pyqtgraph-gl|matplotlib|qtgraphs|qtgraphs-cpp|iced|plotly|all]... [--dev] [--browser bundled|system]'
+  echo 'Usage: ./scripts/setup [core|rust|pyqtgraph|pyqtgraph-gl|matplotlib|qtgraphs|qtgraphs-cpp|iced|fyne|plotly|all]... [--dev] [--browser bundled|system]'
 }
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -20,8 +20,8 @@ while [[ $# -gt 0 ]]; do
       shift; PLOTBENCH_BROWSER="$1"
       [[ "$1" == bundled || "$1" == system ]] || { usage >&2; exit 2; }
       ;;
-    all) PLOTBENCH_COMPONENTS+=(core rust pyqtgraph matplotlib qtgraphs qtgraphs-cpp iced plotly) ;;
-    core|rust|pyqtgraph|matplotlib|qtgraphs|qtgraphs-cpp|iced|plotly) PLOTBENCH_COMPONENTS+=("$1") ;;
+    all) PLOTBENCH_COMPONENTS+=(core rust pyqtgraph matplotlib qtgraphs qtgraphs-cpp iced fyne plotly) ;;
+    core|rust|pyqtgraph|matplotlib|qtgraphs|qtgraphs-cpp|iced|fyne|plotly) PLOTBENCH_COMPONENTS+=("$1") ;;
     pyqtgraph-gl) PLOTBENCH_COMPONENTS+=(pyqtgraph) ;;
     *) usage >&2; exit 2 ;;
   esac
@@ -109,6 +109,19 @@ for PLOTBENCH_NATIVE in iced rust; do
     .envs/plotting-benchmark/bin/python -m plotbench.provenance "$PLOTBENCH_NATIVE"
   fi
 done
+if selected fyne; then
+  command -v go >/dev/null || { echo 'Fyne requires Go 1.26+ and a native C compiler; see docs/setup.md.' >&2; exit 1; }
+  # Keep downloaded modules, compiler artifacts and optional toolchains local.
+  export GOPATH="$PLOTBENCH_ROOT/.cache/go"
+  export GOCACHE="$PLOTBENCH_ROOT/.cache/go-build"
+  PLOTBENCH_GO_TAGS=release,no_animations
+  if [[ "$(uname -s)" == Linux ]]; then
+    PLOTBENCH_GO_TAGS+=,wayland
+  fi
+  mkdir -p frontends/fyne/build
+  go -C frontends/fyne build -mod=readonly -trimpath -tags "$PLOTBENCH_GO_TAGS" -o build/plotbench-fyne .
+  .envs/plotting-benchmark/bin/python -m plotbench.provenance fyne
+fi
 if selected qtgraphs-cpp; then
   command -v cmake >/dev/null || { echo 'CMake is required for qtgraphs-cpp.' >&2; exit 1; }
   PLOTBENCH_CMAKE=(cmake)

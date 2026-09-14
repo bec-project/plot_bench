@@ -178,3 +178,38 @@ by this local release record.
 
 Generated validation results are local, ignored artifacts. Historical personal
 benchmark campaigns are not included in the public source repository.
+
+## Fyne integration validation
+
+The Go/Fyne frontend was checked on macOS arm64 with the native Fyne GLFW/OpenGL
+driver, Go 1.27 and Fyne 2.8.1. Visible acceptance used a Retina desktop with a
+2× physical pixel ratio. All **16 combinations** in `scenarios/fyne-smoke.json`
+completed with valid reports: Python/Rust sources × stream/replay × combined
+replacement/scalar, combined append/RGB, waveform-only and image-only cases.
+Each run used a one-second warmup and three measured seconds. No telemetry loss
+was reported. These short checks establish function, not a sustained ranking.
+
+Untimed canvas screenshots verified combined rendering and an external live
+view change to image-only. The adapter README retains a combined screenshot.
+The physical-pixel regression test covers macOS's separate texture scale:
+`Canvas.Scale()` alone is insufficient; `PixelCoordinateForPosition` includes it.
+An initial local acceptance attempt using logical canvas scale is retained as a
+diagnostic and excluded from the above acceptance claim.
+
+The 12 Go tests pass with the race detector using Fyne's `ci` test driver.
+Core integration/provenance/setup tests, Python formatting, web UI type checking,
+proxy tests and bundle rebuild were also checked. Go vet and module checksum
+verification pass. To repeat the Go checks from the repository root:
+
+```sh
+export GOPATH="$PWD/.cache/go"
+export GOCACHE="$PWD/.cache/go-build"
+go -C frontends/fyne test -race -tags ci ./...
+go -C frontends/fyne vet -tags ci ./...
+go -C frontends/fyne mod verify
+```
+
+A dedicated workflow adds macOS and Ubuntu native build/test coverage; it is not
+a claim that remote CI has run. Linux/Wayland visible rendering remains
+**unqualified**, and Fyne on AlmaLinux has not been built or tested locally.
+Windows and X11 are outside this integration's supported host contract.

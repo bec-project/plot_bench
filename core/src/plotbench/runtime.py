@@ -108,6 +108,7 @@ def _executable(component):
     return {
         "rust": ROOT / "backends/rust/target/release/plotbench-source-rust",
         "iced": ROOT / "frontends/iced/target/release/plotbench-iced",
+        "fyne": ROOT / "frontends/fyne/build/plotbench-fyne",
         "qtgraphs-cpp": ROOT / "frontends/qtgraphs-cpp/build/plotbench-qtgraphs-cpp",
     }[component]
 
@@ -257,6 +258,13 @@ def preflight(*, frontends=(), backends=(), browser_executable=None, headless=Fa
             else:
                 require_current_artifact(component, ROOT)
                 libraries_to_check = [str(executable)]
+                if component == "fyne":
+                    details = json.loads(_run_check([str(executable), "--runtime-info"]))
+                    runtime.setdefault("components", {})[component] = details
+                    if details.get("headless"):
+                        raise ValueError("Fyne test-driver builds cannot run visible benchmarks")
+                    if system == "Linux" and details.get("display_protocol") != "wayland":
+                        raise ValueError("Fyne requires a native Wayland build; rerun setup fyne")
                 if component == "qtgraphs-cpp":
                     details = json.loads(_run_check([str(executable), "--runtime-info"]))
                     runtime.setdefault("components", {})[component] = details
@@ -320,6 +328,8 @@ def preflight(*, frontends=(), backends=(), browser_executable=None, headless=Fa
             "expected": rust_version,
             "command": ["rustup", "run", rust_version, "rustc", "--version"],
         }
+    if "fyne" in components:
+        toolchains["go"] = {"command": ["go", "version"]}
     if "qtgraphs-cpp" in components:
         toolchains["cmake"] = {"command": ["cmake", "--version"]}
     for name, toolchain in toolchains.items():

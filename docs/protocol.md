@@ -110,7 +110,7 @@ to poll its mailbox, but timer callbacks alone do not count as rendered frames.
 
 Python console scripts: `plotbench-pyqtgraph`, `plotbench-matplotlib`,
 `plotbench-qtgraphs`. Rust binary: `plotbench-iced`. C++ binary:
-`plotbench-qtgraphs-cpp`.
+`plotbench-qtgraphs-cpp`. Go binary: `plotbench-fyne`.
 All accept `--url`, `--mode stream|replay`, `--run-id`, `--duration` (seconds;
 0 means until closed), `--width` and `--height` (logical window size; defaults
 1100 and 820). PyQtGraph additionally accepts `--opengl`.
