@@ -1,4 +1,4 @@
-"""Shared 256-entry blue/cyan/yellow color table, independent of plotting libraries."""
+"""Shared image colormap and curve colours, independent of plotting libraries."""
 
 import numpy as np
 
@@ -21,3 +21,16 @@ def colorize(array):
     """Map finite scalar values in [0,1] to RGB, flooring the LUT index."""
     indices = (np.clip(array, 0, 1) * 255).astype(np.uint8)
     return COLORMAP[indices]
+
+
+# Curve `c` of every waveform plot is drawn with CURVE_COLORS[c % 8]; curve 0 keeps the accent.
+CURVE_COLORS = (
+    "#64dccc",
+    "#f5c76e",
+    "#7aa6ff",
+    "#ff9d7a",
+    "#c39bff",
+    "#9be564",
+    "#ff7ab8",
+    "#6ee7ff",
+)
