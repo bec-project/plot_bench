@@ -36,6 +36,8 @@ QT_QPA_PLATFORM=offscreen .envs/plotting-benchmark-matplotlib/bin/python -m pyte
 QT_QPA_PLATFORM=offscreen .envs/plotting-benchmark-qtgraphs/bin/python -m pytest frontends/qtgraphs/tests
 npm --prefix frontends/plotly test
 npm --prefix frontends/plotly run build
+npm --prefix website test
+npm --prefix website run build
 cargo test --locked --manifest-path backends/rust/Cargo.toml
 cargo test --locked --manifest-path frontends/iced/Cargo.toml
 ```
@@ -89,6 +91,34 @@ functional checks and do not qualify rendering performance. CI also rebuilds the
 UI and checks that it matches the committed assets. The HTML entry points, packaged
 pages and offline reports have different roles; see the
 [web UI guide](../core/webui/README.md).
+
+### Results website
+
+The community results site under `website/` is a React + Vite app with the same
+Node requirement as the other web UIs; CI builds its bundle, which is never
+committed. Install its locked tools into the repository cache, then run the unit
+tests, formatting, catalogue validation, type checking and production build:
+
+```sh
+npm ci --prefix website --cache "$PWD/.cache/npm" --no-audit --no-fund
+npm --prefix website test
+npm --prefix website run format:check
+npm --prefix website run validate
+npm --prefix website run build
+```
+
+With `PLOTBENCH_TEST_BROWSER` selected as above, the opt-in browser check drives
+the built site through its filters, grouping, winners, run details, contribution
+preview and mobile layout:
+
+```sh
+.envs/plotting-benchmark/bin/python -m pytest website/tests/browser_smoke.py
+```
+
+It skips without a selected browser. Like the matrix editor checks, it is a
+headless functional test and measures no rendering performance. Its stylesheet
+shares the design tokens and control primitives of `core/webui/src/style.css`;
+see the [website guide](../website/README.md).
 
 ### Documentation examples
 
