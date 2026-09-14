@@ -265,6 +265,9 @@ test('submission fields are proposed from public summary data only', async () =>
   raw.campaign.hardware.os = 'macOS 15.7.5 (24G624)';
   const runs: any[] = raw.runs;
   runs[0].metadata = { ...runs[0].metadata, pixel_ratio: 2, display: { refresh_hz: 120 } };
+  // Runs that report nothing do not split the context; a conflicting rate does.
+  assert.match(suggestSubmission(raw).notes, /Native desktop display at 120 Hz and 2× scaling\./);
+  runs[1].metadata = { ...runs[1].metadata, display: { refresh_hz: 60 } };
   const long = suggestSubmission(raw);
   assert.match(long.id, /^[a-z0-9][a-z0-9-]{0,79}$/);
   assert.ok(long.id.length <= 80 && !long.id.endsWith('-'));

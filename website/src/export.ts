@@ -235,6 +235,9 @@ const seconds = (values: number[]): string | null =>
 const distinctNumbers = (values: Array<number | null>) => [
   ...new Set(values.filter((v): v is number => v !== null)),
 ];
+const distinctStrings = (values: Array<string | null>) => [
+  ...new Set(values.filter((v): v is string => v !== null)),
+];
 
 export type SubmissionDefaults = Required<ExportOptions>;
 
@@ -270,31 +273,41 @@ export function suggestSubmission(raw: unknown): SubmissionDefaults {
     timing ? `${timing} per run` : '',
   ].filter(Boolean);
   if (setup.length) sentences.push(setup.join(', ') + '.');
-  const contexts = [
-    ...new Set(
-      runs.map((r) => {
-        const m = record(r.metadata),
-          display = record(m.display);
-        const protocol = displayProtocol(m, record(r.provenance));
-        const headless = boolean(m.headless) ?? boolean(campaign.headless);
-        if (headless || protocol === 'offscreen' || protocol === 'headless')
-          return 'Headless or offscreen run without a visible desktop.';
-        const label =
-          protocol === 'native'
-            ? 'Native desktop'
-            : protocol === 'wayland'
-              ? 'Wayland'
-              : protocol === 'x11'
-                ? 'X11'
-                : 'Visible';
-        const refresh = numeric(display.refresh_hz),
-          scale = numeric(m.pixel_ratio) ?? numeric(display.device_pixel_ratio);
-        return `${label} display${refresh ? ` at ${refresh} Hz` : ''}${scale ? ` and ${scale}× scaling` : ''}.`;
-      }),
-    ),
-  ];
-  if (contexts.length === 1) sentences.push(contexts[0]);
-  else if (contexts.length > 1)
+  // Frontends that report no refresh rate or scale do not create a second display
+  // context; only conflicting reported values, or a headless run, change the sentence.
+  const contexts = runs.map((r) => {
+    const m = record(r.metadata),
+      display = record(m.display);
+    const protocol = displayProtocol(m, record(r.provenance));
+    return {
+      headless:
+        (boolean(m.headless) ?? boolean(campaign.headless)) === true ||
+        protocol === 'offscreen' ||
+        protocol === 'headless',
+      protocol,
+      refresh: numeric(display.refresh_hz),
+      scale: numeric(m.pixel_ratio) ?? numeric(display.device_pixel_ratio),
+    };
+  });
+  const protocols = distinctStrings(contexts.map((c) => c.protocol)),
+    refreshes = distinctNumbers(contexts.map((c) => c.refresh)),
+    scales = distinctNumbers(contexts.map((c) => c.scale));
+  if (contexts.some((c) => c.headless))
+    sentences.push('Headless or offscreen run without a visible desktop.');
+  else if (protocols.length > 1 || refreshes.length > 1 || scales.length > 1)
     sentences.push('Runs were recorded in more than one display context.');
+  else if (contexts.length) {
+    const label =
+      protocols[0] === 'native'
+        ? 'Native desktop'
+        : protocols[0] === 'wayland'
+          ? 'Wayland'
+          : protocols[0] === 'x11'
+            ? 'X11'
+            : 'Visible';
+    sentences.push(
+      `${label} display${refreshes[0] ? ` at ${refreshes[0]} Hz` : ''}${scales[0] ? ` and ${scales[0]}× scaling` : ''}.`,
+    );
+  }
   return { id, hostId, hostLabel, notes: sentences.join(' ').slice(0, 2000) };
 }
