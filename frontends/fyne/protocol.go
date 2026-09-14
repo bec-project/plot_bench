@@ -12,17 +12,21 @@ import (
 const maxPacket = 257 * 1024 * 1024
 const maxReplay = 256 * 1024 * 1024
 
+// Config mirrors the shared workload configuration in wire order (protocol v2).
 type Config struct {
-	Hz           float64 `json:"hz"`
-	Points       int     `json:"points"`
-	AppendCount  int     `json:"append_count"`
-	Width        int     `json:"width"`
-	Height       int     `json:"height"`
-	WaveformMode string  `json:"waveform_mode"`
-	ImageMode    string  `json:"image_mode"`
-	View         string  `json:"view"`
-	Seed         uint64  `json:"seed"`
-	Generation   uint64  `json:"generation"`
+	Hz            float64 `json:"hz"`
+	Points        int     `json:"points"`
+	AppendCount   int     `json:"append_count"`
+	Curves        int     `json:"curves"`
+	WaveformPlots int     `json:"waveform_plots"`
+	Width         int     `json:"width"`
+	Height        int     `json:"height"`
+	ImagePlots    int     `json:"image_plots"`
+	WaveformMode  string  `json:"waveform_mode"`
+	ImageMode     string  `json:"image_mode"`
+	View          string  `json:"view"`
+	Seed          uint64  `json:"seed"`
+	Generation    uint64  `json:"generation"`
 }
 type Array struct {
 	Name   string `json:"name"`
@@ -46,6 +50,40 @@ type Frame struct {
 }
 
 func finite(v float64) bool { return !math.IsNaN(v) && !math.IsInf(v, 0) }
+
+// imageItem is the byte size of one image element: float32 scalar or RGB triple.
+func (c Config) imageItem() int {
+	if c.ImageMode == "rgb" {
+		return 3
+	}
+	return 4
+}
+
+// waveformCurve returns the float32 bytes of waveform plot p, curve c without copying.
+func (f *Frame) waveformCurve(p, c int) []byte {
+	n := f.Header.Config.Points * 4
+	start := (p*f.Header.Config.Curves + c) * n
+	return f.Arrays["waveform"][start : start+n : start+n]
+}
+
+// waveformPlot returns the curves of waveform plot p as slices into the packet.
+func (f *Frame) waveformPlot(p int) [][]byte {
+	curves := make([][]byte, f.Header.Config.Curves)
+	for c := range curves {
+		curves[c] = f.waveformCurve(p, c)
+	}
+	return curves
+}
+
+// imagePlot returns the height×width(×3) block of image plot p without copying.
+func (f *Frame) imagePlot(p int) []byte {
+	c := f.Header.Config
+	n := c.Height * c.Width * c.imageItem()
+	return f.Arrays["image"][p*n : (p+1)*n : (p+1)*n]
+}
+
+// decode validates a protocol v2 packet: version 2, complete configuration and
+// full-rank shapes [waveform_plots, curves, points] / [image_plots, height, width(, 3)].
 func decode(data []byte) (*Frame, error) {
 	if len(data) < 4 || len(data) > maxPacket {
 		return nil, errors.New("invalid packet length")
@@ -69,7 +107,7 @@ func decode(data []byte) (*Frame, error) {
 	if err := json.Unmarshal(fields["config"], &configFields); err != nil {
 		return nil, err
 	}
-	for _, key := range []string{"hz", "points", "append_count", "width", "height", "waveform_mode", "image_mode", "view", "seed", "generation"} {
+	for _, key := range []string{"hz", "points", "append_count", "curves", "waveform_plots", "width", "height", "image_plots", "waveform_mode", "image_mode", "view", "seed", "generation"} {
 		if len(configFields[key]) == 0 || string(configFields[key]) == "null" {
 			return nil, fmt.Errorf("missing configuration %s", key)
 		}
@@ -79,8 +117,14 @@ func decode(data []byte) (*Frame, error) {
 		return nil, err
 	}
 	c := h.Config
-	if h.Version != 1 || !finite(h.Emitted) || !finite(c.Hz) || c.Hz <= 0 || c.Hz > 120 || c.Points < 1 || c.Points > 10000000 || c.Width < 1 || c.Width > 8192 || c.Height < 1 || c.Height > 8192 || c.AppendCount < 1 || c.AppendCount > c.Points {
+	if h.Version != 2 {
+		return nil, fmt.Errorf("unsupported protocol version %d (expected 2)", h.Version)
+	}
+	if !finite(h.Emitted) || !finite(c.Hz) || c.Hz <= 0 || c.Hz > 120 || c.Points < 1 || c.Points > 10000000 || c.Width < 1 || c.Width > 8192 || c.Height < 1 || c.Height > 8192 || c.AppendCount < 1 || c.AppendCount > c.Points {
 		return nil, errors.New("invalid header/configuration")
+	}
+	if c.Curves < 1 || c.Curves > 64 || c.WaveformPlots < 1 || c.WaveformPlots > 16 || c.ImagePlots < 1 || c.ImagePlots > 16 {
+		return nil, errors.New("invalid plot or curve count")
 	}
 	if (c.WaveformMode != "append" && c.WaveformMode != "replace") || (c.ImageMode != "rgb" && c.ImageMode != "scalar") || (c.View != "both" && c.View != "waveform" && c.View != "image") {
 		return nil, errors.New("invalid modes")
@@ -96,12 +140,12 @@ func decode(data []byte) (*Frame, error) {
 			if c.View == "image" {
 				return nil, errors.New("unexpected waveform")
 			}
-			shape = []int{c.Points}
+			shape = []int{c.WaveformPlots, c.Curves, c.Points}
 		case "image":
 			if c.View == "waveform" {
 				return nil, errors.New("unexpected image")
 			}
-			shape = []int{c.Height, c.Width}
+			shape = []int{c.ImagePlots, c.Height, c.Width}
 			if c.ImageMode == "rgb" {
 				shape = append(shape, 3)
 				dtype = "uint8"
