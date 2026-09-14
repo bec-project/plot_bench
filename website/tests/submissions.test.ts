@@ -3,8 +3,8 @@ import test from 'node:test';
 import { mkdtemp, writeFile, symlink, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import seed from '../results/apple-m1-max-20260914-quick.json';
-import { classify, workloadKey, type Submission } from '../src/model';
+import seed from './fixtures/quick-smoke.json';
+import { classify, workloadKey, workloadLabel, type Submission } from '../src/model';
 import { parseSubmission, parseSubmissionText, validateCatalog } from '../src/validation';
 import { exportSummary, suggestSubmission } from '../src/export';
 import { loadCatalog } from '../scripts/catalog';
@@ -87,6 +87,8 @@ test('schema rejects unknown/private fields, unsupported versions and invalid ob
     (c: any) => (c.runs[1].id = c.runs[0].id),
     (c: any) => (c.planned_runs = 1),
     (c: any) => (c.classification = 'benchmark'),
+    (c: any) => (c.runs[0].config.curves = 65),
+    (c: any) => delete c.runs[0].config.image_plots,
   ]) {
     const c = sample();
     mutate(c);
@@ -265,4 +267,29 @@ test('submission fields are proposed from public summary data only', async () =>
   const empty = suggestSubmission({});
   assert.deepEqual(empty, { id: 'host', hostId: 'host', hostLabel: 'Unknown CPU', notes: '' });
   assert.match(empty.id, /^[a-z0-9][a-z0-9-]{0,79}$/);
+});
+
+test('plot counts are kept, and summaries without counts mean one plot and one curve', async () => {
+  const raw = rawSummary();
+  const runs: any[] = raw.runs;
+  runs[0].config = { ...runs[0].config };
+  delete runs[0].config.waveform_plots;
+  delete runs[0].config.curves;
+  delete runs[0].config.image_plots;
+  runs[1].config = { ...runs[1].config, waveform_plots: 2, curves: 3, image_plots: 3 };
+  const result = await exportSummary(raw, options);
+  const counts = (c: Submission['runs'][number]['config']) => [
+    c.waveform_plots,
+    c.curves,
+    c.image_plots,
+  ];
+  assert.deepEqual(counts(result.runs[0].config), [1, 1, 1]);
+  assert.deepEqual(counts(result.runs[1].config), [2, 3, 3]);
+  assert.notEqual(
+    workloadKey(result.runs[0].config),
+    workloadKey({ ...result.runs[0].config, curves: 2 }),
+  );
+  assert.match(workloadLabel({ ...result.runs[1].config, view: 'both' }), /2 plots × 3 curves/);
+  assert.match(workloadLabel({ ...result.runs[1].config, view: 'both' }), /3 plots · /);
+  assert.doesNotMatch(workloadLabel(result.runs[0].config), /plots/);
 });

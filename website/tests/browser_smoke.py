@@ -43,11 +43,7 @@ def test_results_filters_details_submission_and_mobile():
             url = str(server.make_url(base))
             await page.goto(url)
             catalog = json.loads((ROOT / "dist/catalog.json").read_text())
-            seed = next(
-                c
-                for c in catalog["campaigns"]
-                if c["id"] == "apple-m1-max-20260914-quick"
-            )
+            seed = json.loads((ROOT / "tests/fixtures/quick-smoke.json").read_text())
             all_runs = [r for c in catalog["campaigns"] for r in c["runs"]]
             matplotlib_count = min(
                 25, sum(r["frontend"] == "matplotlib" for r in all_runs)
@@ -101,23 +97,30 @@ def test_results_filters_details_submission_and_mobile():
             await expect(page.get_by_label("Winner collection")).to_have_value(
                 "benchmark"
             )
-            if not any(
-                c["classification"] == "benchmark" for c in catalog["campaigns"]
-            ):
+            # The default collection is benchmarks; without any, the empty state
+            # links to whichever collection the catalogue does contain.
+            kinds = {c["classification"] for c in catalog["campaigns"]}
+            headings = {
+                "benchmark": "Overall winners",
+                "smoke": "Best observed smoke results",
+                "diagnostic": "Best observed diagnostic results",
+            }
+            if "benchmark" in kinds:
+                kind = "benchmark"
+            else:
                 await expect(
                     page.get_by_role("heading", name="No eligible benchmark results")
                 ).to_be_visible()
+                kind = "smoke" if "smoke" in kinds else "diagnostic"
                 await page.get_by_role(
-                    "link", name="View smoke checks", exact=True
+                    "link",
+                    name="View smoke checks" if kind == "smoke" else "View diagnostics",
+                    exact=True,
                 ).click()
-            else:
-                await page.get_by_label("Winner collection").select_option("smoke")
             await expect(page.locator(".winner-board").first).to_be_visible()
-            await expect(
-                page.get_by_role("heading", name="Best observed smoke results")
-            ).to_be_visible()
+            await expect(page.get_by_role("heading", name=headings[kind])).to_be_visible()
             await page.reload()
-            await expect(page.get_by_label("Winner collection")).to_have_value("smoke")
+            await expect(page.get_by_label("Winner collection")).to_have_value(kind)
             assert await page.evaluate(
                 "document.documentElement.scrollWidth <= innerWidth"
             )
@@ -219,7 +222,7 @@ def test_grouped_campaign_weights_drilldown_dates_and_pagination():
 
     from playwright.async_api import async_playwright, expect
 
-    seed = json.loads((ROOT / "results/apple-m1-max-20260914-quick.json").read_text())
+    seed = json.loads((ROOT / "tests/fixtures/quick-smoke.json").read_text())
 
     def campaign(identifier, rates, day):
         c = copy.deepcopy(seed)

@@ -17,6 +17,9 @@ export interface Workload {
   image_mode: 'scalar' | 'rgb';
   view: 'waveform' | 'image' | 'both';
   seed: number;
+  waveform_plots: number;
+  curves: number;
+  image_plots: number;
 }
 export interface Run {
   id: string;
@@ -92,12 +95,24 @@ export function workloadKey(config: Workload): string {
     config.height,
     config.image_mode,
     config.seed,
+    config.waveform_plots,
+    config.curves,
+    config.image_plots,
   ]);
 }
 export function workloadLabel(c: Workload): string {
   const parts = [];
-  if (c.view !== 'image') parts.push(`${c.points.toLocaleString()} points · ${c.waveform_mode}`);
-  if (c.view !== 'waveform') parts.push(`${c.width} × ${c.height} · ${c.image_mode}`);
+  if (c.view !== 'image') {
+    const layout =
+      c.waveform_plots > 1 || c.curves > 1
+        ? `${c.waveform_plots} plot${c.waveform_plots === 1 ? '' : 's'} × ${c.curves} curve${c.curves === 1 ? '' : 's'} · `
+        : '';
+    parts.push(`${layout}${c.points.toLocaleString()} points · ${c.waveform_mode}`);
+  }
+  if (c.view !== 'waveform') {
+    const layout = c.image_plots > 1 ? `${c.image_plots} plots · ` : '';
+    parts.push(`${layout}${c.width} × ${c.height} · ${c.image_mode}`);
+  }
   return `${parts.join(' / ')} · ${c.hz} Hz`;
 }
 export function sourceLimited(run: Run): boolean {

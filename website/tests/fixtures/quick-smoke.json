@@ -35,7 +35,10 @@
         "waveform_mode": "replace",
         "image_mode": "scalar",
         "view": "both",
-        "seed": 42
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
       },
       "measurement_seconds": 5,
       "warmup_seconds": 2,
@@ -102,7 +105,10 @@
         "waveform_mode": "append",
         "image_mode": "rgb",
         "view": "both",
-        "seed": 42
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
       },
       "measurement_seconds": 5,
       "warmup_seconds": 2,
@@ -169,7 +175,10 @@
         "waveform_mode": "append",
         "image_mode": "rgb",
         "view": "both",
-        "seed": 42
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
       },
       "measurement_seconds": 5,
       "warmup_seconds": 2,
@@ -236,7 +245,10 @@
         "waveform_mode": "append",
         "image_mode": "rgb",
         "view": "both",
-        "seed": 42
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
       },
       "measurement_seconds": 5,
       "warmup_seconds": 2,
@@ -303,7 +315,10 @@
         "waveform_mode": "replace",
         "image_mode": "scalar",
         "view": "both",
-        "seed": 42
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
       },
       "measurement_seconds": 5,
       "warmup_seconds": 2,
@@ -370,7 +385,10 @@
         "waveform_mode": "append",
         "image_mode": "rgb",
         "view": "both",
-        "seed": 42
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
       },
       "measurement_seconds": 5,
       "warmup_seconds": 2,
@@ -437,7 +455,10 @@
         "waveform_mode": "replace",
         "image_mode": "scalar",
         "view": "both",
-        "seed": 42
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
       },
       "measurement_seconds": 5,
       "warmup_seconds": 2,
@@ -504,7 +525,10 @@
         "waveform_mode": "replace",
         "image_mode": "scalar",
         "view": "both",
-        "seed": 42
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
       },
       "measurement_seconds": 5,
       "warmup_seconds": 2,

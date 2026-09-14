@@ -88,6 +88,8 @@ export async function exportSummary(raw: unknown, options: ExportOptions): Promi
         'seed',
       ])
         c[key] = config[key];
+      for (const key of ['waveform_plots', 'curves', 'image_plots'])
+        c[key] = numeric(config[key]) ?? 1;
       const metrics: RecordValue = {};
       for (const key of [
         'submitted_hz',

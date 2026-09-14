@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import seed from '../results/apple-m1-max-20260914-quick.json';
+import seed from './fixtures/quick-smoke.json';
 import { parseSubmission } from '../src/validation';
 import { observations, type Submission } from '../src/model';
 import { collectWinners, winnerKey, closeRatePercent } from '../src/winners';
@@ -246,6 +246,8 @@ test('case identity separates sources, timings, workloads and collection types',
     (o: typeof base) => o.run.config.hz++,
     (o: typeof base) => o.run.config.points++,
     (o: typeof base) => o.run.config.width++,
+    (o: typeof base) => o.run.config.curves++,
+    (o: typeof base) => o.run.config.image_plots++,
     (o: typeof base) => o.run.measurement_seconds++,
     (o: typeof base) => o.run.warmup_seconds++,
     (o: typeof base) => (o.run.context.source_hash = 'f'.repeat(64)),

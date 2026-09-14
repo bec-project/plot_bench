@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import seed from '../results/apple-m1-max-20260914-quick.json';
+import seed from './fixtures/quick-smoke.json';
 import { parseSubmission } from '../src/validation';
 import { observations, type Submission, type Observation } from '../src/model';
 import {
@@ -109,7 +109,17 @@ test('every compatibility dimension separates groups, including explicit context
     (o) => (o.run.context.refresh_hz = 144),
     (o) => (o.run.context.headless = true),
   ];
-  for (const key of ['hz', 'points', 'append_count', 'width', 'height', 'seed'] as const)
+  for (const key of [
+    'hz',
+    'points',
+    'append_count',
+    'width',
+    'height',
+    'seed',
+    'waveform_plots',
+    'curves',
+    'image_plots',
+  ] as const)
     mutations.push((o) => o.run.config[key]++);
   for (const mutate of mutations) {
     const other = structuredClone(base);
