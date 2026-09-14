@@ -15,6 +15,41 @@ PyQtGraph/Matplotlib campaign and are labeled as smoke checks.
 
 UI previews: [desktop](docs/results-desktop.png) · [mobile](docs/results-mobile.png).
 
+The **Winners** page shows the best observed frontend configurations across hosts.
+Preview: [desktop](docs/winners-desktop.png) · [mobile](docs/winners-mobile.png).
+
+## Winners across hosts
+
+Each comparison case selects the highest grouped median for each frontend across
+all submitted hosts. It uses the existing campaign-weighted median, not the fastest
+individual repetition. Cases require the same exact workload and seed, source
+backend, delivery mode, measurement/warmup durations, campaign classification and
+recorded source hash/commit/dirty state. Hardware, frontend versions and display
+settings may vary; their original groups remain separate and inspectable. This is
+a record table of the best observed configurations, not a controlled comparison
+establishing a host-independent library winner. It calculates no cross-host mean.
+
+Scores rank at the displayed precision of 0.1 submitted updates/s. Equal rounded
+scores share a rank, and all tied host/configuration records are retained.
+Competition ranks follow 1, 1, 3 after a first-place tie. Raw precision is available
+in run details; rounding ties do not establish statistical equivalence. Paced runs
+that reach their target cannot establish an adapter's maximum rendering capacity.
+Cases with only one eligible frontend are explicitly marked as having one entrant.
+
+**Benchmarks** is the default collection; **Smoke checks** and **Diagnostics** are
+separate selections and never compete against benchmark campaigns. The initial
+seed has only smoke checks, so the benchmark winners view explains its empty state
+and links to smoke records. Incomplete-context and no-valid-rate groups cannot
+win; their excluded count is shown, and the Results page retains their observations.
+Source-limited groups with valid observations remain eligible with visible flags
+and attempted/successful counts, including any failed repetitions.
+
+Workload, source, mode, collection and inclusive UTC date filters persist in the
+URL. The page paginates comparison cases and ties, links back to each winning
+host, and expands into campaign and run evidence. All frontend records can be
+expanded to inspect the runners-up. Winners depend on the submitted coverage;
+more submissions or a changed date filter may change the record holders.
+
 ## Repeated measurements
 
 **Grouped / Individual runs** changes the display without changing any submission
