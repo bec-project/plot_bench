@@ -89,8 +89,10 @@ if selected plotly; then
       --no-audit --no-fund "node@$PLOTBENCH_NODE_VERSION"
   fi
   export PATH="$(dirname "$PLOTBENCH_NODE"):$PATH"
-  npm ci --prefix frontends/plotly --cache "$PLOTBENCH_ROOT/.cache/npm" --no-audit --no-fund
-  npm run build --prefix frontends/plotly
+  # Distribution npm launchers can hard-code /usr/bin/node, ignoring PATH.
+  PLOTBENCH_NPM="$(command -v npm)"
+  "$PLOTBENCH_NODE" "$PLOTBENCH_NPM" ci --prefix frontends/plotly --cache "$PLOTBENCH_ROOT/.cache/npm" --no-audit --no-fund
+  "$PLOTBENCH_NODE" "$PLOTBENCH_NPM" run build --prefix frontends/plotly
   .envs/plotting-benchmark/bin/python -m plotbench.provenance plotly
   if [[ "$PLOTBENCH_BROWSER" == bundled ]]; then
     .envs/plotting-benchmark/bin/python -m playwright install chromium
