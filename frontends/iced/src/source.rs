@@ -439,29 +439,25 @@ mod tests {
     }
 
     fn replay_fixture(view: &str, generation: u64) -> (Value, Vec<u8>) {
-        let config = json!({"hz":30,"points":2,"append_count":1,"width":1,"height":1,
-            "waveform_mode":"replace","image_mode":"scalar","view":view,"generation":generation});
+        let config = json!({"hz":30,"points":2,"append_count":1,"curves":1,"waveform_plots":1,
+            "width":1,"height":1,"image_plots":1,"waveform_mode":"replace","image_mode":"scalar",
+            "view":view,"seed":42,"generation":generation});
         let mut arrays = Vec::new();
         let mut payload = Vec::new();
         if view != "image" {
             arrays.push(
-                json!({"name":"waveform","dtype":"float32","shape":[2],"offset":0,"nbytes":8}),
+                json!({"name":"waveform","dtype":"float32","shape":[1,1,2],"offset":0,"nbytes":8}),
             );
             payload.extend([0.0_f32, 1.0].into_iter().flat_map(f32::to_le_bytes));
         }
         if view != "waveform" {
-            arrays.push(json!({"name":"image","dtype":"float32","shape":[1,1],"offset":payload.len(),"nbytes":4}));
+            arrays.push(json!({"name":"image","dtype":"float32","shape":[1,1,1],"offset":payload.len(),"nbytes":4}));
             payload.extend(0.5_f32.to_le_bytes());
         }
-        let header = serde_json::to_vec(&json!({"version":1,"seq":0,"generation":generation,
-            "emitted_at_ms":0.0,"config":config,"arrays":arrays}))
-        .unwrap();
-        let mut packet = (header.len() as u32).to_le_bytes().to_vec();
-        packet.extend(header);
-        while !packet.len().is_multiple_of(4) {
-            packet.push(0);
-        }
-        packet.extend(payload);
+        let packet = protocol::tests::pack(
+            json!({"seq":0,"generation":generation,"emitted_at_ms":0.0,"config":config,"arrays":arrays}),
+            &payload,
+        );
         let mut replay = 2_u32.to_le_bytes().to_vec();
         for _ in 0..2 {
             replay.extend((packet.len() as u32).to_le_bytes());

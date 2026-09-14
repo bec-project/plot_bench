@@ -32,6 +32,65 @@ const PRIMARY: Color = Color::from_rgb8(216, 230, 237);
 const MUTED: Color = Color::from_rgb8(143, 167, 182);
 const ACCENT: Color = Color::from_rgb8(100, 220, 204);
 const ERROR: Color = Color::from_rgb8(255, 167, 167);
+/// Shared curve palette (`CURVE_COLORS` in `plotbench.palette`): curve `c` uses index `c % 8`.
+const CURVE_COLORS: [Color; 8] = [
+    Color::from_rgb8(100, 220, 204), // #64dccc (accent)
+    Color::from_rgb8(245, 199, 110), // #f5c76e
+    Color::from_rgb8(122, 166, 255), // #7aa6ff
+    Color::from_rgb8(255, 157, 122), // #ff9d7a
+    Color::from_rgb8(195, 155, 255), // #c39bff
+    Color::from_rgb8(155, 229, 100), // #9be564
+    Color::from_rgb8(255, 122, 184), // #ff7ab8
+    Color::from_rgb8(110, 231, 255), // #6ee7ff
+];
+const GRID_SPACING: f32 = 16.0;
+
+fn curve_color(curve: usize) -> Color {
+    CURVE_COLORS[curve % CURVE_COLORS.len()]
+}
+
+/// Shared layout rule: `columns = ceil(sqrt(n))`, `rows = ceil(n / columns)`, row-major.
+fn grid_shape(plots: usize) -> (usize, usize) {
+    let plots = plots.max(1);
+    let mut columns = (plots as f64).sqrt().floor() as usize;
+    while columns * columns < plots {
+        columns += 1;
+    }
+    (columns, plots.div_ceil(columns))
+}
+
+fn plot_title(kind: &str, index: usize, count: usize) -> String {
+    if count == 1 {
+        kind.to_owned()
+    } else {
+        format!("{kind} {}", index + 1)
+    }
+}
+
+/// `1 plot` / `3 plots`: a count with its grammatically pluralised noun.
+fn plural(count: usize, noun: &str) -> String {
+    format!("{count} {noun}{}", if count == 1 { "" } else { "s" })
+}
+
+/// Workload strip suffixes: ` · N plot(s) × K curve(s)` when either exceeds one,
+/// ` · M plots` when there are several image plots; empty otherwise.
+fn workload_suffixes(config: &Config) -> (String, String) {
+    let waveform = if config.waveform_plots > 1 || config.curves > 1 {
+        format!(
+            " · {} × {}",
+            plural(config.waveform_plots, "plot"),
+            plural(config.curves, "curve")
+        )
+    } else {
+        String::new()
+    };
+    let image = if config.image_plots > 1 {
+        format!(" · {}", plural(config.image_plots, "plot"))
+    } else {
+        String::new()
+    };
+    (waveform, image)
+}
 
 #[derive(Clone, Debug, ValueEnum)]
 enum Mode {
@@ -77,6 +136,7 @@ enum Message {
     SourceReady,
     ImageReady(
         Identity,
+        usize,
         Result<image_allocation::Allocation, image_allocation::Error>,
     ),
     Window(window::Id),
@@ -121,15 +181,20 @@ struct PreparedFrame {
     identity: Identity,
     config: Config,
     receive_age_ms: Option<f64>,
-    waveform: Option<(canvas::Path, Size)>,
+    /// One entry per waveform plot; each holds one path (and its layout size) per curve.
+    waveforms: Vec<Vec<(canvas::Path, Size)>>,
+    /// One allocation slot per image plot, filled as `ImageReady` completions arrive.
+    allocations: Vec<Option<image_allocation::Allocation>>,
+    remaining_allocations: usize,
     started: Instant,
     cpu_ms: f64,
     conversion_ms: f64,
     allocation_started: Option<Instant>,
 }
 
+/// One Canvas program per waveform plot, drawing every curve of that plot.
 struct Waveform {
-    path: canvas::Path,
+    paths: Vec<canvas::Path>,
     path_size: Size,
     points: usize,
     seq: u64,
@@ -138,6 +203,22 @@ struct Waveform {
     draw_sample: Arc<Mutex<Option<(u64, f64)>>>,
     data_area: Arc<Mutex<Option<Size>>>,
     canvas_size: Arc<Mutex<Option<Size>>>,
+}
+
+impl Waveform {
+    fn new(scale: f32) -> Self {
+        Self {
+            paths: Vec::new(),
+            path_size: Size::new(1.0, 1.0),
+            points: 0,
+            seq: 0,
+            scale,
+            cache: canvas::Cache::new(),
+            draw_sample: Arc::new(Mutex::new(None)),
+            data_area: Arc::new(Mutex::new(None)),
+            canvas_size: Arc::new(Mutex::new(None)),
+        }
+    }
 }
 
 impl canvas::Program<Message> for Waveform {
@@ -199,30 +280,30 @@ impl canvas::Program<Message> for Waveform {
                     ..canvas::Text::default()
                 });
             }
-            let path = if bounds.size() == self.path_size {
-                Cow::Borrowed(&self.path)
-            } else {
-                let original = plot_area(self.path_size);
-                let sx = area.width / original.width;
-                let sy = area.height / original.height;
-                Cow::Owned(
-                    self.path
-                        .transform(&canvas::path::lyon_path::math::Transform::new(
-                            sx,
-                            0.0,
-                            0.0,
-                            sy,
-                            area.x - original.x * sx,
-                            area.y - original.y * sy,
-                        )),
-                )
-            };
-            frame.stroke(
-                &path,
-                canvas::Stroke::default()
-                    .with_color(ACCENT)
-                    .with_width(1.0 / self.scale),
+            let original = plot_area(self.path_size);
+            let sx = area.width / original.width;
+            let sy = area.height / original.height;
+            let fit = canvas::path::lyon_path::math::Transform::new(
+                sx,
+                0.0,
+                0.0,
+                sy,
+                area.x - original.x * sx,
+                area.y - original.y * sy,
             );
+            for (curve, path) in self.paths.iter().enumerate() {
+                let path = if bounds.size() == self.path_size {
+                    Cow::Borrowed(path)
+                } else {
+                    Cow::Owned(path.transform(&fit))
+                };
+                frame.stroke(
+                    &path,
+                    canvas::Stroke::default()
+                        .with_color(curve_color(curve))
+                        .with_width(1.0 / self.scale),
+                );
+            }
         });
         if generated.get() {
             *self.draw_sample.lock().unwrap() =
@@ -267,8 +348,8 @@ struct App {
     metrics: Metrics,
     config: Config,
     palette: Arc<Vec<[u8; 3]>>,
-    waveform: Waveform,
-    image: Option<image_allocation::Allocation>,
+    waveforms: Vec<Waveform>,
+    images: Vec<image_allocation::Allocation>,
     readiness: Readiness<Packet>,
     preparing: Option<PreparedFrame>,
     image_area: Arc<Mutex<Option<Size>>>,
@@ -304,13 +385,17 @@ impl App {
             "pixel_ratio":null,"viewport_logical":[args.width,args.height],
             "viewport_size":[args.width,args.height],"viewport_size_units":"logical pixels",
             "plot_viewport_units":"physical pixels; data drawing area excluding axes",
-            "measurement_stage":"update_ms: synchronous CPU preparation (Canvas path and RGBA conversion) plus ready-frame adoption; excludes asynchronous allocation waiting and later Canvas tessellation. update_complete_ms: elapsed from selected-packet preparation to ready-frame adoption, including allocation and event-loop waiting; not GPU or screen presentation time. image_upload_wait_ms: allocation request to completion-message processing, including queue/GPU/event scheduling. draw_ms: Canvas cache generation (axes/text/stroke tessellation) when a callback matches an adopted frame; excludes image upload, GPU submission and physical presentation",
-            "update_strategy":"authoritative full-window replacement in append and replace; no decimation; iced_runtime::image::allocate before adopting a fresh image; retain last ready Allocation until replacement; one active preparation/allocation plus one latest CPU packet; stale-generation allocation completions discarded",
+            "measurement_stage":"update_ms: synchronous CPU preparation (one Canvas path per curve of every waveform plot and RGBA conversion of every image plot) plus ready-frame adoption; excludes asynchronous allocation waiting and later Canvas tessellation. update_complete_ms: elapsed from selected-packet preparation to ready-frame adoption, including allocation and event-loop waiting for every image plot; not GPU or screen presentation time. image_upload_wait_ms: first allocation request to the last completion-message processing, including queue/GPU/event scheduling. draw_ms: sum of the Canvas cache generations (axes/text/stroke tessellation) of every waveform plot when each callback matches the adopted frame; excludes image upload, GPU submission and physical presentation",
+            "update_strategy":"authoritative full-window replacement in append and replace; no decimation; one Canvas per waveform plot with one path per curve; iced_runtime::image::allocate for every image plot before adopting a frame; retain the last ready Allocations until replacement; one active preparation/allocation plus one latest CPU packet; stale-generation allocation completions discarded",
             "image_interpolation":"nearest", "image_levels":[0,1],"waveform_y_range":[-1.5,1.5],
-            "waveform_stroke_physical_px":1,"custom_work":"Custom Canvas waveform paths, fixed axes and ticks; custom scalar LUT to RGBA conversion. Iced is a GUI toolkit, not a plotting library.",
+            "waveform_stroke_physical_px":1,"custom_work":"Custom Canvas waveform paths, fixed axes and ticks; custom scalar LUT to RGBA conversion; custom plot grid. Iced is a GUI toolkit, not a plotting library.",
             "gpu_time_available":false,"displayed_fps_available":false,
             "mailbox_capacity":1,"source_notifications":"bounded coalesced wakeup; no packet polling",
             "housekeeping_interval_ms":250,"target_hz":config.hz,"config":config,
+            "plot_counts":{"waveform":config.visible_waveform_plots(),"image":config.visible_image_plots()},
+            "curves":config.curves,
+            "plot_layout":"waveform plots first, then image plots; columns = ceil(sqrt(n)), rows = ceil(n / columns), row-major, equal cells",
+            "curve_colors":["#64dccc","#f5c76e","#7aa6ff","#ff9d7a","#c39bff","#9be564","#ff7ab8","#6ee7ff"],
             "image_allocation_timeout_seconds":20,
             "monitor_identity":null,"monitor_refresh_hz":null,
             "display_metadata_note":"Iced exposes monitor dimensions and window position here, not physical monitor identity or actual refresh rate; controlled-display context must be supplied by the harness",
@@ -328,24 +413,17 @@ impl App {
         );
         let source = Source::start(args.url.clone(), matches!(args.mode, Mode::Replay));
         let hud_targets = metric_target_hints(None, matches!(args.mode, Mode::Replay));
+        let waveforms = (0..config.waveform_plots)
+            .map(|_| Waveform::new(1.0))
+            .collect();
         let app = Self {
             args,
             source,
             metrics,
             config,
             palette,
-            waveform: Waveform {
-                path: canvas::Path::new(|_| {}),
-                path_size: Size::new(1.0, 1.0),
-                points: 0,
-                seq: 0,
-                scale: 1.0,
-                cache: canvas::Cache::new(),
-                draw_sample: Arc::new(Mutex::new(None)),
-                data_area: Arc::new(Mutex::new(None)),
-                canvas_size: Arc::new(Mutex::new(None)),
-            },
-            image: None,
+            waveforms,
+            images: Vec::new(),
             readiness: Readiness::default(),
             preparing: None,
             image_area: Arc::new(Mutex::new(None)),
@@ -379,31 +457,52 @@ impl App {
         )
     }
 
-    fn waveform_size(&self) -> Size {
-        self.waveform
-            .canvas_size
-            .lock()
-            .unwrap()
-            .unwrap_or_else(|| {
-                let width = self.args.width as f32 - 48.0;
-                Size::new(
-                    if self.config.view == "both" {
-                        (width - 16.0) / 2.0 - 36.0
-                    } else {
-                        width - 36.0
-                    },
-                    self.args.height as f32 - 360.0,
-                )
-            })
+    /// Estimated Canvas size of one grid cell before the first layout pass reports it.
+    fn estimated_canvas_size(&self, config: &Config) -> Size {
+        let (columns, rows) =
+            grid_shape(config.visible_waveform_plots() + config.visible_image_plots());
+        let width = (self.args.width as f32 - 48.0 - GRID_SPACING * (columns - 1) as f32)
+            / columns as f32
+            - 36.0;
+        let height = (self.args.height as f32 - 276.0 - GRID_SPACING * (rows - 1) as f32)
+            / rows as f32
+            - 84.0;
+        Size::new(width.max(1.0), height.max(1.0))
+    }
+
+    /// The Canvas size to build waveform plot `plot` for: the last measured layout of that
+    /// plot, unless the frame changes the visible plot set (its old measurement is stale).
+    fn waveform_size(&self, plot: usize, config: &Config) -> Size {
+        let same_layout = (
+            self.config.view.as_str(),
+            self.config.visible_waveform_plots(),
+            self.config.visible_image_plots(),
+        ) == (
+            config.view.as_str(),
+            config.visible_waveform_plots(),
+            config.visible_image_plots(),
+        );
+        same_layout
+            .then(|| self.waveforms.get(plot))
+            .flatten()
+            .and_then(|waveform| *waveform.canvas_size.lock().unwrap())
+            .unwrap_or_else(|| self.estimated_canvas_size(config))
+    }
+
+    /// Total Canvas generation time when every waveform plot reported a match for `seq`.
+    fn take_draw_ms(&self, seq: u64) -> Option<f64> {
+        let samples: Vec<_> = self
+            .waveforms
+            .iter()
+            .map(|waveform| waveform.draw_sample.lock().unwrap().take())
+            .collect();
+        (!samples.is_empty() && samples.iter().all(|s| s.is_some_and(|(s, _)| s == seq)))
+            .then(|| samples.iter().flatten().map(|(_, ms)| ms).sum())
     }
 
     fn finish_pending(&mut self) {
         if let Some(mut sample) = self.pending.take() {
-            if let Some((seq, elapsed)) = self.waveform.draw_sample.lock().unwrap().take()
-                && seq == sample.seq
-            {
-                sample.draw_ms = Some(elapsed);
-            }
+            sample.draw_ms = self.take_draw_ms(sample.seq);
             self.metrics.record(sample);
         }
     }
@@ -412,7 +511,9 @@ impl App {
         let waveform = if self.config.view == "image" {
             None
         } else {
-            *self.waveform.data_area.lock().unwrap()
+            self.waveforms
+                .first()
+                .and_then(|waveform| *waveform.data_area.lock().unwrap())
         };
         let image = if self.config.view == "waveform" {
             None
@@ -430,6 +531,11 @@ impl App {
             "waveform": dimensions(waveform, 1.0),
             "image": dimensions(image, 1.0),
         });
+        buffer.metadata["plot_counts"] = json!({
+            "waveform": self.config.visible_waveform_plots(),
+            "image": self.config.visible_image_plots(),
+        });
+        buffer.metadata["curves"] = json!(self.config.curves);
     }
 
     fn collect_latest(&mut self) {
@@ -451,41 +557,65 @@ impl App {
         };
         let started = Instant::now();
         let converting = Instant::now();
-        let waveform = packet.array("waveform").map(|bytes| {
-            let size = self.waveform_size();
-            (curve_path(bytes, size), size)
-        });
-        let handle = packet.array("image").map(|bytes| {
-            image::Handle::from_rgba(
-                packet.header.config.width,
-                packet.header.config.height,
-                protocol::rgba(
-                    bytes,
-                    packet.header.config.image_mode == "rgb",
-                    &self.palette,
-                ),
-            )
-        });
+        let config = &packet.header.config;
+        let waveforms: Vec<Vec<(canvas::Path, Size)>> = if packet.array("waveform").is_some() {
+            (0..config.waveform_plots)
+                .map(|plot| {
+                    let size = self.waveform_size(plot, config);
+                    (0..config.curves)
+                        .map(|curve| {
+                            let bytes = packet
+                                .waveform_curve(plot, curve)
+                                .expect("Validated waveform layout");
+                            (curve_path(bytes, size), size)
+                        })
+                        .collect()
+                })
+                .collect()
+        } else {
+            Vec::new()
+        };
+        let handles: Vec<image::Handle> = if packet.array("image").is_some() {
+            (0..config.image_plots)
+                .map(|plot| {
+                    image::Handle::from_rgba(
+                        config.width,
+                        config.height,
+                        protocol::rgba(
+                            packet.image_plot(plot).expect("Validated image layout"),
+                            config.image_mode == "rgb",
+                            &self.palette,
+                        ),
+                    )
+                })
+                .collect()
+        } else {
+            Vec::new()
+        };
         let conversion_ms = converting.elapsed().as_secs_f64() * 1000.0;
         let mut prepared = PreparedFrame {
             identity,
             config: packet.header.config,
             receive_age_ms: packet.receive_age_ms,
-            waveform,
+            waveforms,
+            allocations: (0..handles.len()).map(|_| None).collect(),
+            remaining_allocations: handles.len(),
             started,
             cpu_ms: started.elapsed().as_secs_f64() * 1000.0,
             conversion_ms,
             allocation_started: None,
         };
-        if let Some(handle) = handle {
+        if !handles.is_empty() {
             prepared.allocation_started = Some(Instant::now());
             self.preparing = Some(prepared);
-            image_allocation::allocate(handle)
-                .map(move |result| Message::ImageReady(identity, result))
+            Task::batch(handles.into_iter().enumerate().map(|(plot, handle)| {
+                image_allocation::allocate(handle)
+                    .map(move |result| Message::ImageReady(identity, plot, result))
+            }))
         } else {
             self.collect_latest();
             if self.readiness.complete(identity) {
-                self.adopt(prepared, None, None);
+                self.adopt(prepared, Vec::new(), None);
             }
             if self.readiness.has_candidate() {
                 Task::done(Message::SourceReady)
@@ -498,13 +628,15 @@ impl App {
     fn adopt(
         &mut self,
         prepared: PreparedFrame,
-        allocation: Option<image_allocation::Allocation>,
+        allocations: Vec<image_allocation::Allocation>,
         image_upload_wait_ms: Option<f64>,
     ) {
-        // Flush the previous observation before clearing its Canvas callback slot.
+        // Flush the previous observation before clearing its Canvas callback slots.
         self.finish_pending();
         let adopting = Instant::now();
-        *self.waveform.draw_sample.lock().unwrap() = None;
+        for waveform in &self.waveforms {
+            *waveform.draw_sample.lock().unwrap() = None;
+        }
         self.config = prepared.config;
         let identity = prepared.identity;
         let skipped = self
@@ -515,14 +647,24 @@ impl App {
             .map_or(0, |previous| {
                 identity.seq.saturating_sub(previous.seq.saturating_add(1))
             });
-        if let Some((path, size)) = prepared.waveform {
-            self.waveform.path_size = size;
-            self.waveform.path = path;
-            self.waveform.points = self.config.points;
-            self.waveform.seq = identity.seq;
-            self.waveform.cache.clear();
+        if !prepared.waveforms.is_empty() {
+            // Rebuild the Canvas set when the plot count changes; otherwise reuse the
+            // programs and only replace their paths.
+            let scale = self.scale;
+            self.waveforms.truncate(prepared.waveforms.len());
+            self.waveforms
+                .resize_with(prepared.waveforms.len(), || Waveform::new(scale));
+            for (waveform, curves) in self.waveforms.iter_mut().zip(prepared.waveforms) {
+                waveform.path_size = curves
+                    .first()
+                    .map_or(Size::new(1.0, 1.0), |(_, size)| *size);
+                waveform.paths = curves.into_iter().map(|(path, _)| path).collect();
+                waveform.points = self.config.points;
+                waveform.seq = identity.seq;
+                waveform.cache.clear();
+            }
         }
-        self.image = allocation;
+        self.images = allocations;
         self.update_ms = prepared.cpu_ms + adopting.elapsed().as_secs_f64() * 1000.0;
         self.age = prepared.receive_age_ms;
         self.skipped += skipped;
@@ -565,30 +707,57 @@ impl App {
                     });
                 return Task::batch([self.prepare_next(), selection]);
             }
-            Message::ImageReady(identity, result) => {
+            Message::ImageReady(identity, plot, result) => {
                 // A newer generation can already be in the mailbox while its
                 // coalesced wakeup waits in the event queue. Observe it first.
                 self.collect_latest();
-                let Some(prepared) = self.preparing.take() else {
+                let Some(mut prepared) = self.preparing.take() else {
                     return Task::none();
                 };
-                if prepared.identity != identity {
+                // Stale (other identity), duplicate or out-of-range completions are discarded.
+                if prepared.identity != identity
+                    || prepared
+                        .allocations
+                        .get(plot)
+                        .is_none_or(|slot| slot.is_some())
+                {
                     self.preparing = Some(prepared);
                     return Task::none();
                 }
-                if self.readiness.complete(identity) {
-                    match result {
-                        Ok(allocation) => {
-                            let wait = prepared
-                                .allocation_started
-                                .map(|started| started.elapsed().as_secs_f64() * 1000.0);
-                            self.adopt(prepared, Some(allocation), wait);
-                        }
-                        Err(error) => {
-                            return self
-                                .fail_allocation(format!("Image allocation failed: {error}"));
-                        }
+                match result {
+                    Ok(allocation) => {
+                        prepared.allocations[plot] = Some(allocation);
+                        prepared.remaining_allocations -= 1;
                     }
+                    Err(error) => {
+                        // Only the frame that would still be adopted is fatal; a
+                        // superseded frame (newer generation or closed run) is
+                        // logged and discarded like any other stale completion.
+                        let message = format!(
+                            "Image allocation failed for image plot {}: {error}",
+                            plot + 1
+                        );
+                        if self.readiness.complete(identity) {
+                            return self.fail_allocation(message);
+                        }
+                        eprintln!("{message} (frame superseded; discarded)");
+                        return self.prepare_next();
+                    }
+                }
+                if prepared.remaining_allocations > 0 {
+                    self.preparing = Some(prepared);
+                    return Task::none();
+                }
+                // Every image plot of this frame is allocated: adopt them together.
+                if self.readiness.complete(identity) {
+                    let wait = prepared
+                        .allocation_started
+                        .map(|started| started.elapsed().as_secs_f64() * 1000.0);
+                    let allocations = std::mem::take(&mut prepared.allocations)
+                        .into_iter()
+                        .map(|slot| slot.expect("Every image plot completed"))
+                        .collect();
+                    self.adopt(prepared, allocations, wait);
                 }
                 return self.prepare_next();
             }
@@ -610,7 +779,7 @@ impl App {
                     .is_some_and(|frame| frame.started.elapsed() > Duration::from_secs(20))
                 {
                     return self.fail_allocation(
-                        "Image allocation did not complete within 20 seconds".into(),
+                        "Image allocation of the frame did not complete within 20 seconds".into(),
                     );
                 }
                 if let Some(pending) = &self.pending_selection {
@@ -752,9 +921,11 @@ impl App {
             },
             Message::Scale(scale) => {
                 self.scale = scale;
-                if self.waveform.scale != scale {
-                    self.waveform.scale = scale;
-                    self.waveform.cache.clear();
+                for waveform in &mut self.waveforms {
+                    if waveform.scale != scale {
+                        waveform.scale = scale;
+                        waveform.cache.clear();
+                    }
                 }
                 let mut buffer = self.metrics.buffer.lock().unwrap();
                 buffer.metadata["pixel_ratio"] = json!(scale);
@@ -847,13 +1018,14 @@ impl App {
             .align_x(alignment::Horizontal::Right),
         ]
         .align_y(alignment::Vertical::Center);
+        let (waveform_suffix, image_suffix) = workload_suffixes(&self.config);
         let workload = container(
             row![
                 workload_item("TARGET RATE", format!("{} Hz", self.config.hz)),
                 workload_item(
                     "WAVEFORM",
                     format!(
-                        "{} points · {}",
+                        "{} points · {}{waveform_suffix}",
                         grouped_count(self.config.points),
                         self.config.waveform_mode
                     )
@@ -861,7 +1033,7 @@ impl App {
                 workload_item(
                     "IMAGE",
                     format!(
-                        "{} × {} · {}",
+                        "{} × {} · {}{image_suffix}",
                         self.config.width, self.config.height, self.config.image_mode
                     )
                 ),
@@ -888,81 +1060,7 @@ impl App {
             metric_item("Receive age", &self.hud[3], &self.hud_targets[3]),
         ]
         .spacing(16);
-        let mut plots = row![].spacing(16).height(Fill);
-        if self.config.view != "image" {
-            let waveform = responsive(move |available| {
-                *self.waveform.canvas_size.lock().unwrap() = Some(available);
-                canvas::Canvas::new(&self.waveform)
-                    .width(Fill)
-                    .height(Fill)
-                    .into()
-            });
-            plots = plots.push(
-                container(
-                    column![
-                        text("Waveform").size(17).color(PRIMARY),
-                        text(format!(
-                            "{} points · {} · full data",
-                            grouped_count(self.config.points),
-                            self.config.waveform_mode
-                        ))
-                        .size(11)
-                        .color(MUTED),
-                        waveform,
-                    ]
-                    .spacing(10),
-                )
-                .padding(18)
-                .width(Fill)
-                .height(Fill)
-                .style(panel_style),
-            );
-        }
-        if self.config.view != "waveform" {
-            let image_view: Element<'_, Message> = if let Some(handle) = &self.image {
-                responsive(move |available| {
-                    let original = Size::new(self.config.width as f32, self.config.height as f32);
-                    *self.image_area.lock().unwrap() =
-                        Some(iced::ContentFit::Contain.fit(original, available));
-                    image(handle.handle().clone())
-                        .filter_method(image::FilterMethod::Nearest)
-                        .content_fit(iced::ContentFit::Contain)
-                        .width(Fill)
-                        .height(Fill)
-                        .into()
-                })
-                .into()
-            } else {
-                container(text("Waiting for image").size(13).color(MUTED))
-                    .center_x(Fill)
-                    .center_y(Fill)
-                    .into()
-            };
-            let mode = if self.config.image_mode == "rgb" {
-                "RGB"
-            } else {
-                "scalar · levels 0–1"
-            };
-            plots = plots.push(
-                container(
-                    column![
-                        text("Image").size(17).color(PRIMARY),
-                        text(format!(
-                            "{} × {} · {}",
-                            self.config.width, self.config.height, mode
-                        ))
-                        .size(11)
-                        .color(MUTED),
-                        image_view,
-                    ]
-                    .spacing(10),
-                )
-                .padding(18)
-                .width(Fill)
-                .height(Fill)
-                .style(panel_style),
-            );
-        }
+        let plots = self.plot_grid();
         let footer = row![
             text("Submitted updates · not displayed FPS")
                 .size(10)
@@ -995,6 +1093,96 @@ impl App {
                 ..container::Style::default()
             })
             .into()
+    }
+
+    /// Waveform cards first, then image cards, in the shared `ceil(sqrt(n))`-column grid.
+    /// Trailing cells of the last row stay empty so every cell keeps the same size.
+    fn plot_grid(&self) -> Element<'_, Message> {
+        let mut cells: Vec<Element<'_, Message>> = Vec::new();
+        if self.config.view != "image" {
+            let count = self.waveforms.len();
+            let curves = if self.config.curves > 1 {
+                format!(" · {} curves", self.config.curves)
+            } else {
+                String::new()
+            };
+            for (index, waveform) in self.waveforms.iter().enumerate() {
+                let canvas = responsive(move |available| {
+                    *waveform.canvas_size.lock().unwrap() = Some(available);
+                    canvas::Canvas::new(waveform)
+                        .width(Fill)
+                        .height(Fill)
+                        .into()
+                });
+                cells.push(plot_card(
+                    plot_title("Waveform", index, count),
+                    format!(
+                        "{} points · {}{curves} · full data",
+                        grouped_count(self.config.points),
+                        self.config.waveform_mode
+                    ),
+                    canvas.into(),
+                ));
+            }
+        }
+        if self.config.view != "waveform" {
+            let count = self.config.image_plots;
+            let mode = if self.config.image_mode == "rgb" {
+                "RGB"
+            } else {
+                "scalar · levels 0–1"
+            };
+            for index in 0..count {
+                let image_view: Element<'_, Message> = if let Some(handle) = self.images.get(index)
+                {
+                    responsive(move |available| {
+                        let original =
+                            Size::new(self.config.width as f32, self.config.height as f32);
+                        if index == 0 {
+                            *self.image_area.lock().unwrap() =
+                                Some(iced::ContentFit::Contain.fit(original, available));
+                        }
+                        image(handle.handle().clone())
+                            .filter_method(image::FilterMethod::Nearest)
+                            .content_fit(iced::ContentFit::Contain)
+                            .width(Fill)
+                            .height(Fill)
+                            .into()
+                    })
+                    .into()
+                } else {
+                    container(text("Waiting for image").size(13).color(MUTED))
+                        .center_x(Fill)
+                        .center_y(Fill)
+                        .into()
+                };
+                cells.push(plot_card(
+                    plot_title("Image", index, count),
+                    format!("{} × {} · {}", self.config.width, self.config.height, mode),
+                    image_view,
+                ));
+            }
+        }
+        let (columns, _) = grid_shape(cells.len());
+        let mut grid = column![].spacing(GRID_SPACING).height(Fill);
+        let mut current = row![].spacing(GRID_SPACING).height(Fill);
+        let mut filled = 0;
+        for cell in cells {
+            current = current.push(cell);
+            filled += 1;
+            if filled == columns {
+                grid = grid.push(current);
+                current = row![].spacing(GRID_SPACING).height(Fill);
+                filled = 0;
+            }
+        }
+        if filled > 0 {
+            for _ in filled..columns {
+                current = current.push(space().width(Fill).height(Fill));
+            }
+            grid = grid.push(current);
+        }
+        grid.into()
     }
 
     fn plot_button(&self, plot: Plot) -> Element<'_, Message> {
@@ -1084,6 +1272,9 @@ fn main() -> Result<()> {
             .context("Cannot read shared source configuration; start plotbench serve first")?,
         1024 * 1024,
     )?)?;
+    config
+        .validate()
+        .context("Invalid shared source configuration from /api/config")?;
     let palette: Vec<[u8; 3]> = serde_json::from_slice(&read_limited(
         client.get(endpoint(&args.url, "/api/colormap")?).send()?,
         1024 * 1024,
@@ -1172,6 +1363,26 @@ fn badge(label: &str, accent: bool) -> Element<'_, Message> {
         },
         ..container::Style::default()
     })
+    .into()
+}
+
+fn plot_card<'a>(
+    title: String,
+    subtitle: String,
+    content: Element<'a, Message>,
+) -> Element<'a, Message> {
+    container(
+        column![
+            text(title).size(17).color(PRIMARY),
+            text(subtitle).size(11).color(MUTED),
+            content,
+        ]
+        .spacing(10),
+    )
+    .padding(18)
+    .width(Fill)
+    .height(Fill)
+    .style(panel_style)
     .into()
 }
 
@@ -1314,6 +1525,120 @@ fn plot_button_style(selected: bool, status: button::Status) -> button::Style {
 #[cfg(test)]
 mod selection_tests {
     use super::*;
+
+    fn config(view: &str, curves: usize, waveform_plots: usize, image_plots: usize) -> Config {
+        serde_json::from_value(protocol::tests::config(
+            view,
+            10_000,
+            curves,
+            waveform_plots,
+            (256, 256),
+            image_plots,
+            "scalar",
+        ))
+        .unwrap()
+    }
+
+    #[test]
+    fn grid_columns_follow_the_shared_layout_rule() {
+        let expected = [
+            (1, (1, 1)),
+            (2, (2, 1)),
+            (3, (2, 2)),
+            (4, (2, 2)),
+            (5, (3, 2)),
+            (6, (3, 2)),
+            (7, (3, 3)),
+            (8, (3, 3)),
+            (9, (3, 3)),
+        ];
+        for (plots, shape) in expected {
+            assert_eq!(grid_shape(plots), shape, "n = {plots}");
+        }
+        assert_eq!(grid_shape(0), (1, 1));
+        assert_eq!(grid_shape(10), (4, 3));
+        assert_eq!(grid_shape(16), (4, 4));
+        assert_eq!(grid_shape(32), (6, 6));
+        for plots in 1..=32 {
+            let (columns, rows) = grid_shape(plots);
+            assert_eq!(columns, (plots as f64).sqrt().ceil() as usize);
+            assert_eq!(rows, plots.div_ceil(columns));
+        }
+    }
+
+    #[test]
+    fn curve_colours_match_the_shared_palette() {
+        let expected = [
+            "#64dccc", "#f5c76e", "#7aa6ff", "#ff9d7a", "#c39bff", "#9be564", "#ff7ab8", "#6ee7ff",
+        ];
+        let hex = |color: Color| {
+            let channel = |value: f32| (value * 255.0).round() as u8;
+            format!(
+                "#{:02x}{:02x}{:02x}",
+                channel(color.r),
+                channel(color.g),
+                channel(color.b)
+            )
+        };
+        for (index, expected) in expected.iter().enumerate() {
+            assert_eq!(hex(curve_color(index)), *expected);
+            assert_eq!(hex(curve_color(index + 8)), *expected, "wraps at eight");
+        }
+        assert_eq!(hex(curve_color(0)), hex(ACCENT));
+    }
+
+    #[test]
+    fn titles_and_workload_suffixes_follow_the_plot_counts() {
+        assert_eq!(plot_title("Waveform", 0, 1), "Waveform");
+        assert_eq!(plot_title("Waveform", 0, 2), "Waveform 1");
+        assert_eq!(plot_title("Image", 2, 3), "Image 3");
+        assert_eq!(
+            workload_suffixes(&config("both", 1, 1, 1)),
+            (String::new(), String::new())
+        );
+        assert_eq!(
+            workload_suffixes(&config("both", 3, 2, 3)),
+            (" · 2 plots × 3 curves".into(), " · 3 plots".into())
+        );
+        assert_eq!(
+            workload_suffixes(&config("waveform", 4, 1, 1)).0,
+            " · 1 plot × 4 curves"
+        );
+        assert_eq!(
+            workload_suffixes(&config("waveform", 1, 4, 1)).0,
+            " · 4 plots × 1 curve"
+        );
+        assert_eq!(
+            workload_suffixes(&config("both", 1, 1, 2)),
+            (String::new(), " · 2 plots".into())
+        );
+        assert_eq!(
+            workload_suffixes(&config("image", 1, 1, 4)),
+            (String::new(), " · 4 plots".into())
+        );
+    }
+
+    #[test]
+    fn visible_plot_counts_follow_the_view() {
+        let both = config("both", 2, 3, 4);
+        assert_eq!(
+            (both.visible_waveform_plots(), both.visible_image_plots()),
+            (3, 4)
+        );
+        let waveform = config("waveform", 2, 3, 4);
+        assert_eq!(
+            (
+                waveform.visible_waveform_plots(),
+                waveform.visible_image_plots()
+            ),
+            (3, 0)
+        );
+        let image = config("image", 2, 3, 4);
+        assert_eq!(
+            (image.visible_waveform_plots(), image.visible_image_plots()),
+            (0, 4)
+        );
+    }
 
     #[test]
     fn metric_hints_follow_active_rate_and_replay_mode() {

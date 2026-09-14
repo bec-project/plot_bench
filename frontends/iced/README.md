@@ -1,9 +1,10 @@
 # Iced frontend
 
 Independent Rust package and `plotbench-iced` executable. This adapter uses the
-released **Iced 0.14.0**, with the wgpu renderer, a custom
-Canvas waveform and Iced's image widget. `Cargo.lock` fixes the complete dependency
-resolution. Python and Node dependencies are not required by this frontend.
+released **Iced 0.14.0**, with the wgpu renderer, one custom Canvas program per
+waveform plot and one Iced image widget per image plot (protocol v2 multi-plot,
+multi-curve workloads). `Cargo.lock` fixes the complete dependency resolution.
+Python and Node dependencies are not required by this frontend.
 
 From the repository root, install the frontend and default Rust source:
 
@@ -64,37 +65,90 @@ causes extra GPU readback and PNG encoding; omit it from benchmark measurements.
 is recorded in metadata.
 
 The presentation uses the shared dark benchmark palette, a workload strip, four
-live metric columns, and equally sized waveform/image cards. Single-view cases
-use the entire plot row. The **Source controls** button opens the configured
-source URL with `open` on macOS or `xdg-open` on Linux, passing the URL as a direct argument. Actual plot
-dimensions continue to be recorded after resizing; hold the window size fixed
-during measurements. Resizing fits the existing Canvas path until the next data
-update replaces it, with the same physical stroke width.
+live metric columns, and equally sized plot cards. The **Source controls** button
+opens the configured source URL with `open` on macOS or `xdg-open` on Linux,
+passing the URL as a direct argument. Actual plot dimensions continue to be
+recorded after resizing; hold the window size fixed during measurements. Resizing
+fits the existing Canvas paths until the next data update replaces them, with the
+same physical stroke width.
+
+## Plots, curves and layout (protocol v2)
+
+![Iced with two three-curve waveform plots and three images](screenshots/iced-multi-plot.png)
+
+The capture above is untimed visual QA of the 2 × 3-curve + 3-image smoke workload on macOS (2× pixel ratio).
+
+The frame header's `waveform_plots`, `curves` and `image_plots` decide what is
+rendered; the widget set is rebuilt whenever an adopted frame changes those counts
+(a new generation), otherwise the Canvas programs are reused and only their paths
+are replaced.
+
+- **Waveform plots**: one Canvas program per plot. Each holds `curves`
+  `canvas::Path` values built from the plot's `(plot, curve)` slice of the 3-D
+  `[waveform_plots, curves, points]` array, sliced without copying. Every curve is
+  stroked with the same one-physical-pixel width; the axes, ticks and labels are
+  drawn once per Canvas. Curve `c` uses the shared palette `CURVE_COLORS[c % 8]`
+  (`#64dccc`, `#f5c76e`, `#7aa6ff`, `#ff9d7a`, `#c39bff`, `#9be564`, `#ff7ab8`,
+  `#6ee7ff`; curve 0 keeps the accent colour), all sharing the fixed y range
+  [-1.5, 1.5] and x range [0, points-1].
+- **Image plots**: one RGBA conversion and one `iced_runtime::image::allocate`
+  request per plot, issued together as a `Task::batch`. A frame is adopted only
+  when **every** image plot's allocation has completed for the same frame
+  identity; stale, duplicate or out-of-range completions are discarded. The
+  20-second allocation timeout applies to the whole frame. An allocation
+  *error* is fatal only for the frame that would still be adopted (the readiness
+  tracker confirms it is the completing identity); an error for a frame that a
+  newer generation has already superseded is logged to stderr and discarded so
+  the run continues with the next frame.
+- **Configuration validation**: `Config::validate()` (curves 1..64,
+  `waveform_plots` and `image_plots` 1..16, Hz, points, append count, modes and
+  view) runs on every packet header and on the boot `/api/config` fetch. An
+  out-of-range boot configuration fails loudly with the same message instead of
+  being clamped.
+- **Layout rule** (shared with every frontend): visible plots are ordered waveform
+  plots first (`Waveform 1..N`), then image plots (`Image 1..M`), with `n = N + M`
+  counting only the kinds enabled by `view`. They fill a grid of
+  `columns = ceil(sqrt(n))` and `rows = ceil(n / columns)` row-major, built from
+  nested `column!`/`row!` widgets with equal `Fill` cells; trailing cells of the
+  last row hold empty `space()` so every cell keeps the same size (n=1 → 1×1,
+  n=2 → 2×1, n=3–4 → 2×2, n=5–6 → 3×2, n=9 → 3×3).
+- **Titles**: `Waveform` / `Image` when there is exactly one of that kind, else
+  `Waveform 1`, `Waveform 2`, … / `Image 1`, …. Waveform subtitles gain `· K curves`
+  when `curves > 1`. The workload strip shows `10,000 points · replace · 2 plots ×
+  3 curves` when plots or curves exceed one and `256 × 256 · scalar · 3 plots`
+  when `image_plots > 1`.
+- **Metadata**: `plot_viewports` / `plot_viewports_logical` record the data area of
+  the **first** plot of each kind (all cells are equal), `plot_counts` the visible
+  counts (`0` for a kind hidden by `view`) and `curves` the curves per waveform
+  plot.
 
 ## Workload and engineering cost
 
 The source transmits a complete authoritative rolling window in append mode and a
 complete new waveform in replace mode. Both are applied as full-window Canvas
-path replacements; this adapter does not claim a specialized append operation.
-Every supplied sample becomes a path vertex, with fixed axes, no decimation, no
-point markers, and a one-physical-pixel opaque stroke. Display pixel ratio is
-queried from the actual window and recorded. The built-in nearest-neighbor image widget
-receives a new allocated RGBA handle for every adopted frame. RGB input is expanded to
-RGBA; scalar input uses the central 256-entry LUT with index
-`floor(clamp(value, 0, 1) * 255)` and fixed levels `[0, 1]`.
+path replacements for every curve of every waveform plot; this adapter does not
+claim a specialized append operation. Every supplied sample becomes a path vertex,
+with fixed axes, no decimation, no point markers, and a one-physical-pixel opaque
+stroke. Display pixel ratio is queried from the actual window and recorded. Each
+built-in nearest-neighbor image widget receives a new allocated RGBA handle for
+every adopted frame. RGB input is expanded to RGBA; scalar input uses the central
+256-entry LUT with index `floor(clamp(value, 0, 1) * 255)` and fixed levels `[0, 1]`.
+The cost therefore scales with `waveform_plots × curves` paths (tessellated in as
+many Canvas caches) and `image_plots` conversions plus allocations per frame.
 
-Images use Iced's explicit allocation API before adoption. The last ready image's
-`Allocation` stays alive until its replacement is ready; Iced may otherwise skip
-drawing a fresh handle while its asynchronous upload is pending. There is at most
-one preparation/allocation in flight and one replaceable newest CPU candidate, in
-addition to the receiver's latest mailbox. New source generations invalidate pending
+Images use Iced's explicit allocation API before adoption. The last ready
+`Allocation` of every image plot stays alive until the complete replacement frame
+is ready; Iced may otherwise skip drawing a fresh handle while its asynchronous
+upload is pending. There is at most one preparation (covering all plots of one
+frame) in flight and one replaceable newest CPU candidate, in addition to the
+receiver's latest mailbox. New source generations invalidate pending
 older work; a receiver-connection epoch also rejects work from a disconnected source
 while allowing a restarted source to reset its wire sequence/generation. The epoch is
 recorded in metadata; a timed run with a reconnect should be repeated. Same-generation
 uploads can complete even when a newer candidate exists,
-so continuous input cannot starve adoption. The waveform and image from a combined
-packet are adopted together. Allocation errors or a 20-second timeout end the run
-with error metadata. Shutdown discards queued candidates and ignores late completions.
+so continuous input cannot starve adoption. All waveform plots and all image plots
+of a packet are adopted together. Allocation errors or a 20-second whole-frame
+timeout end the run with error metadata. Shutdown discards queued candidates and ignores late completions.
 
 The pinned `iced_runtime::image::allocate` API is used directly because Iced's
 convenience re-export is gated by its `image` feature. Keeping `image-without-codecs`
@@ -102,30 +156,34 @@ avoids adding image-file codecs to this raw-RGBA benchmark. The image widget and
 allocation machinery are supplied by Iced; custom work remains the plotting and
 conversion described here.
 
-**Iced is a GUI toolkit, not a ready-made scientific plotting library.** The curve,
-fixed axes, tick placement, coordinate mapping, and scalar colormapping are custom
-application code. That extra implementation and maintenance work is a disadvantage
+**Iced is a GUI toolkit, not a ready-made scientific plotting library.** The curves,
+fixed axes, tick placement, coordinate mapping, plot grid, and scalar colormapping
+are custom application code. That extra implementation and maintenance work is a disadvantage
 of this solution. Zoom, pan, scientific tick formatting, selection, colorbars, and
 plot export would require further work. These features are outside the common
 streaming baseline, and are not implicitly provided by this example.
 
 ## What the measurements mean
 
-- `update_ms`: synchronous CPU input conversion, complete waveform path creation,
-  scalar/RGB-to-RGBA conversion, and ready-frame adoption. Allocation waiting is excluded.
-- `conversion_ms`: the conversion/path/image-handle portion of that same interval.
+- `update_ms`: synchronous CPU input conversion, path creation for every curve of
+  every waveform plot, scalar/RGB-to-RGBA conversion of every image plot, and
+  ready-frame adoption. Allocation waiting is excluded.
+- `conversion_ms`: the conversion/path/image-handle portion of that same interval,
+  covering all plots of the frame.
 - `update_complete_ms`: elapsed time from selecting a packet for preparation to
   adopting the complete ready frame. This includes allocation and event-loop waiting
-  for images. It excludes waiting in the receiver/candidate mailbox and later drawing;
-  it is neither pure CPU cost nor physical presentation time.
-- `image_upload_wait_ms`, for images: allocation request to completion-message
-  processing. This includes upload-queue, GPU and UI scheduling; it is not a GPU timer.
-- `draw_ms`, when observed: the subsequent Canvas geometry-cache generation,
-  including fixed axes/text and stroke tessellation. It is matched to its frame
-  sequence. It excludes image drawing, renderer scheduling, GPU upload,
-  GPU completion, and physical presentation. A missing value means no matching
-  Canvas generation callback was observed before the next update; image-only
-  runs have no Canvas measurement.
+  for every image plot. It excludes waiting in the receiver/candidate mailbox and
+  later drawing; it is neither pure CPU cost nor physical presentation time.
+- `image_upload_wait_ms`, for images: the first allocation request of the frame to
+  the processing of its last completion message. This includes upload-queue, GPU
+  and UI scheduling; it is not a GPU timer.
+- `draw_ms`, when observed: the sum of the subsequent Canvas geometry-cache
+  generations of every waveform plot, including fixed axes/text and stroke
+  tessellation of all curves. It is recorded only when every waveform Canvas
+  reported a generation matching the frame sequence. It excludes image drawing,
+  renderer scheduling, GPU upload, GPU completion, and physical presentation. A
+  missing value means at least one Canvas generation callback was not observed
+  before the next update; image-only runs have no Canvas measurement.
 - The HUD counts **adopted ready updates/s** under the Submitted label, not displayed FPS.
   Preparing an image or requesting its allocation does not increment the count. Receive age is an
   approximate same-host wall-clock estimate at receipt, not presentation latency.
@@ -164,9 +222,10 @@ The metadata separates logical window dimensions from physical pixels. It does
 not claim identical inner plot areas to the other adapters: axes and toolkit
 layout can consume different fractions of the same window. Root reports must
 retain that limitation when comparing numbers.
-`plot_viewports` records the measured physical data areas: Canvas bounds minus
-axes margins for waveforms, and the fitted image area from actual layout bounds.
-`plot_viewports_logical` records their logical-pixel counterparts.
+`plot_viewports` records the measured physical data areas of the first plot of each
+kind: Canvas bounds minus axes margins for waveforms, and the fitted image area from
+actual layout bounds. `plot_viewports_logical` records their logical-pixel
+counterparts; `plot_counts` and `curves` record the visible widget and curve counts.
 Monitor logical dimensions, window position, and renderer environment overrides are
 also recorded. Iced uses vsync by default; `ICED_PRESENT_MODE` can override it. Actual
 surface present mode, monitor identity and physical refresh rate remain explicitly
@@ -191,8 +250,12 @@ cargo test --manifest-path frontends/iced/Cargo.toml --locked --release live_sha
 ```
 
 Protocol tests cover little-endian arrays and aligned headers, authoritative
-append windows, truncation, invalid protocol versions, exact replay framing, and
-RGB/scalar color conversion. Live tests and graphical smoke runs also require a
+append windows, truncation, invalid protocol versions (only version 2 is accepted),
+exact replay framing, and RGB/scalar color conversion. A multi-plot packet built
+like the Python encoder checks the zero-copy `(plot, curve)` waveform slices and
+per-plot image slices, and a rejection matrix covers flat, transposed, wrong-count
+and out-of-range shapes and plot fields. Layout tests cover the grid-columns rule
+(n = 1..9 and beyond), plot titles, workload suffixes and the shared curve palette. Live tests and graphical smoke runs also require a
 running shared source and an active graphical desktop.
 Selection tests cover the last-enabled-plot guard and recorded-run/pending locks.
 A loopback HTTP test verifies that selection updates contain only `view`, replay
