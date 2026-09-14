@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { submitUpdates } from '../src/update-timing';
 
-test('completion elapsed includes deferred work and waits for both active plots', async (context) => {
+test('completion elapsed includes deferred work and waits for every active plot', async (context) => {
   let clock = 15;
   context.mock.method(performance, 'now', () => clock);
   let finishWaveform!: () => void;
