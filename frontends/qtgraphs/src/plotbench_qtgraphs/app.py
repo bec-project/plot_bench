@@ -1,6 +1,7 @@
 """Qt Graphs LineSeries and a custom QQuickImageProvider fed by the central source."""
 
 import logging
+import math
 import os
 import platform
 import sys
@@ -12,7 +13,7 @@ from time import perf_counter
 import numpy as np
 import psutil
 from plotbench.client import FrameSource, MetricsSink, frontend_parser
-from plotbench.palette import colorize
+from plotbench.palette import CURVE_COLORS, colorize
 from plotbench.qt_metadata import qt_window_metadata
 
 # qtpy has no QtGraphs wrapper; all other Qt types use qtpy.
@@ -20,31 +21,74 @@ from PySide6.QtGraphs import QLineSeries
 from qtpy.QtCore import Property, QObject, Qt, QTimer, QUrl, Signal, Slot, qVersion
 from qtpy.QtGui import QDesktopServices, QGuiApplication, QImage
 from qtpy.QtQml import QQmlApplicationEngine
-from qtpy.QtQuick import QQuickImageProvider
+from qtpy.QtQuick import QQuickImageProvider, QQuickItem
 from qtpy.QtQuickControls2 import QQuickStyle
+from shiboken6 import getCppPointer
 
 logger = logging.getLogger(__name__)
 METRIC_GUIDE = "Targets follow the current input frame rate. The update budget is one source period and excludes deferred GPU and display presentation work. The receive-age goal is indicative; it is not a latency guarantee. These are not displayed-FPS measurements. Replay has no receive age."
 
 
+def grid_columns(count):
+    """Shared layout rule: ``ceil(sqrt(n))`` columns for ``n`` visible plots (at least one)."""
+    return max(1, math.ceil(math.sqrt(count)))
+
+
+def iter_objects(obj, visited=None):
+    """Walk QObject children and Qt Quick child items (Repeater delegates have no QObject parent).
+
+    One ``visited`` set is threaded through the recursion so every object is yielded once even
+    when it is reachable both as a QObject child and as a Qt Quick child item.
+    """
+    if visited is None:
+        visited = set()
+    key = getCppPointer(obj)[0]
+    if key in visited:
+        return
+    visited.add(key)
+    yield obj
+    for child in obj.children():
+        yield from iter_objects(child, visited)
+    if isinstance(obj, QQuickItem):
+        for child in obj.childItems():
+            yield from iter_objects(child, visited)
+
+
+def named_objects(root):
+    """Map every non-empty objectName below ``root`` to its object (first occurrence wins)."""
+    named = {}
+    for obj in iter_objects(root):
+        name = obj.objectName()
+        if name and name not in named:
+            named[name] = obj
+    return named
+
+
 class FrameImageProvider(QQuickImageProvider):
-    """Own one detached RGB image; Qt Quick handles its texture upload and display."""
+    """Own one detached RGB image per image plot; Qt Quick handles texture upload and display."""
 
     def __init__(self):
         super().__init__(QQuickImageProvider.ImageType.Image)
-        self._image = QImage()
+        self._images = []
         self._lock = Lock()
 
-    def update_image(self, array):
+    def update_image(self, plot, array):
         rgb = colorize(array) if array.ndim == 2 else np.ascontiguousarray(array)
         height, width, _ = rgb.shape
         image = QImage(rgb.data, width, height, rgb.strides[0], QImage.Format.Format_RGB888).copy()
         with self._lock:
-            self._image = image
+            if plot >= len(self._images):
+                self._images.extend(QImage() for _ in range(plot + 1 - len(self._images)))
+            self._images[plot] = image
 
     def requestImage(self, image_id, size, requested_size):
+        # Image ids are "<plot>/<generation>/<seq>"; generation and seq only defeat caching.
+        try:
+            plot = int(image_id.partition("/")[0])
+        except ValueError:
+            plot = -1
         with self._lock:
-            image = QImage(self._image)
+            image = QImage(self._images[plot]) if 0 <= plot < len(self._images) else QImage()
         size.setWidth(image.width())
         size.setHeight(image.height())
         if requested_size.isValid() and requested_size != image.size():
@@ -69,7 +113,7 @@ class Controller(QObject):
         self.error = None
         self.duration_started = False
         self._config = {}
-        self._image_url = ""
+        self._image_urls = []
         self._view_request_pending = False
         self._presentation = {
             "submitted": "—",
@@ -86,7 +130,9 @@ class Controller(QObject):
         self.generation = None
         self.x = np.empty(0, dtype=np.float32)
         self.window = None
-        self.series = None
+        self.series = []
+        self.first_graph = None
+        self.first_image = None
         self.process = psutil.Process()
         self.process.cpu_percent()
         self.source = FrameSource(args.url, args.mode)
@@ -97,8 +143,9 @@ class Controller(QObject):
             args.run_id,
             expected_duration=args.duration,
             metadata={
-                "measurement_stage": "QLineSeries.replaceNp + custom CPU scalar LUT/RGB QImage "
-                "copy + synchronous QML image-provider submission; GPU work excluded",
+                "measurement_stage": "QLineSeries.replaceNp per plot and curve + custom CPU "
+                "scalar LUT/RGB QImage copy per image plot + synchronous QML image-provider "
+                "submission; GPU work excluded",
                 "renderer": "Qt Graphs LineSeries / Qt Quick scene graph",
                 "qsg_rhi_backend_override": os.environ.get("QSG_RHI_BACKEND"),
                 "qt_quick_backend_override": os.environ.get("QT_QUICK_BACKEND"),
@@ -143,11 +190,25 @@ class Controller(QObject):
                 "imageSubtitle": "Waiting for source",
             }
         image_mode = "RGB" if config["image_mode"] == "rgb" else "scalar"
+        plots, curves, image_plots = (
+            config["waveform_plots"],
+            config["curves"],
+            config["image_plots"],
+        )
+        waveform = f"{config['points']:,} · {config['waveform_mode']}"
+        if plots > 1 or curves > 1:
+            waveform += f" · {plural(plots, 'plot')} × {plural(curves, 'curve')}"
+        image = f"{config['width']} × {config['height']} · {image_mode}"
+        if image_plots > 1:
+            image += f" · {plural(image_plots, 'plot')}"
+        waveform_subtitle = f"{config['points']:,} points · {config['waveform_mode']}"
+        if curves > 1:
+            waveform_subtitle += f" · {curves} curves"
         return {
             "target": f"{config['hz']:g} Hz",
-            "waveform": f"{config['points']:,} · {config['waveform_mode']}",
-            "image": f"{config['width']} × {config['height']} · {image_mode}",
-            "waveformSubtitle": f"{config['points']:,} points · {config['waveform_mode']}",
+            "waveform": waveform,
+            "image": image,
+            "waveformSubtitle": waveform_subtitle,
             "imageSubtitle": f"{config['width']} × {config['height']} · "
             f"{'RGB' if config['image_mode'] == 'rgb' else 'scalar colormap'}",
         }
@@ -234,9 +295,9 @@ class Controller(QObject):
             )
         self.plotControlsChanged.emit()
 
-    @Property(str, notify=imageChanged)
-    def imageUrl(self):
-        return self._image_url
+    @Property("QStringList", notify=imageChanged)
+    def imageUrls(self):
+        return list(self._image_urls)
 
     @Property(bool, notify=configChanged)
     def waveformVisible(self):
@@ -245,6 +306,36 @@ class Controller(QObject):
     @Property(bool, notify=configChanged)
     def imageVisible(self):
         return self._config.get("view", "both") in ("image", "both")
+
+    @Property(int, notify=configChanged)
+    def waveformPlots(self):
+        """Waveform plot widgets to build: the configured count, or none when ``view`` hides them."""
+        return self._config.get("waveform_plots", 1) if self.waveformVisible else 0
+
+    @Property(int, notify=configChanged)
+    def imagePlots(self):
+        """Image plot widgets to build: the configured count, or none when ``view`` hides them."""
+        return self._config.get("image_plots", 1) if self.imageVisible else 0
+
+    @Property(int, notify=configChanged)
+    def curves(self):
+        return self._config.get("curves", 1)
+
+    @Property(int, notify=configChanged)
+    def gridColumns(self):
+        return grid_columns(self.waveformPlots + self.imagePlots)
+
+    @Property("QStringList", notify=configChanged)
+    def waveformTitles(self):
+        return plot_titles("Waveform", self.waveformPlots)
+
+    @Property("QStringList", notify=configChanged)
+    def imageTitles(self):
+        return plot_titles("Image", self.imagePlots)
+
+    @Property("QStringList", constant=True)
+    def curveColors(self):
+        return list(CURVE_COLORS)
 
     @Property(float, notify=configChanged)
     def xMaximum(self):
@@ -264,12 +355,47 @@ class Controller(QObject):
 
     def start(self, window):
         self.window = window
-        self.series = window.findChild(QLineSeries, "waveformSeries")
-        if self.series is None:
-            raise RuntimeError("QML did not create the required Qt Graphs LineSeries")
+        self.resolve_plots()
         self.source.start()
         self.update_timer.start(1)
         self.hud_timer.start(500)
+
+    def resolve_plots(self):
+        """Re-resolve the QML-built series and first plots after the window (re)built them.
+
+        QML rebuilds the Repeater/Instantiator delegates synchronously while ``configChanged``
+        is emitted, so the objects exist by the time this runs; a missing one is a QML defect
+        and stops the run rather than silently plotting fewer curves.
+        """
+        named = named_objects(self.window)
+        plots, curves = self.waveformPlots, self.curves
+        series = []
+        for p in range(plots):
+            row = []
+            for c in range(curves):
+                name = f"waveformSeries-{p}-{c}"
+                candidate = named.get(name)
+                if candidate is None:
+                    raise RuntimeError(
+                        f"QML did not create Qt Graphs LineSeries {name} "
+                        f"({plots} plots × {curves} curves expected)"
+                    )
+                if not isinstance(candidate, QLineSeries):
+                    raise TypeError(
+                        f"{name} is a {candidate.metaObject().className()}, not a LineSeries"
+                    )
+                row.append(candidate)
+            series.append(row)
+        self.series = series
+        self.first_graph = named.get("waveformGraph-0") if plots else None
+        self.first_image = named.get("streamImage-0") if self.imagePlots else None
+        if plots and self.first_graph is None:
+            raise RuntimeError("QML did not create the Qt Graphs GraphsView waveformGraph-0")
+        if self.imagePlots and self.first_image is None:
+            raise RuntimeError("QML did not create the Qt Quick Image streamImage-0")
+        self.sink.metadata.update(
+            plot_counts={"waveform": plots, "image": self.imagePlots}, curves=curves
+        )
 
     @Slot()
     def poll_frame(self):
@@ -285,16 +411,35 @@ class Controller(QObject):
                 if self.x.size != self._config["points"]:
                     self.x = np.arange(self._config["points"], dtype=np.float32)
                 self.generation = frame.generation
+                self._image_urls = []
                 self.configChanged.emit()
                 self.plotControlsChanged.emit()
+                self.resolve_plots()
             if "waveform" in frame.arrays:
-                self.series.replaceNp(self.x, frame.arrays["waveform"])
+                waveform = frame.arrays["waveform"]
+                if waveform.shape[:2] != (len(self.series), self.curves):
+                    raise ValueError(
+                        f"waveform frame shape {waveform.shape} does not match the built "
+                        f"{len(self.series)} plots × {self.curves} curves"
+                    )
+                for p, plot_series in enumerate(self.series):
+                    for c, series in enumerate(plot_series):
+                        series.replaceNp(self.x, waveform[p, c])
             conversion_started = perf_counter()
             if "image" in frame.arrays:
-                self.provider.update_image(frame.arrays["image"])
+                images = frame.arrays["image"]
+                if images.shape[0] != self.imagePlots:
+                    raise ValueError(
+                        f"image frame holds {images.shape[0]} plots, {self.imagePlots} built"
+                    )
+                for p in range(images.shape[0]):
+                    self.provider.update_image(p, images[p])
             conversion_ms = (perf_counter() - conversion_started) * 1000
             if "image" in frame.arrays:
-                self._image_url = f"image://frames/{frame.generation}/{frame.seq}"
+                self._image_urls = [
+                    f"image://frames/{p}/{frame.generation}/{frame.seq}"
+                    for p in range(images.shape[0])
+                ]
                 self.imageChanged.emit()
             self.sink.record(frame, (perf_counter() - started) * 1000, conversion_ms=conversion_ms)
             self.sink.metadata.update(self.source.metadata)
@@ -340,24 +485,26 @@ class Controller(QObject):
         self.sink.metadata.update(
             qt_window_metadata(self.window, platform_name=QGuiApplication.platformName())
         )
-        self.series.setWidth(1 / ratio)
+        for plot_series in self.series:
+            for series in plot_series:
+                series.setWidth(1 / ratio)
         self.sink.metadata.update(
             pixel_ratio=ratio,
             viewport_size=[self.window.width(), self.window.height()],
             viewport_size_units="logical pixels",
-            plot_viewport_units="physical pixels; data drawing area excluding axes",
+            plot_viewport_units="physical pixels; data drawing area of the first plot of each "
+            "kind, excluding axes; all grid cells are equal",
             graphics_api=self.window.rendererInterface().graphicsApi().name,
+            plot_counts={"waveform": self.waveformPlots, "image": self.imagePlots},
+            curves=self.curves,
         )
-        graph = self.window.findChild(QObject, "waveformGraph")
-        image = self.window.findChild(QObject, "streamImage")
-        area = graph.property("plotArea")
+        area = self.first_graph.property("plotArea") if self.first_graph is not None else None
+        image = self.first_image
         self.sink.metadata["plot_viewports"] = {
-            "waveform": (
-                [area.width() * ratio, area.height() * ratio] if self.waveformVisible else None
-            ),
+            "waveform": [area.width() * ratio, area.height() * ratio] if area is not None else None,
             "image": (
                 [image.property("paintedWidth") * ratio, image.property("paintedHeight") * ratio]
-                if self.imageVisible
+                if image is not None
                 else None
             ),
         }
@@ -374,6 +521,18 @@ class Controller(QObject):
         self.sink.mark_stopped("user")
         self.source.close()
         self.sink.close()
+
+
+def plural(count, noun):
+    """``1 plot`` / ``3 curves`` — grammatical count labels for the workload summary."""
+    return f"{count} {noun}" if count == 1 else f"{count} {noun}s"
+
+
+def plot_titles(kind, count):
+    """``Waveform`` / ``Image`` for a single plot, else ``Waveform 1``, ``Waveform 2``, …"""
+    if count == 1:
+        return [kind]
+    return [f"{kind} {index + 1}" for index in range(count)]
 
 
 def main():
