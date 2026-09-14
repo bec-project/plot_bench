@@ -38,25 +38,42 @@ def configure(url, **values):
 
 
 @pytest.mark.parametrize(
-    "waveform_mode,image_mode,view",
+    "waveform_mode,image_mode,view,layout",
     [
-        ("replace", "scalar", "both"),
-        ("append", "rgb", "both"),
-        ("replace", "rgb", "image"),
-        ("replace", "scalar", "waveform"),
+        ("replace", "scalar", "both", {}),
+        ("append", "rgb", "both", {}),
+        ("replace", "rgb", "image", {}),
+        ("replace", "scalar", "waveform", {}),
+        ("replace", "scalar", "both", dict(curves=3, waveform_plots=2, image_plots=2)),
+        ("append", "rgb", "both", dict(curves=3, waveform_plots=2, image_plots=2)),
+        ("append", "scalar", "waveform", dict(curves=5, waveform_plots=4)),
+        ("replace", "rgb", "image", dict(image_plots=3)),
     ],
 )
 def test_source_frames_match_shared_numerical_contract(
-    backend_source, waveform_mode, image_mode, view
+    backend_source, waveform_mode, image_mode, view, layout
 ):
     _, url = backend_source
-    config = configure(url, waveform_mode=waveform_mode, image_mode=image_mode, view=view)
+    config = configure(url, waveform_mode=waveform_mode, image_mode=image_mode, view=view, **layout)
     for seq in (0, 13, 1000):
         frame = decode_frame(request(url + f"/api/frame?seq={seq}"))
         expected = generate_arrays(config, seq)
+        assert frame.header["version"] == 2
         assert frame.header["config"] == config.to_dict()
         assert frame.seq == seq
         assert set(frame.arrays) == set(expected)
+        if view != "image":
+            assert frame.arrays["waveform"].shape == (
+                config.waveform_plots,
+                config.curves,
+                config.points,
+            )
+        if view != "waveform":
+            assert frame.arrays["image"].shape[:3] == (
+                config.image_plots,
+                config.height,
+                config.width,
+            )
         for name, array in frame.arrays.items():
             assert array.shape == expected[name].shape and array.dtype == expected[name].dtype
             if array.dtype == np.uint8:
@@ -73,7 +90,19 @@ def test_config_patches_preserve_plot_selection_and_reject_invalid_fields(backen
     assert updated["points"] == config.points and updated["height"] == config.height
     assert updated["generation"] == config.generation + 1
     assert json.loads(request(url + "/api/health"))["backend"] == backend
-    for patch in ({"hz": 121}, {"width": 0}, {"width": True}, {"view": "none"}, {"generation": 1}):
+    for patch in (
+        {"hz": 121},
+        {"width": 0},
+        {"width": True},
+        {"view": "none"},
+        {"generation": 1},
+        {"curves": 0},
+        {"curves": 65},
+        {"curves": True},
+        {"waveform_plots": 17},
+        {"image_plots": 0},
+        {"curves": 64, "waveform_plots": 16, "points": 10_000_000},
+    ):
         with pytest.raises(HTTPError) as failure:
             request(url + "/api/config", patch)
         assert failure.value.code == 400

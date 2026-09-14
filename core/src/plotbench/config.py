@@ -9,8 +9,11 @@ class Config:
     hz: float = 30.0
     points: int = 10_000
     append_count: int = 1_000
+    curves: int = 1
+    waveform_plots: int = 1
     width: int = 512
     height: int = 512
+    image_plots: int = 1
     waveform_mode: str = "replace"
     image_mode: str = "scalar"
     view: str = "both"
@@ -22,11 +25,25 @@ class Config:
             raise ValueError("hz must be a number")
         if not math.isfinite(self.hz) or not 0 < self.hz <= 120:
             raise ValueError("hz must be greater than zero and at most 120")
-        for name in ("points", "append_count", "width", "height", "seed", "generation"):
+        for name in (
+            "points",
+            "append_count",
+            "curves",
+            "waveform_plots",
+            "width",
+            "height",
+            "image_plots",
+            "seed",
+            "generation",
+        ):
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, int):
                 raise ValueError(f"{name} must be an integer")
-            if value < (0 if name in ("seed", "generation") else 1):
+        for name, limit in (("curves", 64), ("waveform_plots", 16), ("image_plots", 16)):
+            if not 1 <= getattr(self, name) <= limit:
+                raise ValueError(f"{name} must be between 1 and {limit}")
+        for name in ("points", "append_count", "width", "height", "seed", "generation"):
+            if getattr(self, name) < (0 if name in ("seed", "generation") else 1):
                 raise ValueError(f"{name} is out of range")
         if self.append_count > self.points:
             raise ValueError("append_count must not exceed points")
@@ -44,8 +61,11 @@ class Config:
 
     @property
     def payload_bytes(self):
-        wave = self.points * 4 if self.view != "image" else 0
-        image = self.width * self.height * (4 if self.image_mode == "scalar" else 3)
+        """Bytes of array payload per frame: every waveform plot and curve, every image plot."""
+        wave = self.waveform_plots * self.curves * self.points * 4 if self.view != "image" else 0
+        image = (
+            self.image_plots * self.width * self.height * (4 if self.image_mode == "scalar" else 3)
+        )
         return wave + (image if self.view != "waveform" else 0)
 
     def to_dict(self):

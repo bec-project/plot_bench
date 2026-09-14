@@ -25,7 +25,8 @@ def test_service_config_stream_replay_and_atomic_metrics(tmp_path):
             assert (await response.json())["generation"] == 1
             async with client.ws_connect("/ws") as ws:
                 frame = decode_frame((await ws.receive(timeout=2)).data)
-                assert frame.arrays["image"].shape == (5, 7, 3)
+                assert frame.arrays["image"].shape == (1, 5, 7, 3)
+                assert frame.header["version"] == 2
                 assert frame.generation == 1
                 with pytest.raises(TimeoutError):
                     await ws.receive(timeout=0.05)

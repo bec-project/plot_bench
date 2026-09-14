@@ -1,4 +1,10 @@
-"""Strict language-neutral frame codec."""
+"""Strict language-neutral frame codec (protocol version 2).
+
+Version 2 always ships the waveform as a 3-D ``[waveform_plots, curves, points]`` float32
+array and images as ``[image_plots, height, width]`` float32 or
+``[image_plots, height, width, 3]`` uint8, so descriptors carry one to four dimensions.
+The packet layout itself is unchanged from version 1; version 1 frames are rejected.
+"""
 
 import json
 import struct
@@ -7,6 +13,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
+VERSION = 2
 MAX_PACKET = 257 * 1024 * 1024
 DTYPES = {"float32": np.dtype("<f4"), "uint8": np.dtype("u1")}
 
@@ -55,7 +62,7 @@ def encode_frame(header, arrays, *, stamp_emitted_at=False):
     if stamp_emitted_at:
         header["emitted_at_ms"] = time.time_ns() / 1e6
     raw_header = json.dumps(
-        dict(header, version=1, arrays=descriptors), separators=(",", ":"), allow_nan=False
+        dict(header, version=VERSION, arrays=descriptors), separators=(",", ":"), allow_nan=False
     ).encode()
     prefix_size = (len(raw_header) + 7) & ~3
     if prefix_size > reserved:
@@ -66,6 +73,21 @@ def encode_frame(header, arrays, *, stamp_emitted_at=False):
     return memoryview(packet)[start:].toreadonly()
 
 
+def expected_layout(config, name):
+    """Protocol v2 (dtype, shape) of an array implied by a frame's configuration."""
+    if name == "waveform":
+        return "float32", [config["waveform_plots"], config["curves"], config["points"]]
+    shape = [config["image_plots"], config["height"], config["width"]]
+    if config["image_mode"] == "rgb":
+        return "uint8", shape + [3]
+    return "float32", shape
+
+
+def expected_shape(config, name, dtype=None):
+    """Protocol v2 array shape implied by a frame's configuration."""
+    return expected_layout(config, name)[1]
+
+
 def decode_frame(packet):
     if not 4 <= len(packet) <= MAX_PACKET:
         raise ValueError("invalid frame size")
@@ -73,24 +95,39 @@ def decode_frame(packet):
     if header_size > 65536 or header_size + 4 > len(packet):
         raise ValueError("invalid frame header length")
     header = json.loads(bytes(packet[4 : 4 + header_size]))
-    if not isinstance(header, dict) or header.get("version") != 1:
+    if not isinstance(header, dict) or header.get("version") != VERSION:
         raise ValueError("unsupported protocol version")
     for key in ("seq", "generation"):
         if type(header.get(key)) is not int or header[key] < 0:
             raise ValueError(f"invalid {key}")
     base = (header_size + 7) // 4 * 4
+    config = header.get("config")
+    if config is not None and not isinstance(config, dict):
+        raise ValueError("frame configuration must be a JSON object")
     arrays, end = {}, 0
     for descriptor in header["arrays"]:
         name, shape = descriptor["name"], descriptor["shape"]
         if name not in ("waveform", "image") or name in arrays:
             raise ValueError("invalid or repeated array name")
-        if not isinstance(shape, list) or not 1 <= len(shape) <= 3:
+        if not isinstance(shape, list) or not 1 <= len(shape) <= 4:
             raise ValueError("invalid shape")
         if any(type(n) is not int or n <= 0 for n in shape):
             raise ValueError("invalid array dimension")
         dtype = DTYPES.get(descriptor["dtype"])
         if dtype is None:
             raise ValueError("unsupported dtype")
+        if config is not None:
+            try:
+                expected_dtype, expected = expected_layout(config, name)
+                enabled = config["view"] in ("both", name)
+            except (KeyError, TypeError):
+                raise ValueError("frame configuration lacks the protocol v2 plot fields") from None
+            if not enabled:
+                raise ValueError(f"{name} array is not enabled by view {config['view']!r}")
+            if descriptor["dtype"] != expected_dtype:
+                raise ValueError(f"{name} dtype {descriptor['dtype']} does not match configuration")
+            if shape != expected:
+                raise ValueError(f"{name} shape {shape} does not match configuration {expected}")
         count = 1
         for n in shape:
             count *= n
