@@ -118,7 +118,7 @@ in a particular group. This is a display aggregation, not a file merge.
 Use the Node version in the repository's `.node-version`. From the repository root:
 
 ```sh
-npm --prefix website ci
+npm ci --prefix website --cache "$PWD/.cache/npm" --no-audit --no-fund
 npm --prefix website test
 npm --prefix website run format:check
 npm --prefix website run validate
@@ -126,11 +126,17 @@ npm --prefix website run build
 npm --prefix website run dev
 ```
 
-Open the `/plot_bench/` URL printed by Vite. `dev` builds the catalogue on startup;
+Open the `/plot_bench/` URL printed by Vite (port 5373). `dev` builds the catalogue on startup;
 restart it after adding or editing result files. `build` regenerates the catalogue,
 checks TypeScript, and emits `website/dist/`. Generated bundles and
 `website/public/catalog.json` are ignored; CI rebuilds them from reviewed source.
 No Rust, Python or plotting frontend is required to develop this website.
+
+The pages use the design tokens, type scale and control primitives of the matrix
+editor and source controls; the shared block at the top of
+[`src/style.css`](src/style.css) mirrors
+[`core/webui/src/style.css`](../core/webui/src/style.css). Change a shared
+primitive in both files, and keep site-specific rules below that block.
 
 The automated tests cover schema validation, acquisition provenance, privacy
 allowlisting, failed observations, duplicate submissions, workload identity,

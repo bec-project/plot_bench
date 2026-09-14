@@ -3,13 +3,15 @@
     "target": "ES2022",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "moduleResolution": "Bundler",
+    "moduleResolution": "bundler",
     "jsx": "react-jsx",
     "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "noEmit": true,
-    "resolveJsonModule": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "resolveJsonModule": true,
     "types": ["vite/client", "node"]
   },
   "include": ["src", "scripts", "tests", "vite.config.ts"]

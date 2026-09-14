@@ -19,6 +19,7 @@ The complete lists and platform notes are in `docs/validation.md` and
 | `backends/rust/` or `frontends/iced/` | `cargo test --locked` for that crate |
 | `frontends/qtgraphs-cpp/` | `ctest` in its build directory |
 | `core/webui/` | typecheck and rebuild; the committed bundles must come out unchanged |
+| `website/` | unit tests, Prettier check, catalogue validation and the build; the browser smoke when a Chromium is selected |
 | `scenarios/`, `docs/`, `README.md`, `AGENTS.md`, `.agents/skills/` | the docs-example test — it parses every documented command against the CLI |
 | any `pyproject.toml`, `Cargo.toml` or `package.json` dependency change | re-lock with the tool, then the affected component's checks |
 
@@ -49,6 +50,15 @@ Web UI — rebuild, then confirm the committed bundles are unchanged (an empty
 npm --prefix core/webui run typecheck
 npm --prefix core/webui run build
 git status --short core/src/plotbench/matrix_assets core/src/plotbench/controls.html
+```
+
+Results website — unit tests, formatting, catalogue validation, type checking and
+build; nothing is committed from `website/dist`:
+```sh
+npm --prefix website test
+npm --prefix website run format:check
+npm --prefix website run validate
+npm --prefix website run build
 ```
 
 Lockfiles after a dependency change (also re-lock the Python frontends, which
