@@ -43,7 +43,10 @@ npm --prefix website test
   documents; explain any correction to an existing record in the pull request.
 - Preserve failed runs and missing values (`null`, never invented zeroes). The
   recorded/planned count and completion status expose incomplete campaigns. The
-  initial UI does not calculate statistical significance or aggregate rates.
+  grouped UI calculates a median of compatible campaign medians, with equal
+  campaign weights. It does not calculate statistical significance. See
+  [repeated measurements](../README.md#repeated-measurements) for grouping rules,
+  spread, failure handling and the individual-run view.
 - Optional `links.report`, `links.extended_report` and `links.raw_data` may contain
   public HTTPS URLs for separately hosted evidence. Review those files for private
   information too. Missing links are explicit; the initial seed has no public raw
