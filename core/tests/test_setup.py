@@ -258,3 +258,32 @@ def test_cpp_setup_failure_explains_how_to_select_a_qt_sdk(
         assert (
             f"no Qt online-installer SDK under {environment['HOME']}/Qt/<version>" in result.stderr
         )
+
+
+@pytest.mark.parametrize("system,tag", [("Linux", ",wayland"), ("Darwin", "")])
+def test_fyne_setup_uses_local_caches_readonly_modules_and_native_tags(
+    tmp_path, setup_root, cpp_toolchain, system, tag
+):
+    log = tmp_path / "calls"
+    environment = setup_environment(cpp_toolchain, log)
+    go = cpp_toolchain / "go"
+    go.write_text(
+        '#!/bin/sh\nprintf "go %s GOPATH=%s GOCACHE=%s\\n" "$*" "$GOPATH" "$GOCACHE" '
+        '>> "$PLOTBENCH_SETUP_LOG"\n'
+    )
+    go.chmod(0o755)
+    uname = cpp_toolchain / "uname"
+    uname.write_text(f"#!/bin/sh\necho {system}\n")
+    uname.chmod(0o755)
+    result = subprocess.run(
+        ["bash", "scripts/setup", "fyne"],
+        cwd=setup_root,
+        env=environment,
+        text=True,
+        capture_output=True,
+    )
+    assert result.returncode == 0, result.stderr
+    commands = log.read_text()
+    assert f"build -mod=readonly -trimpath -tags release,no_animations{tag}" in commands
+    assert f"GOPATH={setup_root}/.cache/go" in commands
+    assert f"GOCACHE={setup_root}/.cache/go-build" in commands

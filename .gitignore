@@ -22,3 +22,5 @@ plotbench.local.json
 
 # Locally generated custom suites from the matrix editor
 scenarios_custom/
+
+frontends/fyne/build/

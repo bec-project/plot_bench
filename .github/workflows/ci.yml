@@ -165,3 +165,37 @@ jobs:
           npm --prefix frontends/plotly test
       - name: Explain qualification boundary
         run: echo 'Container checks do not qualify native Wayland, an installed browser, or GPU performance.'
+
+  fyne:
+    name: Fyne Go (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14]
+    env:
+      GOPATH: ${{ github.workspace }}/.cache/go
+      GOCACHE: ${{ github.workspace }}/.cache/go-build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: frontends/fyne/go.mod
+          cache: false
+      - name: Native Wayland and OpenGL build libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config libgl1-mesa-dev \
+            libegl1-mesa-dev libwayland-dev libxkbcommon-dev wayland-protocols
+      - name: Build native frontend and provenance
+        run: ./scripts/setup fyne
+      - name: Go protocol, transport, raster and telemetry tests (test driver)
+        run: |
+          go -C frontends/fyne test -race -tags ci ./...
+          go -C frontends/fyne vet -tags ci ./...
+          test -z "$(gofmt -l frontends/fyne/*.go)"
+          go -C frontends/fyne mod verify
+          git diff --exit-code -- frontends/fyne/go.mod frontends/fyne/go.sum

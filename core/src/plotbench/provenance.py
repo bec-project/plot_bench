@@ -10,6 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 ARTIFACTS = {
+    "fyne": "frontends/fyne/build/plotbench-fyne",
     "rust": "backends/rust/target/release/plotbench-source-rust",
     "iced": "frontends/iced/target/release/plotbench-iced",
     "plotly": "frontends/plotly/dist",
@@ -37,6 +38,9 @@ _EXCLUDED_DIRECTORIES = {
     "docs",
 }
 _SOURCE_SUFFIXES = {
+    ".go",
+    ".mod",
+    ".sum",
     ".py",
     ".rs",
     ".toml",
@@ -161,6 +165,8 @@ def capture_provenance(root=ROOT):
             "core/uv.lock",
             "frontends/*/uv.lock",
             "frontends/*/Cargo.lock",
+            "frontends/*/go.mod",
+            "frontends/*/go.sum",
             "backends/*/Cargo.lock",
             "frontends/*/package-lock.json",
         )
@@ -254,6 +260,6 @@ def record_build(component, root=ROOT):
 if __name__ == "__main__":
     if len(sys.argv) != 2 or sys.argv[1] not in ARTIFACTS:
         raise SystemExit(
-            "Usage: python -m plotbench.provenance rust|iced|plotly|qtgraphs-cpp (after building)"
+            "Usage: python -m plotbench.provenance rust|iced|fyne|plotly|qtgraphs-cpp (after building)"
         )
     record_build(sys.argv[1])

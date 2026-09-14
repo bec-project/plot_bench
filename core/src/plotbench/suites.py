@@ -17,6 +17,7 @@ FRONTENDS = (
     "qtgraphs",
     "qtgraphs-cpp",
     "iced",
+    "fyne",
     "plotly",
 )
 MODES = ("stream", "replay")

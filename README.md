@@ -2,7 +2,7 @@
 
 Plotbench measures how well plotting libraries keep up with streaming data. One
 source generates identical waveform and image frames, and every frontend adapter —
-PyQtGraph, Matplotlib, Qt Graphs (Python and C++), Iced and Plotly — receives those
+PyQtGraph, Matplotlib, Qt Graphs (Python and C++), Iced, Fyne (Go) and Plotly — receives those
 same frames over the same protocol and renders them. Because none of the frontends
 generate their own data, what you compare is each library's update path: its data
 conversion, plot-update API and rendering, and whether it can sustain the requested
@@ -136,6 +136,7 @@ CLI filters and timing overrides remain available. See the
 | [Matplotlib](frontends/matplotlib/README.md) | QtAgg with reusable artists and fixed-axes blitting |
 | [Qt Graphs](frontends/qtgraphs/README.md) | PySide6 native waveform series; custom Qt Quick image provider |
 | [Qt Graphs C++](frontends/qtgraphs-cpp/README.md) | Native C++ waveform submission and custom Qt Quick image provider |
+| [Fyne](frontends/fyne/README.md) | Go/Fyne OpenGL canvas images with custom CPU waveform rasterization |
 | [Iced](frontends/iced/README.md) | Rust/wgpu with a custom waveform Canvas and image widget |
 | [Plotly/React](frontends/plotly/README.md) | Production TypeScript bundle; scattergl, heatmap and image |
 
