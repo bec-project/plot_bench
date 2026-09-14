@@ -97,6 +97,38 @@ def test_results_filters_details_submission_and_mobile():
                 .map(e => [e.tagName, e.className, e.getBoundingClientRect().width]).slice(0, 20)"""
             )
 
+            await page.get_by_role("link", name="Winners", exact=True).click()
+            await expect(page.get_by_label("Winner collection")).to_have_value(
+                "benchmark"
+            )
+            if not any(
+                c["classification"] == "benchmark" for c in catalog["campaigns"]
+            ):
+                await expect(
+                    page.get_by_role("heading", name="No eligible benchmark results")
+                ).to_be_visible()
+                await page.get_by_role(
+                    "link", name="View smoke checks", exact=True
+                ).click()
+            else:
+                await page.get_by_label("Winner collection").select_option("smoke")
+            await expect(page.locator(".winner-board").first).to_be_visible()
+            await expect(
+                page.get_by_role("heading", name="Best observed smoke results")
+            ).to_be_visible()
+            await page.reload()
+            await expect(page.get_by_label("Winner collection")).to_have_value("smoke")
+            assert await page.evaluate(
+                "document.documentElement.scrollWidth <= innerWidth"
+            )
+            if screenshots:
+                await page.screenshot(
+                    path=str(Path(screenshots) / "winners-mobile.png"), full_page=True
+                )
+                await page.set_viewport_size({"width": 1440, "height": 1080})
+                await page.screenshot(
+                    path=str(Path(screenshots) / "winners-desktop.png"), full_page=True
+                )
             await page.get_by_role("link", name="Contribute", exact=True).click()
             assert await page.evaluate(
                 "document.documentElement.scrollWidth <= innerWidth"
@@ -287,6 +319,56 @@ def test_grouped_campaign_weights_drilldown_dates_and_pagination():
             ).to_be_visible()
             await page.get_by_role("link", name="Clear filters", exact=True).click()
             await expect(groups).to_have_count(25)
+            await page.get_by_role("link", name="Winners", exact=True).click()
+            await page.get_by_label("Winner collection").select_option("smoke")
+            await expect(page.locator(".winner-board")).to_have_count(12)
+            await page.get_by_role("button", name="Next cases", exact=True).click()
+            await expect(page.locator(".winner-board")).to_have_count(12)
+            await page.get_by_role("button", name="Next cases", exact=True).click()
+            await expect(page.locator(".winner-board")).to_have_count(2)
+            await page.get_by_label("Winner acquired through (UTC)").fill("2026-09-16")
+            await expect(
+                page.get_by_role("heading", name="No eligible smoke results")
+            ).to_be_visible()
+            # Cross-host ties and lower-ranked frontends, using test-only records.
+            fixtures[:] = [
+                campaign("aaa", [20, 30, 40], "14"),
+                campaign("bbb", [60, 60, 60], "15"),
+                campaign("ccc", [60.03, 60.03, 60.03], "16"),
+                campaign("ddd", [50, 50, None], "17"),
+            ]
+            for index, c in enumerate(fixtures):
+                c["host"]["id"] = f"qa-host-{index}"
+                c["host"]["label"] = f"QA host {index}"
+                c["classification"] = "benchmark"
+                for run in c["runs"]:
+                    run["frontend"] = ["alpha", "alpha", "beta", "gamma"][index]
+                    run["measurement_seconds"] = 30
+            await page.goto(str(server.make_url(base)) + "#winners")
+            await page.reload()
+            board = page.locator(".winner-board")
+            await expect(board).to_have_count(1)
+            await expect(board).to_contain_text("Joint winners")
+            await expect(board.locator(".winner-score strong")).to_have_text("60")
+            await expect(board).to_contain_text("QA host 1")
+            await expect(board).to_contain_text("QA host 2")
+            await expect(board).not_to_contain_text("QA host 0")
+            await board.locator(".other-records > summary").click()
+            await expect(board).to_contain_text("#3 gamma")
+            await expect(board).to_contain_text("1 source-limited")
+            await board.locator(".winner-evidence > summary").first.click()
+            await board.locator(".result-group > summary").first.click()
+            await board.locator(".campaign-group > summary").first.click()
+            await board.get_by_role("button", name="Details for").first.click()
+            await expect(page.get_by_role("dialog")).to_be_visible()
+            await page.keyboard.press("Escape")
+            assert await page.evaluate(
+                "document.documentElement.scrollWidth <= innerWidth"
+            )
+            await board.get_by_role("link", name="QA host 1", exact=True).click()
+            await expect(page.get_by_label("Host", exact=True)).to_have_value(
+                "qa-host-1"
+            )
             await browser.close()
 
     asyncio.run(exercise())

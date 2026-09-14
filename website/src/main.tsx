@@ -4,6 +4,7 @@ import { exportSummary } from './export';
 import { MAX_SUBMISSION_BYTES, validateCatalog } from './validation';
 import { groupObservations, inDateRange } from './aggregation';
 import { GroupedResults } from './grouped-results';
+import { WinnersPage } from './winners-page';
 import { Badge, date, format } from './presentation';
 import {
   REPOSITORY,
@@ -30,7 +31,7 @@ function download(campaign: Submission) {
 function readLocation() {
   const [view, query = ''] = location.hash.slice(1).split('?');
   return {
-    view: ['hosts', 'contribute'].includes(view) ? view : 'results',
+    view: ['hosts', 'contribute', 'winners'].includes(view) ? view : 'results',
     filters: new URLSearchParams(query),
   };
 }
@@ -71,7 +72,9 @@ function App() {
   function filter(key: string, value: string) {
     const params = new URLSearchParams(route.filters);
     value ? params.set(key, value) : params.delete(key);
-    location.hash = 'results' + (params.size ? '?' + params.toString() : '');
+    location.hash =
+      (route.view === 'winners' ? 'winners' : 'results') +
+      (params.size ? '?' + params.toString() : '');
   }
   const visible = useMemo(
     () =>
@@ -118,6 +121,7 @@ function App() {
         <nav aria-label="Main navigation">
           {[
             ['results', 'Results'],
+            ['winners', 'Winners'],
             ['hosts', 'Hosts'],
             ['contribute', 'Contribute'],
           ].map(([v, label]) => (
@@ -142,16 +146,20 @@ function App() {
             <h1>
               {route.view === 'hosts'
                 ? 'Explore the hosts'
-                : route.view === 'contribute'
-                  ? 'Add your measurements'
-                  : 'Plotting performance, in context.'}
+                : route.view === 'winners'
+                  ? 'The best results, across hosts.'
+                  : route.view === 'contribute'
+                    ? 'Add your measurements'
+                    : 'Plotting performance, in context.'}
             </h1>
             <p className="lede">
               {route.view === 'hosts'
                 ? 'Hardware and platforms behind the submitted campaigns.'
-                : route.view === 'contribute'
-                  ? 'Contribute a campaign from your machine. Every submission keeps its own context.'
-                  : 'Explore community measurements across plotting libraries, machines, and platforms.'}
+                : route.view === 'winners'
+                  ? 'Find the highest recorded median for each frontend and workload, wherever it was measured.'
+                  : route.view === 'contribute'
+                    ? 'Contribute a campaign from your machine. Every submission keeps its own context.'
+                    : 'Explore community measurements across plotting libraries, machines, and platforms.'}
             </p>
           </div>
           {route.view !== 'contribute' && (
@@ -206,7 +214,15 @@ function App() {
                 <small>Each rendering path measured separately</small>
               </div>
             </div>
-            {route.view === 'hosts' ? (
+            {route.view === 'winners' ? (
+              <WinnersPage
+                key={route.filters.toString()}
+                observations={all}
+                filters={route.filters}
+                filter={filter}
+                select={setSelected}
+              />
+            ) : route.view === 'hosts' ? (
               <section className="host-grid" aria-label="Benchmark hosts">
                 {hosts.length ? (
                   hosts.map((id) => {
