@@ -6,7 +6,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .DS_Store
-results/
+/results/
 node_modules/
 dist/
 target/
@@ -24,3 +24,6 @@ plotbench.local.json
 scenarios_custom/
 
 frontends/fyne/build/
+
+# Generated public catalogue; reviewed submissions live in website/results.
+website/public/catalog.json
