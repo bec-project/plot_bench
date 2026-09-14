@@ -88,6 +88,18 @@ export const WAVEFORM_FIELDS: FieldSpec[] = [
     hint: 'append mode',
     tip: 'In append mode, how many new samples are added per frame.',
   },
+  {
+    key: 'waveform_plots',
+    label: 'Waveform plots',
+    kind: 'number',
+    tip: 'Number of waveform plot widgets in the window, each with its own data. Between 1 and 16.',
+  },
+  {
+    key: 'curves',
+    label: 'Curves per plot',
+    kind: 'number',
+    tip: 'Curves drawn in every waveform plot, each with distinct data. Between 1 and 64.',
+  },
 ];
 
 export const IMAGE_FIELDS: FieldSpec[] = [
@@ -98,6 +110,12 @@ export const IMAGE_FIELDS: FieldSpec[] = [
     label: 'Image mode',
     kind: 'enum',
     tip: 'scalar sends a single intensity channel; rgb sends three colour channels.',
+  },
+  {
+    key: 'image_plots',
+    label: 'Image plots',
+    kind: 'number',
+    tip: 'Number of image plot widgets in the window, each with its own data. Between 1 and 16.',
   },
 ];
 
@@ -115,9 +133,12 @@ export const ALL_AXES: string[] = [
   'hz',
   'points',
   'append_count',
+  'curves',
+  'waveform_plots',
   'waveform_mode',
   'width',
   'height',
+  'image_plots',
   'image_mode',
   'seed',
   'resolution',

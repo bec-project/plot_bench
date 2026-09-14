@@ -452,6 +452,18 @@ const WAVEFORM_FIELDS = [
     kind: "number",
     hint: "append mode",
     tip: "In append mode, how many new samples are added per frame."
+  },
+  {
+    key: "waveform_plots",
+    label: "Waveform plots",
+    kind: "number",
+    tip: "Number of waveform plot widgets in the window, each with its own data. Between 1 and 16."
+  },
+  {
+    key: "curves",
+    label: "Curves per plot",
+    kind: "number",
+    tip: "Curves drawn in every waveform plot, each with distinct data. Between 1 and 64."
   }
 ];
 const IMAGE_FIELDS = [
@@ -462,6 +474,12 @@ const IMAGE_FIELDS = [
     label: "Image mode",
     kind: "enum",
     tip: "scalar sends a single intensity channel; rgb sends three colour channels."
+  },
+  {
+    key: "image_plots",
+    label: "Image plots",
+    kind: "number",
+    tip: "Number of image plot widgets in the window, each with its own data. Between 1 and 16."
   }
 ];
 const RESOLUTION_FIELD = {
@@ -636,9 +654,12 @@ const EDITABLE = [
   "points",
   "waveform_mode",
   "append_count",
+  "waveform_plots",
+  "curves",
   "image_mode",
   "width",
   "height",
+  "image_plots",
   "seed"
 ];
 const RATE_PRESETS = [1, 5, 10, 15, 24, 30, 60, 90, 120];
@@ -663,6 +684,16 @@ const RESOLUTION_PRESETS = [
     ]
   }
 ];
+const LAYOUT_PRESETS = [
+  { label: "1 waveform + 1 image", waveform_plots: 1, curves: 1, image_plots: 1, view: "both" },
+  { label: "2 waveforms × 3 curves + 3 images", waveform_plots: 2, curves: 3, image_plots: 3, view: "both" },
+  { label: "4 waveforms × 2 curves + 2 images", waveform_plots: 4, curves: 2, image_plots: 2, view: "both" },
+  { label: "6 waveforms × 4 curves", waveform_plots: 6, curves: 4, image_plots: 1, view: "waveform" },
+  { label: "4 images", waveform_plots: 1, curves: 1, image_plots: 4, view: "image" }
+];
+function layoutKey(layout) {
+  return `${layout.waveform_plots}x${layout.curves}x${layout.image_plots}-${layout.view}`;
+}
 async function getJSON(path) {
   const response = await fetch(path);
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -744,6 +775,13 @@ function ControlsApp() {
   const resolutionValue = RESOLUTION_PRESETS.flatMap((group) => group.items).some(
     (item) => item.value === resolution
   ) ? resolution : "";
+  const layout = layoutKey({
+    waveform_plots: Number(draft.waveform_plots),
+    curves: Number(draft.curves),
+    image_plots: Number(draft.image_plots),
+    view: String(draft.view)
+  });
+  const layoutValue = LAYOUT_PRESETS.some((preset) => layoutKey(preset) === layout) ? layout : "";
   const backend = health?.backend === "rust" ? "rust" : "python";
   const sourceUrl = `'${window.location.origin.replaceAll("'", "'\\''")}'`;
   const apply = async () => {
@@ -822,7 +860,32 @@ function ControlsApp() {
               RESOLUTION_PRESETS.map((group) => /* @__PURE__ */ u$1("optgroup", { label: group.group, children: group.items.map((item) => /* @__PURE__ */ u$1("option", { value: item.value, children: item.label })) }))
             ]
           }
-        ) })
+        ) }),
+        /* @__PURE__ */ u$1(
+          Field,
+          {
+            label: "Plot layout preset",
+            tip: "Fills the waveform plot, curve and image plot counts below, and switches the plots shown.",
+            children: /* @__PURE__ */ u$1(
+              "select",
+              {
+                "aria-label": "Plot layout preset",
+                value: layoutValue,
+                onChange: (event) => {
+                  const value = event.target.value;
+                  const preset = LAYOUT_PRESETS.find((item) => layoutKey(item) === value);
+                  if (!preset) return;
+                  const { waveform_plots, curves, image_plots, view } = preset;
+                  setDraft({ ...draft, waveform_plots, curves, image_plots, view });
+                },
+                children: [
+                  /* @__PURE__ */ u$1("option", { value: "", children: "Custom layout" }),
+                  LAYOUT_PRESETS.map((preset) => /* @__PURE__ */ u$1("option", { value: layoutKey(preset), children: preset.label }))
+                ]
+              }
+            )
+          }
+        )
       ] }),
       /* @__PURE__ */ u$1("div", { class: "workload-view", children: [
         /* @__PURE__ */ u$1("span", { class: "field-label", children: "Plots" }),

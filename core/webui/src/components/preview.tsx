@@ -1,4 +1,5 @@
-import type { Plan } from '../types';
+import { showsImage, showsWaveform } from '../config-fields';
+import type { Config, Plan } from '../types';
 import { CommandLine } from './commands';
 
 const PREVIEW_LIMIT = 250;
@@ -8,6 +9,20 @@ function mmss(totalSeconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+// Compact plot layout of one run, e.g. "2×3 wf · 3 img", "2×3 wf" or "3 img";
+// the curve count is only spelled out when a plot draws more than one curve.
+export function plotsLabel(config: Config): string {
+  const view = String(config.view);
+  const parts: string[] = [];
+  if (showsWaveform(view)) {
+    const plots = Number(config.waveform_plots ?? 1);
+    const curves = Number(config.curves ?? 1);
+    parts.push(`${curves > 1 ? `${plots}×${curves}` : plots} wf`);
+  }
+  if (showsImage(view)) parts.push(`${Number(config.image_plots ?? 1)} img`);
+  return parts.join(' · ');
 }
 
 export function PlanPreview(props: {
@@ -52,6 +67,7 @@ export function PlanPreview(props: {
                 <tr>
                   <th>Run</th>
                   <th>Workload</th>
+                  <th>Plots</th>
                   <th>Frontend</th>
                   <th>Source</th>
                   <th>Mode</th>
@@ -64,6 +80,7 @@ export function PlanPreview(props: {
                   <tr>
                     <td>{job.run_id}</td>
                     <td>{job.scenario}</td>
+                    <td>{plotsLabel(job.config)}</td>
                     <td>{job.frontend ?? 'Receiver'}</td>
                     <td>{job.backend}</td>
                     <td>{job.mode}</td>

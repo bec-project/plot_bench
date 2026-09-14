@@ -150,7 +150,7 @@ def test_editor_defaults_to_rust_and_preserves_python_selection():
                 )
                 page = await browser.new_page()
                 await page.goto(str(server.make_url("/")))
-                source_cell = page.locator("table tbody tr").first.locator("td").nth(3)
+                source_cell = page.locator("table tbody tr").first.locator("td").nth(4)
                 await expect(
                     page.get_by_role("button", name="Export JSON", exact=True)
                 ).to_be_enabled()
@@ -241,6 +241,68 @@ def test_editor_rejects_seed_rounding_and_recovers_probe_with_no_frontends():
                 download = await download_info.value
                 exported = json.loads(Path(await download.path()).read_text())
                 assert exported["frontends"] == exported["modes"] == []
+                await browser.close()
+
+    asyncio.run(exercise())
+
+
+@pytest.mark.skipif(
+    not os.environ.get("PLOTBENCH_TEST_BROWSER"), reason="explicit QA browser required"
+)
+def test_group_curves_axis_multiplies_workloads_and_exports():
+    from playwright.async_api import async_playwright, expect
+
+    async def exercise():
+        suite = dict(
+            case_groups=[
+                dict(
+                    name="sweep",
+                    base={"view": "waveform", "waveform_plots": 2},
+                    matrix={"points": [1000, 2000]},
+                )
+            ],
+            frontends=["pyqtgraph"],
+            modes=["stream"],
+            backends=["python"],
+            repetitions=1,
+        )
+        async with TestServer(create_app(suite)) as server:
+            async with async_playwright() as playwright:
+                browser = await playwright.chromium.launch(
+                    headless=True, executable_path=os.environ["PLOTBENCH_TEST_BROWSER"]
+                )
+                page = await browser.new_page(viewport={"width": 1280, "height": 1000})
+                errors = []
+                page.on("pageerror", lambda failure: errors.append(str(failure)))
+                await page.goto(str(server.make_url("/")))
+                await expect(page.locator("#plan-summary")).to_contain_text("2 workloads")
+                plots_cells = page.locator("table tbody tr td:nth-child(3)")
+                await expect(plots_cells.first).to_have_text("2 wf")
+
+                # The new counts are offered as matrix axes; varying curves doubles the
+                # workloads and the preview spells the layout out per run.
+                group = page.locator("#groups article").first
+                await group.get_by_role("button", name="+ Add axis", exact=True).click()
+                await group.get_by_label("Matrix field", exact=True).nth(1).select_option("curves")
+                await group.get_by_label("Matrix curves values", exact=True).fill("1, 4")
+                await expect(page.locator("#plan-summary")).to_contain_text("4 workloads")
+                await expect(plots_cells).to_have_count(4)
+                labels = sorted(await plots_cells.all_inner_texts())
+                assert labels == ["2 wf", "2 wf", "2×4 wf", "2×4 wf"]
+
+                async with page.expect_download() as download_info:
+                    await page.get_by_role("button", name="Export JSON", exact=True).click()
+                download = await download_info.value
+                exported = json.loads(Path(await download.path()).read_text())
+                assert exported["case_groups"][0]["matrix"]["curves"] == [1, 4]
+                assert exported["case_groups"][0]["matrix"]["points"] == [1000, 2000]
+                assert exported["case_groups"][0]["base"]["waveform_plots"] == 2
+
+                # An image group shows only the image count in the Plots column.
+                await group.get_by_role("button", name="image", exact=True).click()
+                await group.get_by_label("Image plots", exact=True).fill("3")
+                await expect(plots_cells.first).to_have_text("3 img")
+                assert not errors, errors
                 await browser.close()
 
     asyncio.run(exercise())

@@ -79,6 +79,28 @@ def test_source_controls_apply_preset_and_live_status(tmp_path):
                 applied = await page.evaluate("() => fetch('/api/config').then(r => r.json())")
                 assert applied["width"] == applied["height"] == 1024
 
+                # The layout preset fills the plot counts and curves together, and the
+                # source accepts them as one workload change.
+                layout = page.get_by_label("Plot layout preset", exact=True)
+                await expect(layout).to_have_value("1x1x1-both")
+                await layout.select_option("2x3x3-both")
+                await expect(page.get_by_label("Waveform plots", exact=True)).to_have_value("2")
+                await expect(page.get_by_label("Curves per plot", exact=True)).to_have_value("3")
+                await expect(page.get_by_label("Image plots", exact=True)).to_have_value("3")
+                await apply.click()
+                await expect(apply).to_be_disabled()
+                applied = await page.evaluate("() => fetch('/api/config').then(r => r.json())")
+                assert applied["waveform_plots"] == 2
+                assert applied["curves"] == 3
+                assert applied["image_plots"] == 3
+                assert applied["view"] == "both"
+                # A waveform-only preset switches the view; a hand edit turns it custom.
+                await layout.select_option("6x4x1-waveform")
+                await expect(page.locator(".config-group > legend")).to_have_count(2)
+                await expect(page.get_by_label("Waveform plots", exact=True)).to_have_value("6")
+                await page.get_by_label("Curves per plot", exact=True).fill("5")
+                await expect(layout).to_have_value("")
+
                 # Option tooltips are present.
                 assert await page.locator(".infotip").count() > 0
                 await page.screenshot(path=str(tmp_path / "controls-desktop.png"), full_page=True)

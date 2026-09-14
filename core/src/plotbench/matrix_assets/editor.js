@@ -483,6 +483,18 @@ const WAVEFORM_FIELDS = [
     kind: "number",
     hint: "append mode",
     tip: "In append mode, how many new samples are added per frame."
+  },
+  {
+    key: "waveform_plots",
+    label: "Waveform plots",
+    kind: "number",
+    tip: "Number of waveform plot widgets in the window, each with its own data. Between 1 and 16."
+  },
+  {
+    key: "curves",
+    label: "Curves per plot",
+    kind: "number",
+    tip: "Curves drawn in every waveform plot, each with distinct data. Between 1 and 64."
   }
 ];
 const IMAGE_FIELDS = [
@@ -493,6 +505,12 @@ const IMAGE_FIELDS = [
     label: "Image mode",
     kind: "enum",
     tip: "scalar sends a single intensity channel; rgb sends three colour channels."
+  },
+  {
+    key: "image_plots",
+    label: "Image plots",
+    kind: "number",
+    tip: "Number of image plot widgets in the window, each with its own data. Between 1 and 16."
   }
 ];
 const RESOLUTION_FIELD = {
@@ -507,9 +525,12 @@ const ALL_AXES = [
   "hz",
   "points",
   "append_count",
+  "curves",
+  "waveform_plots",
   "waveform_mode",
   "width",
   "height",
+  "image_plots",
   "image_mode",
   "seed",
   "resolution"
@@ -796,6 +817,17 @@ function mmss(totalSeconds) {
   const s2 = seconds % 60;
   return `${m2}:${String(s2).padStart(2, "0")}`;
 }
+function plotsLabel(config) {
+  const view = String(config.view);
+  const parts = [];
+  if (showsWaveform(view)) {
+    const plots = Number(config.waveform_plots ?? 1);
+    const curves = Number(config.curves ?? 1);
+    parts.push(`${curves > 1 ? `${plots}×${curves}` : plots} wf`);
+  }
+  if (showsImage(view)) parts.push(`${Number(config.image_plots ?? 1)} img`);
+  return parts.join(" · ");
+}
 function PlanPreview(props) {
   const { plan, error, pending, commands, needsSave } = props;
   return /* @__PURE__ */ u$1("section", { class: "panel", children: [
@@ -839,6 +871,7 @@ function PlanPreview(props) {
         /* @__PURE__ */ u$1("thead", { children: /* @__PURE__ */ u$1("tr", { children: [
           /* @__PURE__ */ u$1("th", { children: "Run" }),
           /* @__PURE__ */ u$1("th", { children: "Workload" }),
+          /* @__PURE__ */ u$1("th", { children: "Plots" }),
           /* @__PURE__ */ u$1("th", { children: "Frontend" }),
           /* @__PURE__ */ u$1("th", { children: "Source" }),
           /* @__PURE__ */ u$1("th", { children: "Mode" }),
@@ -848,6 +881,7 @@ function PlanPreview(props) {
         /* @__PURE__ */ u$1("tbody", { children: plan.jobs.slice(0, PREVIEW_LIMIT).map((job) => /* @__PURE__ */ u$1("tr", { children: [
           /* @__PURE__ */ u$1("td", { children: job.run_id }),
           /* @__PURE__ */ u$1("td", { children: job.scenario }),
+          /* @__PURE__ */ u$1("td", { children: plotsLabel(job.config) }),
           /* @__PURE__ */ u$1("td", { children: job.frontend ?? "Receiver" }),
           /* @__PURE__ */ u$1("td", { children: job.backend }),
           /* @__PURE__ */ u$1("td", { children: job.mode }),
