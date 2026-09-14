@@ -3,7 +3,7 @@ import test from 'node:test';
 import seed from '../results/apple-m1-max-20260914-quick.json';
 import { parseSubmission } from '../src/validation';
 import { observations, type Submission } from '../src/model';
-import { collectWinners, winnerKey } from '../src/winners';
+import { collectWinners, winnerKey, closeRatePercent } from '../src/winners';
 
 function campaign(
   id: string,
@@ -63,7 +63,7 @@ test('campaign medians keep equal weight before record selection', () => {
   assert.equal(boards[0].records[1].score, 45);
 });
 
-test('display-precision ties retain all frontend and host records with shared ranks', () => {
+test('close-rate resource ties retain all frontend and host records with shared ranks', () => {
   const { boards } = collectWinners(
     observations([
       campaign('a', 'alpha', 'host-a', [59.96]),
@@ -78,6 +78,163 @@ test('display-precision ties retain all frontend and host records with shared ra
   );
   assert.equal(boards[0].records[0].groups.length, 2);
   assert.equal(boards[0].records[0].score, 60);
+});
+
+function withResources(
+  c: Submission,
+  memory: (number | null)[],
+  cpu: (number | null)[],
+): Submission {
+  for (const [i, r] of c.runs.entries()) {
+    r.metrics.rss_peak_mib = memory[i % memory.length];
+    r.metrics.cpu_mean_percent = cpu[i % cpu.length];
+  }
+  return c;
+}
+function system(
+  id: string,
+  rate: number,
+  memory: number | null,
+  cpu: number | null,
+  frontend = id,
+): Submission {
+  return withResources(campaign(id, frontend, id, [rate]), [memory], [cpu]);
+}
+
+test('close throughput favors memory first, then CPU; materially slower rates stay behind', () => {
+  const input = observations([
+    system('fast', 100, 500, 1),
+    system('efficient', 99, 100, 80),
+    system('cpu-efficient', 99.5, 100, 20),
+    system('slow', 90, 1, 0),
+  ]);
+  const records = collectWinners(input).boards[0].records;
+  assert.deepEqual(
+    records.map((r) => r.frontend),
+    ['cpu-efficient', 'efficient', 'fast', 'slow'],
+  );
+  assert.equal(records[0].score, 99.5);
+  assert.equal(records[0].memoryMib, 100);
+  assert.equal(records[0].cpuPercent, 20);
+  assert.equal(collectWinners(input, 0).boards[0].records[0].frontend, 'fast');
+});
+
+test('resource ranking also chooses the efficient configuration of a single frontend', () => {
+  const records = collectWinners(
+    observations([
+      system('fast-host', 60, 500, 1, 'alpha'),
+      system('efficient-host', 59, 100, 20, 'alpha'),
+      system('other-host', 60, 200, 10, 'beta'),
+    ]),
+  ).boards[0].records;
+  assert.equal(records[0].frontend, 'alpha');
+  assert.equal(records[0].groups[0].representative.campaign.host.id, 'efficient-host');
+  assert.equal(records[0].score, 59);
+});
+
+test('fastest-anchored bands avoid chained closeness and remain input-order independent', () => {
+  const input = observations([
+    system('a', 100, 500, 10),
+    system('b', 98, 300, 10),
+    system('c', 96, 100, 10),
+  ]);
+  const expected = [
+    ['b', 0, 1],
+    ['a', 0, 2],
+    ['c', 1, 3],
+  ];
+  for (const permutation of [input, [...input].reverse(), [input[1], input[2], input[0]]]) {
+    assert.deepEqual(
+      collectWinners(permutation).boards[0].records.map((r) => [r.frontend, r.rateBand, r.rank]),
+      expected,
+    );
+  }
+  const boundary = collectWinners(
+    observations([system('a', 100, 500, 1), system('b', 97.99, 1, 0)]),
+  ).boards[0];
+  assert.equal(boundary.records[0].frontend, 'a');
+});
+
+test('global throughput bands are formed before choosing a frontend configuration', () => {
+  const records = collectWinners(
+    observations([
+      system('a-fast', 100, 400, 10, 'alpha'),
+      system('a-slow', 98, 50, 1, 'alpha'),
+      system('b', 102, 300, 20, 'beta'),
+    ]),
+  ).boards[0].records;
+  assert.equal(records[0].frontend, 'beta');
+  assert.equal(records[1].groups[0].representative.campaign.host.id, 'a-fast');
+});
+
+test('resource medians retain equal campaign weights and ignore failed repetitions', () => {
+  const a = withResources(campaign('a', 'alpha', 'same', Array(100).fill(60)), [100], [80]);
+  const b = withResources(
+    campaign('b', 'alpha', 'same', [60, 60, 60, null]),
+    [300, 300, 300, 0],
+    [20, 20, 20, 0],
+  );
+  const record = collectWinners(observations([a, b])).boards[0].records[0];
+  assert.equal(record.memoryMib, 200);
+  assert.equal(record.cpuPercent, 50);
+  assert.equal(record.groups[0].attempted, 104);
+  assert.equal(record.groups[0].successful, 103);
+  b.runs[0].metrics.rss_peak_mib = null;
+  const partial = collectWinners(observations([a, b])).boards[0].records[0];
+  assert.equal(partial.memoryMib, null);
+  assert.equal(partial.cpuPercent, null);
+  assert.equal(partial.groups[0].resources.cpuPercent, 50);
+});
+
+test('missing resource coverage is not zero and CPU cannot bypass unknown memory', () => {
+  const records = collectWinners(
+    observations([
+      system('unknown', 60, null, 0),
+      system('known', 60, 100, 50),
+      system('zero', 60, 0, 0),
+      system('missing-cpu', 60, 100, null),
+    ]),
+  ).boards[0].records;
+  assert.deepEqual(
+    records.map((r) => r.frontend),
+    ['zero', 'known', 'missing-cpu', 'unknown'],
+  );
+  const unknowns = collectWinners(
+    observations([system('a', 60, null, 20), system('b', 59, null, 0)]),
+  ).boards[0].records;
+  assert.deepEqual(
+    unknowns.map((r) => r.rank),
+    [1, 1],
+  );
+  assert.ok(unknowns.every((r) => r.cpuPercent === null));
+  const incomplete = withResources(campaign('p', 'partial', 'p', [60, 60]), [100], [10, null]);
+  assert.equal(collectWinners(observations([incomplete])).boards[0].records[0].cpuPercent, null);
+});
+
+test('resources tie at displayed precision and close-rate ties show their rate range', () => {
+  const records = collectWinners(
+    observations([
+      system('a', 60, 100.03, 20.02, 'alpha'),
+      system('b', 59, 100.04, 20.04, 'alpha'),
+      system('c', 59.5, 100, 20, 'beta'),
+    ]),
+  ).boards[0].records;
+  assert.deepEqual(
+    records.map((r) => r.rank),
+    [1, 1],
+  );
+  assert.equal(records[0].score, 60);
+  assert.equal(records[0].minimumScore, 59);
+  assert.equal(records[0].groups.length, 2);
+});
+
+test('close-rate thresholds are explicit and invalid URL choices use the default', () => {
+  assert.equal(closeRatePercent(null), 2);
+  assert.equal(closeRatePercent('0'), 0);
+  assert.equal(closeRatePercent('1'), 1);
+  assert.equal(closeRatePercent('5'), 5);
+  for (const value of ['', '-1', 'NaN', '100', '2.0']) assert.equal(closeRatePercent(value), 2);
+  assert.throws(() => collectWinners([], 3), /threshold/);
 });
 
 test('case identity separates sources, timings, workloads and collection types', () => {

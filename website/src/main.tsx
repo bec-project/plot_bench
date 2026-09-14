@@ -156,7 +156,7 @@ function App() {
               {route.view === 'hosts'
                 ? 'Hardware and platforms behind the submitted campaigns.'
                 : route.view === 'winners'
-                  ? 'Find the highest recorded median for each frontend and workload, wherever it was measured.'
+                  ? 'Find the best balance of update rate, memory and CPU for each workload, wherever it was measured.'
                   : route.view === 'contribute'
                     ? 'Contribute a campaign from your machine. Every submission keeps its own context.'
                     : 'Explore community measurements across plotting libraries, machines, and platforms.'}

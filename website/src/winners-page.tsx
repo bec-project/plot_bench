@@ -1,5 +1,11 @@
 import { useMemo, useState } from 'react';
-import { collectWinners, type WinnerBoard, type FrontendRecord } from './winners';
+import {
+  collectWinners,
+  closeRatePercent,
+  CLOSE_RATE_PERCENTAGES,
+  type WinnerBoard,
+  type FrontendRecord,
+} from './winners';
 import { inDateRange } from './aggregation';
 import { GroupedResults } from './grouped-results';
 import { Badge, format } from './presentation';
@@ -31,7 +37,8 @@ export function WinnersPage({
       ),
     [observations, filters, kind],
   );
-  const collection = useMemo(() => collectWinners(visible), [visible]);
+  const tolerance = closeRatePercent(filters.get('close'));
+  const collection = useMemo(() => collectWinners(visible, tolerance), [visible, tolerance]);
   const [page, setPage] = useState(0),
     pageSize = 12;
   const allKinds = [...new Set(observations.map((o) => o.campaign.classification))];
@@ -39,13 +46,30 @@ export function WinnersPage({
     <section className="winners-page" aria-label="Winners across hosts">
       <div className="notice">
         <p>
-          <strong>Best observed configurations across all hosts.</strong> Scores are
-          campaign-weighted median submitted updates/s. Hardware, frontend versions and display
-          settings may differ; this is not a hardware-independent library ranking or displayed FPS.
-          Rates are paced by the target; reaching it does not establish maximum rendering capacity.
+          <strong>Best observed configurations across all hosts.</strong> Ranking starts with
+          campaign-weighted median submitted updates/s, then prefers lower memory and CPU for close
+          rates. Hardware, frontend versions and display settings may differ; this is not a
+          hardware-independent library ranking or displayed FPS. Rates are paced by the target;
+          reaching it does not establish maximum rendering capacity.
         </p>
       </div>
       <div className="winner-filters">
+        <label>
+          Close update rates
+          <select
+            aria-label="Close update rates"
+            value={tolerance}
+            onChange={(e) => filter('close', e.target.value)}
+          >
+            {CLOSE_RATE_PERCENTAGES.map((percent) => (
+              <option key={percent} value={percent}>
+                {percent === 0
+                  ? 'Exact rates'
+                  : `Within ${percent}%${percent === 2 ? ' (default)' : ''}`}
+              </option>
+            ))}
+          </select>
+        </label>
         <label>
           Collection
           <select
@@ -148,8 +172,11 @@ export function WinnersPage({
       </div>
       <p className="aggregation-note">
         One best record per frontend and case, drawn from any host. Source revision, workload,
-        backend, delivery mode and durations stay separate. Scores tie at 0.1 updates/s precision;
-        ties do not establish statistical equivalence.
+        backend, delivery mode and durations stay separate. Rates within {tolerance}% of the fastest
+        remaining configuration form a band. Within each band: lower median peak RSS first, then
+        lower median mean CPU, compared at 0.1 MiB / 0.1 percentage-point precision. Missing
+        resource coverage ranks after recorded values; CPU cannot break a tie when memory is
+        missing. This is a ranking preference, not a statistical significance test.
       </p>
       {collection.boards.length ? (
         <>
@@ -236,7 +263,12 @@ function Board({ board, select }: { board: WinnerBoard; select: (o: Observation)
           </div>
         </div>
         <div className="winner-score">
-          <strong>{format(leaders[0].score)}</strong>
+          <strong>
+            {rateRange(
+              Math.min(...leaders.map((r) => r.minimumScore)),
+              Math.max(...leaders.map((r) => r.score)),
+            )}
+          </strong>
           <span>median updates/s</span>
           <small>Target {r.config.hz} Hz</small>
         </div>
@@ -246,6 +278,10 @@ function Board({ board, select }: { board: WinnerBoard; select: (o: Observation)
         groups. Source <code>{r.context.source_hash?.slice(0, 12)}</code> · commit{' '}
         <code>{r.context.commit?.slice(0, 12) ?? 'not recorded'}</code>
         {r.context.dirty && ' · modified checkout'}
+      </p>
+      <p className="muted">
+        Priority: throughput bands ({board.closeRatePercent}%) → peak RSS → mean CPU. Resource
+        values use equal campaign weights; CPU 100% means one logical CPU.
       </p>
       <div className="winner-records">
         {leaders.map((record) => (
@@ -269,6 +305,9 @@ function Board({ board, select }: { board: WinnerBoard; select: (o: Observation)
   );
 }
 
+function rateRange(minimum: number, maximum: number): string {
+  return minimum === maximum ? format(maximum) : `${format(minimum)}–${format(maximum)}`;
+}
 function Record({ record, select }: { record: FrontendRecord; select: (o: Observation) => void }) {
   const [open, setOpen] = useState(false),
     [limit, setLimit] = useState(10);
@@ -278,8 +317,18 @@ function Record({ record, select }: { record: FrontendRecord; select: (o: Observ
         <strong>
           #{record.rank} {record.frontend}
         </strong>
-        <span>{format(record.score)} updates/s</span>
+        <span>{rateRange(record.minimumScore, record.score)} updates/s</span>
       </div>
+      <p className="record-resources">
+        Rate band {record.rateBand + 1} · Median peak RSS:{' '}
+        {record.memoryMib === null ? 'incomplete' : `${format(record.memoryMib)} MiB`} · Median mean
+        CPU:{' '}
+        {record.memoryMib === null
+          ? 'not used without memory'
+          : record.cpuPercent === null
+            ? 'incomplete'
+            : `${format(record.cpuPercent)}%`}
+      </p>
       <ul className="winning-hosts">
         {record.groups.slice(0, limit).map((g) => {
           const c = g.representative.campaign;
@@ -291,6 +340,16 @@ function Record({ record, select }: { record: FrontendRecord; select: (o: Observ
               </span>
               <span>
                 {g.successful}/{g.attempted} successful runs · {g.campaigns.length} campaigns
+              </span>
+              <span>
+                {format(g.rates.median)} updates/s · Median peak RSS{' '}
+                {g.resources.memoryMib === null
+                  ? 'unavailable'
+                  : `${format(g.resources.memoryMib)} MiB`}{' '}
+                · Median mean CPU{' '}
+                {g.resources.cpuPercent === null
+                  ? 'unavailable'
+                  : `${format(g.resources.cpuPercent)}%`}
               </span>
               {g.limited > 0 && <Badge tone="amber">{g.limited} source-limited</Badge>}
               {g.successful < g.attempted && (
