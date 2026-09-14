@@ -77,3 +77,12 @@ Share both HTML files for navigation and the full result directory for raw links
 Before sharing results, review operator notes, command paths, log contents and
 display metadata for information you do not intend to publish. Generated results
 are ignored by Git and are not included in the source repository.
+
+For JFreeChart, `conversion_ms` includes float32-to-double waveform copies and
+scalar/RGB-to-ARGB image conversion. `draw_ms` includes axis/dataset updates and
+synchronous JFreeChart drawing to reusable Java2D rasters; it is inside `update_ms`.
+Swing subsequently blits those rasters. Neither timer establishes GPU completion
+or screen presentation. JDK/JVM identity, compiler, library versions and JVM
+arguments are recorded, so different Java configurations remain separate contexts.
+Short functional smoke runs do not establish steady-state JVM performance; allow
+explicit JIT warmup and retain repetitions when making performance comparisons.

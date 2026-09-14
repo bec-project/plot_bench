@@ -82,3 +82,9 @@ screenshots only outside measurement windows.
 Confirm repeated runs have stable runtime identity, source limitations stay
 visible, and failures remain in the report. State which OS/display combinations
 were actually tested; offscreen tests do not validate GPU performance.
+
+Java adapters can use an independent JDK build with checksum-locked dependency
+JARs. JFreeChart is the reference at `frontends/jfreechart/`: setup invokes its
+build script, deployed JARs are fingerprinted separately from temporary classes,
+and `.java` sources plus the dependency lock participate in stale-build checks.
+Record compiler and runtime separately and allow explicit JVM warmup.

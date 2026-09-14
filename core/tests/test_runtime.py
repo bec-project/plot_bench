@@ -240,3 +240,47 @@ def test_fyne_doctor_rejects_non_wayland_linux_build(monkeypatch, tmp_path, prot
     )
     result = runtime.preflight(frontends=["fyne"])
     assert result["ok"] is ok, result["checks"]
+
+
+@pytest.mark.parametrize(
+    "system,headless,ok",
+    [("Darwin", False, True), ("Darwin", True, False), ("Linux", False, False)],
+)
+def test_java_doctor_requires_visible_macos(monkeypatch, tmp_path, system, headless, ok):
+    if system == "Linux":
+        linux(monkeypatch)
+    else:
+        monkeypatch.setattr(runtime.platform, "system", lambda: system)
+    monkeypatch.setattr(runtime, "ROOT", tmp_path)
+    monkeypatch.setattr(runtime, "require_wayland", lambda: None)
+    monkeypatch.setattr(runtime, "require_current_artifact", lambda *args: {})
+    (tmp_path / ".python-version").write_text(runtime.platform.python_version())
+    exe = runtime._executable("jfreechart")
+    exe.parent.mkdir(parents=True)
+    exe.write_text("jar")  # JARs are deliberately not marked executable.
+    java = tmp_path / "bin/java"
+    java.parent.mkdir()
+    java.write_text("java")
+    java.chmod(0o755)
+    monkeypatch.setenv("PLOTBENCH_JAVA_HOME", str(tmp_path))
+    monkeypatch.setattr(
+        runtime,
+        "_run_check",
+        lambda command, **kwargs: json.dumps({"java_feature": 17, "headless": headless}),
+    )
+    assert runtime.component_installed("jfreechart")
+    result = runtime.preflight(frontends=["jfreechart"])
+    assert result["ok"] is ok, result["checks"]
+
+
+def test_java_launch_uses_selected_runtime_and_jar(monkeypatch, tmp_path):
+    from plotbench import runner
+
+    monkeypatch.setattr(runner, "ROOT", tmp_path)
+    monkeypatch.setattr(runner, "java_executable", lambda: "/selected JDK/bin/java")
+    jar = tmp_path / "frontends/jfreechart/build/plotbench-jfreechart.jar"
+    jar.parent.mkdir(parents=True)
+    jar.touch()
+    command = runner.frontend_command("jfreechart", "http://localhost:8765", "replay", "test", 3)
+    assert command[:3] == ["/selected JDK/bin/java", "-jar", str(jar)]
+    assert command[-2:] == ["--duration", "3"]

@@ -81,3 +81,14 @@ The complete module graph is pinned in `frontends/fyne/go.mod` and checked by
 `go.sum`. Fyne includes fonts and other assets with separate notices in its
 [AUTHORS and license directory](https://github.com/fyne-io/fyne/tree/v2.8.1).
 Redistributed Go binaries incorporate dependencies; retain their applicable notices.
+
+## Java / JFreeChart frontend
+
+- JFreeChart 1.5.6: LGPL-2.1-or-later; [upstream license](https://github.com/jfree/jfreechart/blob/v1.5.6/licence-LGPL.txt).
+- Jackson core, databind and annotations 2.18.3: Apache-2.0; [Jackson licensing](https://github.com/FasterXML/jackson/blob/master/LICENSE).
+- JUnit Platform Console Standalone 1.12.2 (tests only): EPL-2.0; [JUnit license](https://github.com/junit-team/junit5/blob/r5.12.2/LICENSE.md).
+
+Exact artifact URLs and SHA-256 digests are in
+`frontends/jfreechart/dependencies.lock.json`. Runtime dependencies are distributed
+as separate, unmodified JARs in `build/lib`, preserving their embedded licenses and
+notices and allowing replacement. The JDK is supplied by the user, not bundled.

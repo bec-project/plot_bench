@@ -1,0 +1,65 @@
+{
+  "name": "JFreeChart functional validation",
+  "description": "Java2D combined and single-view cases, both sources and delivery modes. macOS visible validation; short warmup is functional only.",
+  "warmup_seconds": 1,
+  "measurement_seconds": 3,
+  "repetitions": 1,
+  "cooldown_seconds": 0.5,
+  "order_seed": 42,
+  "frontends": [
+    "jfreechart"
+  ],
+  "modes": [
+    "stream",
+    "replay"
+  ],
+  "cases": [
+    {
+      "name": "replace-scalar-30hz",
+      "config": {
+        "view": "both",
+        "hz": 30,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar"
+      }
+    },
+    {
+      "name": "append-rgb-60hz",
+      "config": {
+        "view": "both",
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 256,
+        "height": 256,
+        "waveform_mode": "append",
+        "image_mode": "rgb"
+      }
+    },
+    {
+      "name": "waveform-only",
+      "config": {
+        "view": "waveform",
+        "hz": 30,
+        "points": 1000
+      }
+    },
+    {
+      "name": "image-only",
+      "config": {
+        "view": "image",
+        "hz": 30,
+        "width": 128,
+        "height": 128
+      }
+    }
+  ],
+  "backends": [
+    "python",
+    "rust"
+  ]
+}

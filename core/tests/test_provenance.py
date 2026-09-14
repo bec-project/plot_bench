@@ -17,17 +17,21 @@ def write(root, relative, content="source"):
 def create_component(root, component):
     directory = "backends/rust" if component == "rust" else f"frontends/{component}"
     source = write(
-        root, f"{directory}/src/main.ts" if component == "plotly" else f"{directory}/src/main.rs"
+        root, (f"{directory}/src/main.ts" if component == "plotly" else f"{directory}/src/main.rs")
     )
     artifact = root / provenance.ARTIFACTS[component]
-    entrypoint = artifact / "index.html" if component == "plotly" else artifact
+    entrypoint = (
+        artifact / provenance.DIRECTORY_ENTRYPOINTS[component]
+        if component in provenance.DIRECTORY_ENTRYPOINTS
+        else artifact
+    )
     write(root, entrypoint.relative_to(root), "compiled artifact")
     if component == "plotly":
         write(root, f"{directory}/dist/assets/main.js", "compiled JavaScript")
     return source, artifact, entrypoint
 
 
-@pytest.mark.parametrize("component", ["rust", "iced", "plotly"])
+@pytest.mark.parametrize("component", ["rust", "iced", "plotly", "jfreechart"])
 def test_recorded_build_matches_sources_and_actual_artifact_bytes(tmp_path, component):
     source, artifact, entrypoint = create_component(tmp_path, component)
     provenance.record_build(component, tmp_path)
@@ -319,3 +323,16 @@ def test_fyne_go_sources_and_dependencies_invalidate_native_build(tmp_path, file
     source.write_text("after")
     with pytest.raises(RuntimeError, match="unverified"):
         provenance.require_current_artifact("fyne", tmp_path)
+
+
+@pytest.mark.parametrize(
+    "relative", ["src/main/java/App.java", "dependencies.lock.json", "build/lib/chart.jar"]
+)
+def test_java_sources_lock_and_runtime_jars_invalidate_build(tmp_path, relative):
+    create_component(tmp_path, "jfreechart")
+    changed = write(tmp_path, f"frontends/jfreechart/{relative}", "before")
+    provenance.record_build("jfreechart", tmp_path)
+    provenance.require_current_artifact("jfreechart", tmp_path)
+    changed.write_text("after")
+    with pytest.raises(RuntimeError, match="unverified"):
+        provenance.require_current_artifact("jfreechart", tmp_path)
