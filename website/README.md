@@ -20,21 +20,48 @@ Preview: [desktop](docs/winners-desktop.png) · [mobile](docs/winners-mobile.png
 
 ## Winners across hosts
 
-Each comparison case selects the highest grouped median for each frontend across
-all submitted hosts. It uses the existing campaign-weighted median, not the fastest
-individual repetition. Cases require the same exact workload and seed, source
+Each comparison case ranks configurations by throughput first, then memory and CPU
+when update rates are close, and keeps the best record per frontend across all
+submitted hosts. It uses campaign-weighted medians, not the fastest individual
+repetition. Cases require the same exact workload and seed, source
 backend, delivery mode, measurement/warmup durations, campaign classification and
 recorded source hash/commit/dirty state. Hardware, frontend versions and display
 settings may vary; their original groups remain separate and inspectable. This is
 a record table of the best observed configurations, not a controlled comparison
 establishing a host-independent library winner. It calculates no cross-host mean.
 
-Scores rank at the displayed precision of 0.1 submitted updates/s. Equal rounded
-scores share a rank, and all tied host/configuration records are retained.
-Competition ranks follow 1, 1, 3 after a first-place tie. Raw precision is available
-in run details; rounding ties do not establish statistical equivalence. Paced runs
-that reach their target cannot establish an adapter's maximum rendering capacity.
-Cases with only one eligible frontend are explicitly marked as having one entrant.
+The **Close update rates** selector defaults to **within 2%**, with 0%, 1% and 5%
+also available. The ranking builds bands from all eligible configurations before
+selecting each frontend's best record. Starting with the fastest remaining grouped
+median `R`, a band includes rates `r >= R × (1 - tolerance / 100)`. The next band
+starts with the fastest remaining configuration outside it. This avoids chained
+closeness: at 2%, 100 and 98 updates/s share a band, while 96 remains in the next
+band even though it is close to 98. Earlier bands always rank ahead of later ones.
+At 0%, only identical unrounded rates share a band.
+
+Within a band, lower **median peak RSS** wins, followed by lower **median mean CPU**.
+Resource medians use the same successful repetitions with valid rates as throughput:
+first a median of per-run `rss_peak_mib` or `cpu_mean_percent` in each campaign,
+then a median of campaign medians with equal campaign weights. Median peak RSS is
+not the maximum memory observed across the group. CPU 100% is one logical CPU,
+following the process-tree measurement contract. Failed repetitions and campaigns
+without valid rates contribute no resource values.
+
+Every rate-contributing repetition must have the metric for its group resource
+summary to be available. Partial coverage becomes unavailable, not an artificially
+favorable median of the remaining samples. Within a throughput band, recorded
+memory ranks before unavailable memory. If memory is tied and known, recorded CPU
+ranks before unavailable CPU. If memory is unavailable for both configurations,
+CPU does not bypass that missing higher-priority measurement; they remain tied.
+Memory and CPU compare at 0.1 MiB and 0.1 percentage-point precision respectively.
+
+All configurations tied on the band's memory/CPU criteria are retained; their
+actual update-rate range is shown rather than implying equal throughput. Competition
+ranks follow 1, 1, 3 after a first-place tie. Original measurements remain available
+in the evidence and downloads. This tolerance is a user-selectable ranking preference,
+not a statistical equivalence or significance test. Paced runs that reach their
+target cannot establish maximum rendering capacity. Cases with only one eligible
+frontend are explicitly marked as having one entrant.
 
 **Benchmarks** is the default collection; **Smoke checks** and **Diagnostics** are
 separate selections and never compete against benchmark campaigns. The initial
@@ -44,7 +71,7 @@ win; their excluded count is shown, and the Results page retains their observati
 Source-limited groups with valid observations remain eligible with visible flags
 and attempted/successful counts, including any failed repetitions.
 
-Workload, source, mode, collection and inclusive UTC date filters persist in the
+Workload, source, mode, collection, close-rate tolerance and inclusive UTC date filters persist in the
 URL. The page paginates comparison cases and ties, links back to each winning
 host, and expands into campaign and run evidence. All frontend records can be
 expanded to inspect the runners-up. Winners depend on the submitted coverage;

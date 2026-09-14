@@ -340,6 +340,12 @@ select {
   white-space: nowrap;
   font-family: ui-monospace, monospace;
 }
+.record-resources {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
 .winning-hosts {
   list-style: none;
   padding: 0;

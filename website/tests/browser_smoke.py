@@ -369,6 +369,42 @@ def test_grouped_campaign_weights_drilldown_dates_and_pagination():
             await expect(page.get_by_label("Host", exact=True)).to_have_value(
                 "qa-host-1"
             )
+            # Near-equal rates use memory, then CPU, and the tolerance survives reloads.
+            for run in fixtures[1]["runs"]:
+                run["metrics"].update(rss_peak_mib=300, cpu_mean_percent=1)
+            for run in fixtures[2]["runs"]:
+                run["metrics"].update(
+                    submitted_hz=59, rss_peak_mib=100, cpu_mean_percent=40
+                )
+            await page.goto(str(server.make_url(base)) + "#winners")
+            await page.reload()
+            await expect(page.get_by_label("Close update rates")).to_have_value("2")
+            await expect(board.get_by_role("heading", level=3)).to_have_text("beta")
+            await expect(board).to_contain_text("Median peak RSS: 100 MiB")
+            await expect(board).to_contain_text("Median mean CPU: 40%")
+            await expect(board.locator(".winner-score strong")).to_have_text("59")
+            await page.get_by_label("Close update rates").select_option("0")
+            await expect(board.get_by_role("heading", level=3)).to_have_text("alpha")
+            await page.reload()
+            await expect(page.get_by_label("Close update rates")).to_have_value("0")
+            await expect(board.get_by_role("heading", level=3)).to_have_text("alpha")
+            await page.get_by_label("Close update rates").select_option("2")
+            await expect(board.get_by_role("heading", level=3)).to_have_text("beta")
+            for run in fixtures[2]["runs"]:
+                run["metrics"]["rss_peak_mib"] = 300
+            await page.reload()
+            await expect(board.get_by_role("heading", level=3)).to_have_text("alpha")
+            for run in fixtures[1]["runs"]:
+                run["metrics"]["cpu_mean_percent"] = 80
+            await page.reload()
+            await expect(board.get_by_role("heading", level=3)).to_have_text("beta")
+            for run in fixtures[2]["runs"]:
+                run["metrics"]["rss_peak_mib"] = None
+            await page.reload()
+            await expect(board.get_by_role("heading", level=3)).to_have_text("alpha")
+            assert await page.evaluate(
+                "document.documentElement.scrollWidth <= innerWidth"
+            )
             await browser.close()
 
     asyncio.run(exercise())

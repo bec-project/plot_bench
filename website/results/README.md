@@ -72,8 +72,9 @@ seed, source/build, delivery mode, durations, rendering path and display/runtime
 conditions. Different hosts are the variable being examined, not an excuse to
 pool different experiments. See [measurement methodology](../../docs/methodology.md).
 
-The [Winners page](../README.md#winners-across-hosts) selects the highest grouped
-median per frontend and comparison case across hosts, retaining the original host
+The [Winners page](../README.md#winners-across-hosts) selects the best configuration
+per frontend and comparison case across hosts, prioritizing throughput, then lower
+memory and CPU for close update rates. It retains the original host
 and context behind every record. It is a best-observed record view; source revisions,
 workloads, modes, durations and smoke/diagnostic classifications remain separate.
 
