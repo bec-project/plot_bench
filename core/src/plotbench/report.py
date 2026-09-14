@@ -433,6 +433,17 @@ def area_label(dimensions):
     return f"{width:,.0f} × {height:,.0f} px ({width * height / 1e6:.2f} MP)"
 
 
+def plot_count(config, field):
+    """Plot or curve count of a workload; legacy records without the field mean one."""
+    value = config.get(field, 1) if isinstance(config, dict) else 1
+    return value if isinstance(value, int) and not isinstance(value, bool) and value > 0 else 1
+
+
+def plural(count, noun):
+    """Grammatically pluralised count: "1 plot", "3 curves"."""
+    return f"{count} {noun}{'' if count == 1 else 's'}"
+
+
 def workload_label(config):
     if not isinstance(config, dict):
         return NOT_RECORDED
@@ -444,11 +455,15 @@ def workload_label(config):
             label += f" append +{config.get('append_count', '?'):,}"
         else:
             label += " replace"
+        plots, curves = plot_count(config, "waveform_plots"), plot_count(config, "curves")
+        if plots > 1 or curves > 1:
+            label += f" · {plural(plots, 'plot')} × {plural(curves, 'curve')}"
         parts.append(label)
     if config.get("view") in ("image", "both"):
-        parts.append(
-            f"{config.get('width', '?')} × {config.get('height', '?')} {config.get('image_mode', '?')}"
-        )
+        label = f"{config.get('width', '?')} × {config.get('height', '?')} {config.get('image_mode', '?')}"
+        if plot_count(config, "image_plots") > 1:
+            label += f" · {plural(plot_count(config, 'image_plots'), 'plot')}"
+        parts.append(label)
     parts.append(
         f"{config.get('hz', '?'):g} Hz" if isinstance(config.get("hz"), (int, float)) else "? Hz"
     )

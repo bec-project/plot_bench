@@ -8,6 +8,7 @@ from plotbench.report import (
     deadline_counter_increase,
     delivery_ack_rate,
     summarize_run,
+    workload_label,
 )
 from plotbench.runner import expand_cases
 
@@ -310,3 +311,36 @@ def test_same_browser_version_with_different_execution_settings_is_not_pooled(tm
     changed["metadata"][key] = value
     groups = aggregate([base, changed, base])
     assert sorted(group["valid"] for group in groups) == [1, 2]
+
+
+def test_workload_label_names_plot_and_curve_counts_only_when_they_exceed_one():
+    base = {
+        "view": "both",
+        "hz": 30,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 256,
+        "height": 256,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+    }
+    single = dict(base, curves=1, waveform_plots=1, image_plots=1)
+    assert workload_label(single) == "both · 10,000 points replace · 256 × 256 scalar · 30 Hz"
+    assert workload_label(base) == workload_label(single)  # legacy records without the fields
+    multi = dict(base, curves=3, waveform_plots=2, image_plots=3)
+    assert workload_label(multi) == (
+        "both · 10,000 points replace · 2 plots × 3 curves · 256 × 256 scalar · 3 plots · 30 Hz"
+    )
+    assert workload_label(dict(base, curves=3)) == (
+        "both · 10,000 points replace · 1 plot × 3 curves · 256 × 256 scalar · 30 Hz"
+    )
+    append = dict(base, view="waveform", waveform_mode="append", waveform_plots=4)
+    assert (
+        workload_label(append)
+        == "waveform · 10,000 points append +1,000 · 4 plots × 1 curve · 30 Hz"
+    )
+    images = dict(base, view="image", image_mode="rgb", image_plots=4, curves=8)
+    assert workload_label(images) == "image · 256 × 256 rgb · 4 plots · 30 Hz"
+    assert workload_label(dict(multi, curves="3", waveform_plots=True)) == workload_label(
+        dict(base, image_plots=3)
+    )

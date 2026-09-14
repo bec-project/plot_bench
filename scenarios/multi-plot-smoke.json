@@ -1,0 +1,16 @@
+{
+  "name": "Multi-plot and multi-curve smoke validation",
+  "description": "Fast sanity check of the multi-plot path: several waveform plots with several curves each and several image plots in one window, as a beamline operator keeps them open. One repetition per adapter and delivery mode; confirms every adapter lays out and renders N×K waveform curves and M images before a longer campaign.",
+  "warmup_seconds": 1,
+  "measurement_seconds": 3,
+  "repetitions": 1,
+  "cooldown_seconds": 0.5,
+  "order_seed": 42,
+  "frontends": ["pyqtgraph", "pyqtgraph-gl", "matplotlib", "qtgraphs", "iced", "plotly"],
+  "modes": ["stream", "replay"],
+  "cases": [
+    {"name": "two-waveforms-three-curves-three-images-30hz", "config": {"view": "both", "hz": 30, "points": 10000, "append_count": 1000, "curves": 3, "waveform_plots": 2, "width": 256, "height": 256, "waveform_mode": "replace", "image_mode": "scalar", "image_plots": 3}},
+    {"name": "four-waveforms-four-curves-60hz", "config": {"view": "waveform", "hz": 60, "points": 10000, "append_count": 1000, "curves": 4, "waveform_plots": 4, "waveform_mode": "replace"}},
+    {"name": "four-images-rgb-30hz", "config": {"view": "image", "hz": 30, "width": 256, "height": 256, "image_mode": "rgb", "image_plots": 4}}
+  ]
+}

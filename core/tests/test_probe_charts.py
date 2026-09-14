@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 
 import pytest
 
-from plotbench.probe_charts import build_probe_charts
+from plotbench.probe_charts import _label, build_probe_charts
 
 
 def run(**changes):
@@ -150,3 +150,51 @@ def test_same_rates_preserve_both_delivery_markers_and_extreme_rates_are_finite(
         assert "inf" not in charts[key].lower()
         ET.fromstring(charts[key])
     assert 'r="7"' in charts["delivery_svg"] and 'width="8"' in charts["delivery_svg"]
+
+
+def test_labels_prefix_plot_and_curve_counts_only_when_they_exceed_one():
+    def label(**config):
+        charts = build_probe_charts([run(config=run()["config"] | config)])
+        root = ET.fromstring(charts["received_svg"])
+        return [element.text for element in root.iter("{http://www.w3.org/2000/svg}text")]
+
+    def compact(**config):
+        return _label({"config": run()["config"] | config, "scenario": "wide"})
+
+    assert "10k-point waveform" in label()
+    assert "10k-point waveform" in label(curves=1, waveform_plots=1)
+    assert "2 × 3-curve 10k-point waveforms" in label(curves=3, waveform_plots=2)
+    assert "3-curve 10k-point waveform" in label(curves=3)
+    assert "2 × 10k-point waveforms" in label(waveform_plots=2)
+    image = dict(view="image", width=512, height=512, image_mode="scalar")
+    assert "512² scalar image" in label(**image)
+    assert "4 × 512² scalar images" in label(**image, image_plots=4)
+    assert "4 × 512² RGB images" in label(**(image | dict(image_mode="rgb", image_plots=4)))
+    both = dict(view="both", points=10_000, width=256, height=256, image_mode="scalar")
+    assert "10k wf + 256² img" in label(**both)
+    # Longer combined labels are shortened in the chart row; check the full compact form.
+    assert "2 × 3-curve 10k wf + 3 × 256²…" in label(
+        **both, curves=3, waveform_plots=2, image_plots=3
+    )
+    assert (
+        compact(**both, curves=3, waveform_plots=2, image_plots=3)
+        == "2 × 3-curve 10k wf + 3 × 256² img"
+    )
+    assert (
+        compact(**(both | dict(curves=3, width=512, image_mode="rgb", image_plots=4)))
+        == "3-curve 10k wf + 4 × 512 × 256 RGB img"
+    )
+
+
+def test_plot_and_curve_counts_are_separate_groups_ordered_by_count():
+    charts = build_probe_charts(
+        [
+            run(scenario="wide", config=run()["config"] | {"waveform_plots": 4}),
+            run(scenario="wide", config=run()["config"] | {"waveform_plots": 2}),
+            run(scenario="narrow"),
+        ]
+    )
+    groups = charts["comparisons"]
+    assert [group["scenario"] for group in groups] == ["narrow", "wide", "wide"]
+    assert [group["config"].get("waveform_plots", 1) for group in groups] == [1, 2, 4]
+    assert all(group["valid"] for group in groups)

@@ -99,7 +99,10 @@ def _comparisons(rows):
         return (
             {"waveform": 0, "image": 1}.get(config.get("view"), 2),
             _number(config.get("points")) or 0,
+            _plot_count(config, "waveform_plots"),
+            _plot_count(config, "curves"),
             {"scalar": 0, "rgb": 1}.get(config.get("image_mode"), 2),
+            _plot_count(config, "image_plots"),
             group["scenario"],
             json.dumps(config, sort_keys=True),
             group["target_hz"] or 0,
@@ -127,23 +130,56 @@ def _ticks(maximum):
     return [index * interval for index in range(int(maximum / interval) + 1)]
 
 
+def _plot_count(config, field):
+    value = config.get(field, 1)
+    return value if isinstance(value, int) and not isinstance(value, bool) and value > 0 else 1
+
+
 def _label(group):
+    """Compact workload label; multi-plot counts prefix it ("2 × 3-curve 10k-point waveforms").
+
+    Combined workloads join the two kinds in a shorter form: "2 × 3-curve 10k wf + 3 × 256² img".
+    """
     config = group["config"] or {}
-    if config.get("view") == "waveform" and _number(config.get("points")) is not None:
-        points = config["points"]
-        count = (
-            f"{points / 1e6:g}M"
-            if points >= 1e6
-            else f"{points / 1e3:g}k" if points >= 1e3 else f"{points:g}"
-        )
-        return f"{count}-point waveform"
-    if config.get("view") == "image":
-        width, height = config.get("width"), config.get("height")
-        if _number(width) is not None and _number(height) is not None:
-            dimensions = f"{width:g}²" if width == height else f"{width:g} × {height:g}"
-            mode = "RGB" if config.get("image_mode") == "rgb" else str(config.get("image_mode", ""))
-            return f"{dimensions} {mode} image"
+    view = config.get("view")
+    waveform = _waveform_label(config) if view in ("waveform", "both") else None
+    image = _image_label(config) if view in ("image", "both") else None
+    if view == "waveform" and waveform is not None:
+        return waveform
+    if view == "image" and image is not None:
+        return image
+    if view == "both" and waveform is not None and image is not None:
+        return f"{waveform} + {image}"
     return group["scenario"]
+
+
+def _waveform_label(config):
+    if _number(config.get("points")) is None:
+        return None
+    points = config["points"]
+    count = (
+        f"{points / 1e6:g}M"
+        if points >= 1e6
+        else f"{points / 1e3:g}k" if points >= 1e3 else f"{points:g}"
+    )
+    plots, curves = _plot_count(config, "waveform_plots"), _plot_count(config, "curves")
+    prefix = (f"{plots} × " if plots > 1 else "") + (f"{curves}-curve " if curves > 1 else "")
+    if config.get("view") == "both":
+        return f"{prefix}{count} wf"
+    return f"{prefix}{count}-point waveform{'s' if plots > 1 else ''}"
+
+
+def _image_label(config):
+    width, height = config.get("width"), config.get("height")
+    if _number(width) is None or _number(height) is None:
+        return None
+    dimensions = f"{width:g}²" if width == height else f"{width:g} × {height:g}"
+    mode = "RGB" if config.get("image_mode") == "rgb" else str(config.get("image_mode", ""))
+    plots = _plot_count(config, "image_plots")
+    prefix = f"{plots} × " if plots > 1 else ""
+    if config.get("view") == "both":
+        return f"{prefix}{dimensions}{'' if mode == 'scalar' else ' ' + mode} img"
+    return f"{prefix}{dimensions} {mode} image{'s' if plots > 1 else ''}"
 
 
 def _text(x, y, text, *, size=14, fill=TEXT, anchor="start", weight="normal"):
