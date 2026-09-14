@@ -30,7 +30,16 @@ def test_results_filters_details_submission_and_mobile():
         async def index(request):
             return web.FileResponse(ROOT / "dist/index.html")
 
+        # The fixture is the catalogue here, so the checks do not depend on which
+        # submissions the reviewed collection currently holds.
+        seed = json.loads((ROOT / "tests/fixtures/quick-smoke.json").read_text())
+        catalog = {"schema_version": 1, "campaigns": [seed]}
+
+        async def catalog_route(request):
+            return web.json_response(catalog)
+
         app.router.add_get(base, index)
+        app.router.add_get(base + "catalog.json", catalog_route)
         app.router.add_static(base, ROOT / "dist")
         async with TestServer(app) as server, async_playwright() as playwright:
             browser = await playwright.chromium.launch(
@@ -42,8 +51,6 @@ def test_results_filters_details_submission_and_mobile():
             page.on("request", lambda request: requests.append(request))
             url = str(server.make_url(base))
             await page.goto(url)
-            catalog = json.loads((ROOT / "dist/catalog.json").read_text())
-            seed = json.loads((ROOT / "tests/fixtures/quick-smoke.json").read_text())
             all_runs = [r for c in catalog["campaigns"] for r in c["runs"]]
             matplotlib_count = min(
                 25, sum(r["frontend"] == "matplotlib" for r in all_runs)
@@ -420,6 +427,51 @@ def test_grouped_campaign_weights_drilldown_dates_and_pagination():
             assert await page.evaluate(
                 "document.documentElement.scrollWidth <= innerWidth"
             )
+            await browser.close()
+
+    asyncio.run(exercise())
+
+
+def test_built_catalogue_renders_results_or_the_empty_state():
+    """The reviewed collection may be empty; either way the built site must render."""
+    import asyncio
+
+    from playwright.async_api import async_playwright, expect
+
+    catalog = json.loads((ROOT / "dist/catalog.json").read_text())
+
+    async def exercise():
+        base = os.environ.get("PLOTBENCH_SITE_BASE", "/plot_bench/")
+        app = web.Application()
+
+        async def index(request):
+            return web.FileResponse(ROOT / "dist/index.html")
+
+        app.router.add_get(base, index)
+        app.router.add_static(base, ROOT / "dist")
+        async with TestServer(app) as server, async_playwright() as playwright:
+            browser = await playwright.chromium.launch(
+                executable_path=os.environ["PLOTBENCH_TEST_BROWSER"], headless=True
+            )
+            page = await browser.new_page(viewport={"width": 1440, "height": 1080})
+            errors = []
+            page.on("pageerror", lambda error: errors.append(str(error)))
+            await page.goto(str(server.make_url(base)))
+            if catalog["campaigns"]:
+                await expect(page.locator(".result-group").first).to_be_visible()
+                await page.get_by_role("link", name="Hosts", exact=True).click()
+                await expect(page.locator(".host-card")).to_have_count(
+                    len({c["host"]["id"] for c in catalog["campaigns"]})
+                )
+            else:
+                await expect(
+                    page.get_by_role("heading", name="The collection starts here")
+                ).to_be_visible()
+                await page.get_by_role("link", name="Winners", exact=True).click()
+                await expect(
+                    page.get_by_role("heading", name="No eligible benchmark results")
+                ).to_be_visible()
+            assert not errors
             await browser.close()
 
     asyncio.run(exercise())
