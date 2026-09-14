@@ -10,8 +10,10 @@ runs, host histories, exact workload filters, source backends, delivery modes,
 failures, and acquisition/build/display context. Compatible campaigns on the same
 host receive equal weight through a median of campaign medians. It does not
 calculate a global score or pool different configurations. Submitted updates/s
-are not displayed FPS. Until a campaign is submitted, the collection is empty and
-every page shows its empty state; the tests use a private fixture instead.
+are not displayed FPS. The initial collection holds three campaigns from the
+maintainers' machines: a repeated comparison of all eight frontends (three 10 s
+repetitions per case) and two short smoke checks. The browser tests use a private
+fixture, so an empty collection still builds and deploys.
 
 UI previews: [desktop](docs/results-desktop.png) · [mobile](docs/results-mobile.png).
 
