@@ -52,23 +52,67 @@ before the Tokio runtime exits.
 
 ## Protocol and generation
 
-The backend implements `/api/config`, `/api/health`, `/api/frame`, `/api/replay`,
-`/api/colormap`, `/api/metrics`, `/ws`, and CORS for browser clients. Configuration
-POSTs are patches: unspecified settings are preserved, read-only/unknown fields
-are rejected, and every successful update increments `generation`. Validation
-matches the Python limits: up to 120 Hz, 10 million waveform points, 8192 pixels
-per image axis, and 256 MiB of selected payload per frame. Seeds, generation
-numbers, frame sequences, and integer sample counters use `u64`; Python permits
-larger arbitrary-precision integers. Keep these fields within `0..2^64-1` when
-comparing backends.
+The backend implements [protocol v2](../../docs/protocol.md): `/api/config`,
+`/api/health`, `/api/frame`, `/api/replay`, `/api/colormap`, `/api/metrics`, `/ws`,
+and CORS for browser clients. Every frame header carries `version: 2`; decoders
+reject other versions. Configuration POSTs are patches: unspecified settings are
+preserved, read-only/unknown fields are rejected, and every successful update
+increments `generation`. The serde struct keeps the shared field order `hz, points,
+append_count, curves, waveform_plots, width, height, image_plots, waveform_mode,
+image_mode, view, seed, generation`. Validation matches the Python limits and
+messages: up to 120 Hz, 10 million waveform points per curve, 8192 pixels per
+image axis, `curves must be between 1 and 64`, `waveform_plots must be between 1
+and 16`, `image_plots must be between 1 and 16`, and 256 MiB of selected payload
+per frame (`a frame must fit in 256 MiB`), where the payload is
+`waveform_plots * curves * points * 4` (unless `view` is `image`) plus
+`image_plots * width * height * (4 scalar | 3 rgb)` (unless `view` is `waveform`).
+Booleans and fractional numbers are not integers. Plot counts hidden by `view` are
+still validated and carried. Seeds, generation numbers, frame sequences, and
+integer sample counters use `u64`; Python permits larger arbitrary-precision
+integers. Keep these fields within `0..2^64-1` when comparing backends.
+
+### Multi-plot layout and shapes
+
+| array | dtype | shape |
+|---|---|---|
+| `waveform` | float32 | `[waveform_plots, curves, points]` |
+| `image` (scalar) | float32 | `[image_plots, height, width]` |
+| `image` (rgb) | uint8 | `[image_plots, height, width, 3]` |
+
+Shapes are always full-rank, even for one plot with one curve. The payload is
+written plot-major, then curve-major: waveform plot `p` curve `c` is the contiguous
+float32 slice `[(p*curves + c)*points, (p*curves + c + 1)*points)`; image plot `p`
+is the contiguous `height*width` (×3 for RGB) block starting at
+`p*height*width(*3)`.
+
+Every plot and curve receives distinct data from the shared definitions (f64):
+
+```text
+phase          = seq * 0.13 + (seed % 10000) * 0.001
+shift(p, c)    = p * 0.29 + c * 0.61          # waveform plot p, curve c (radians)
+harmonic(c)    = 4.3 + 0.37 * c               # replace mode, second-term multiplier
+rate(c)        = 0.071 + 0.0061 * c           # append mode, second-term multiplier
+image_phase(p) = phase + p * 0.47             # image plot p
+```
+
+Replace waveforms evaluate `sin(x + f32(phase + shift)) + 0.23 * sin(x * f32(harmonic)
+- f32(phase * 0.7))` in f32 with `x = linspace(0, 12π, points)`; append waveforms
+evaluate `sin(x * 0.017 + seed * 0.001 + shift) + 0.23 * sin(x * rate)` in f64 on
+the absolute sample position `x = i + seq * append_count` and cast once at the end.
+Images use `image_phase(p)` wherever the single-image formulas used `phase`. For
+`p = 0`, `c = 0` all constants reduce to the protocol v1 values (shift 0, harmonic
+4.3, rate 0.071, image phase `phase`), so the first plot and curve are bit-identical
+to the previous single-plot generator (`generator::tests` checks this against a
+1×1×1 configuration).
 
 Each stream frame is newly generated from its actual sequence number. The stream
 does **not** cycle through cached frames. A dedicated generation thread evaluates
 the same deterministic formulas as Python. Append frames contain complete rolling
 windows derived from absolute sample positions. Replace frames contain the
-complete current waveform. Images evaluate horizontal/vertical trigonometric
-terms once per axis, then write row-major scalar or RGB pixels in a fused loop.
-The waveform also writes directly into the output payload. A reserved prefix
+complete current waveform of every plot and curve. Images evaluate
+horizontal/vertical trigonometric terms once per axis for each image plot, then
+write row-major scalar or RGB pixels in a fused loop. The waveform also writes
+directly into the output payload. A reserved prefix
 lets the encoder write the timestamped, aligned JSON header after generation
 without copying the complete payload again.
 
@@ -93,18 +137,20 @@ replay response already being generated from its configuration snapshot.
 
 ## Numerical equivalence
 
-Wire dtypes, shapes, array ordering, ranges, append overlap, and colormap entries
-match the shared source. Native scalar math and NumPy's vector math can round
+Wire dtypes, shapes, array ordering, plot/curve layout, ranges, append overlap, and
+colormap entries match the shared source. Native scalar math and NumPy's vector math can round
 slightly differently; **bit identity is not claimed**. Replace waveforms and
 images use float32 intermediate arithmetic, while append waveforms evaluate
 absolute positions in float64 before converting to float32, matching Python's
 precision choices. No fast-math or trigonometric approximation is enabled.
 
 The checked-in fixtures exercise append/replace, scalar/RGB, single-pixel
-dimensions, different seeds, and late sequences. Tests allow **3 × 10⁻⁶** absolute
-float32 difference and at most **1** RGB level to accommodate platform math and
-quantization boundaries. These fixture tolerances do not prove equivalence for
-every possible sequence or seed. Consecutive native append windows overlap exactly.
+dimensions, different seeds, late sequences, and several waveform plots, curves per
+plot and image plots (including a 1×1×1 case). Tests compare shapes exactly and
+allow **3 × 10⁻⁶** absolute float32 difference and at most **1** RGB level to
+accommodate platform math and quantization boundaries. These fixture tolerances do
+not prove equivalence for every possible sequence or seed. Consecutive native
+append windows overlap exactly for every plot and curve.
 
 ## Raw results
 
@@ -132,8 +178,10 @@ cargo test --manifest-path backends/rust/Cargo.toml --locked --release -- --noca
 cargo clippy --manifest-path backends/rust/Cargo.toml --locked --all-targets -- -D warnings
 ```
 
-Tests cover patch atomicity and validation, frame/replay layouts, exact append
-overlap, changing replay data, fixture tolerances, colormap identity, metrics
+Tests cover patch atomicity and validation (including the plot-count ranges and
+payload bound), field order, frame/replay layouts and 3-D/4-D shapes, exact append
+overlap per plot and curve, plot 0 / curve 0 identity with the single-plot layout,
+changing replay data, fixture tolerances, colormap identity, metrics
 validation-before-write, and actual loopback WebSocket ACK withholding/mismatch/
 release/client cleanup. Regenerate numerical fixtures only after deliberately
 reviewing source-formula changes:
