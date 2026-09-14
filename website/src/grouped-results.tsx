@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { type ResultGroup, type CampaignGroup } from './aggregation';
 import { type Observation, sourceLimited, workloadLabel } from './model';
-import { Badge, date, format } from './presentation';
+import { Pill, date, format } from './presentation';
 
 export function GroupedResults({
   groups,
@@ -29,16 +29,16 @@ function Group({ group: g, select }: { group: ResultGroup; select: (o: Observati
           <strong>{r.frontend}</strong>
           <span>{c.host.label}</span>
           <small>{workloadLabel(r.config)}</small>
-          <div className="badges">
-            <Badge>
+          <div className="pills">
+            <Pill>
               {r.backend} · {r.mode}
-            </Badge>
-            <Badge>{c.classification}</Badge>
-            {g.limited > 0 && <Badge tone="amber">{g.limited} source-limited</Badge>}
+            </Pill>
+            <Pill>{c.classification}</Pill>
+            {g.limited > 0 && <Pill tone="amber">{g.limited} source-limited</Pill>}
             {g.successful < g.attempted && (
-              <Badge tone="danger">{g.attempted - g.successful} without valid rate</Badge>
+              <Pill tone="danger">{g.attempted - g.successful} without valid rate</Pill>
             )}
-            {g.incompleteContext && <Badge>Incomplete context · unmerged</Badge>}
+            {g.incompleteContext && <Pill>Incomplete context · unmerged</Pill>}
           </div>
         </div>
         <dl className="group-stats">
@@ -70,17 +70,17 @@ function Group({ group: g, select }: { group: ResultGroup; select: (o: Observati
       </summary>
       {open && (
         <div className="group-content">
-          <p className="muted">
+          <p className="muted small">
             {date(g.first)}–{date(g.last)} UTC · {r.warmup_seconds}s warmup +{' '}
             {r.measurement_seconds}s measurement. Each campaign contributes one median; spread
             describes campaign medians, not individual updates or confidence intervals.
           </p>
-          <p className="muted">
+          <p className="muted small">
             {c.host.os} · {c.host.cpu} · {c.host.gpu ?? 'GPU not recorded'} ·{' '}
             {format(c.host.memory_gib)} GiB. Context <code>{r.context.fingerprint}</code>
           </p>
           {g.rates.count < 2 && (
-            <p className="muted">
+            <p className="muted small">
               At least two campaigns with valid rates are needed to show between-campaign spread.
             </p>
           )}
@@ -116,7 +116,7 @@ function Campaign({
       </summary>
       {open && (
         <div className="campaign-content">
-          <p className="muted">
+          <p className="muted small">
             Repetition range:{' '}
             {g.rates.count > 1
               ? `${format(g.rates.min)}–${format(g.rates.max)} updates/s`
@@ -124,8 +124,8 @@ function Campaign({
             . Whole campaign: {g.campaign.completion_status}; {g.campaign.runs.length} of{' '}
             {g.campaign.planned_runs} planned runs recorded.
           </p>
-          {g.campaign.notes && <p className="muted">{g.campaign.notes}</p>}
-          <div className="table-scroll">
+          {g.campaign.notes && <p className="muted small">{g.campaign.notes}</p>}
+          <div className="table-wrap">
             <table>
               <thead>
                 <tr>
@@ -144,13 +144,16 @@ function Campaign({
                     </td>
                     <td>{o.run.status === 'ok' ? format(o.run.metrics.submitted_hz) : '—'}</td>
                     <td>
-                      <Badge tone={o.run.status === 'ok' ? 'success' : 'danger'}>
-                        {o.run.status}
-                      </Badge>
-                      {sourceLimited(o.run) && <Badge tone="amber">Source limits</Badge>}
+                      <div className="pills">
+                        <Pill tone={o.run.status === 'ok' ? 'success' : 'danger'}>
+                          {o.run.status}
+                        </Pill>
+                        {sourceLimited(o.run) && <Pill tone="amber">Source limits</Pill>}
+                      </div>
                     </td>
                     <td>
                       <button
+                        className="btn-soft btn-small"
                         aria-label={`Details for ${o.run.frontend} ${o.run.id} in ${o.campaign.id}`}
                         onClick={() => select(o)}
                       >
@@ -163,7 +166,7 @@ function Campaign({
             </table>
           </div>
           {limit < g.observations.length && (
-            <button className="show-more" onClick={() => setLimit((n) => n + 25)}>
+            <button className="btn-soft btn-small" onClick={() => setLimit((n) => n + 25)}>
               Show more runs ({g.observations.length - limit} remaining)
             </button>
           )}

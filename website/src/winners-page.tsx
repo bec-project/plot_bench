@@ -8,7 +8,7 @@ import {
 } from './winners';
 import { inDateRange } from './aggregation';
 import { GroupedResults } from './grouped-results';
-import { Badge, format } from './presentation';
+import { Field, Pill, format } from './presentation';
 import { workloadKey, workloadLabel, type Observation } from './model';
 
 export function WinnersPage({
@@ -42,6 +42,11 @@ export function WinnersPage({
   const [page, setPage] = useState(0),
     pageSize = 12;
   const allKinds = [...new Set(observations.map((o) => o.campaign.classification))];
+  const workloads = [
+    ...new Map(
+      observations.map((o) => [workloadKey(o.run.config), workloadLabel(o.run.config)]),
+    ).entries(),
+  ];
   return (
     <section className="winners-page" aria-label="Winners across hosts">
       <div className="notice">
@@ -53,98 +58,93 @@ export function WinnersPage({
           reaching it does not establish maximum rendering capacity.
         </p>
       </div>
-      <div className="winner-filters">
-        <label>
-          Close update rates
-          <select
-            aria-label="Close update rates"
-            value={tolerance}
-            onChange={(e) => filter('close', e.target.value)}
-          >
-            {CLOSE_RATE_PERCENTAGES.map((percent) => (
-              <option key={percent} value={percent}>
-                {percent === 0
-                  ? 'Exact rates'
-                  : `Within ${percent}%${percent === 2 ? ' (default)' : ''}`}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Collection
-          <select
-            aria-label="Winner collection"
-            value={kind}
-            onChange={(e) => filter('kind', e.target.value)}
-          >
-            <option value="benchmark">Benchmarks</option>
-            <option value="smoke">Smoke checks</option>
-            <option value="diagnostic">Diagnostics</option>
-          </select>
-        </label>
-        <label>
-          Source backend
-          <select
-            aria-label="Winner source backend"
-            value={filters.get('backend') ?? ''}
-            onChange={(e) => filter('backend', e.target.value)}
-          >
-            <option value="">All backends</option>
-            {[...new Set(observations.map((o) => o.run.backend))].sort().map((x) => (
-              <option key={x}>{x}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Delivery
-          <select
-            aria-label="Winner delivery"
-            value={filters.get('mode') ?? ''}
-            onChange={(e) => filter('mode', e.target.value)}
-          >
-            <option value="">All modes</option>
-            <option value="stream">stream</option>
-            <option value="replay">replay</option>
-          </select>
-        </label>
-        <label>
-          Workload
-          <select
-            aria-label="Winner workload"
-            value={filters.get('workload') ?? ''}
-            onChange={(e) => filter('workload', e.target.value)}
-          >
-            <option value="">All workloads</option>
-            {[
-              ...new Map(
-                observations.map((o) => [workloadKey(o.run.config), workloadLabel(o.run.config)]),
-              ).entries(),
-            ].map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Acquired from (UTC)
-          <input
-            aria-label="Winner acquired from (UTC)"
-            type="date"
-            value={filters.get('from') ?? ''}
-            onChange={(e) => filter('from', e.target.value)}
-          />
-        </label>
-        <label>
-          Acquired through (UTC)
-          <input
-            aria-label="Winner acquired through (UTC)"
-            type="date"
-            value={filters.get('to') ?? ''}
-            onChange={(e) => filter('to', e.target.value)}
-          />
-        </label>
-      </div>
+      <section className="panel" aria-label="Winner filters">
+        <div className="panel-head">
+          <h2>Compare</h2>
+          <a href="#winners">Reset</a>
+        </div>
+        <div className="field-grid">
+          <Field label="Close update rates">
+            <select
+              aria-label="Close update rates"
+              value={tolerance}
+              onChange={(e) => filter('close', e.target.value)}
+            >
+              {CLOSE_RATE_PERCENTAGES.map((percent) => (
+                <option key={percent} value={percent}>
+                  {percent === 0
+                    ? 'Exact rates'
+                    : `Within ${percent}%${percent === 2 ? ' (default)' : ''}`}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Collection">
+            <select
+              aria-label="Winner collection"
+              value={kind}
+              onChange={(e) => filter('kind', e.target.value)}
+            >
+              <option value="benchmark">Benchmarks</option>
+              <option value="smoke">Smoke checks</option>
+              <option value="diagnostic">Diagnostics</option>
+            </select>
+          </Field>
+          <Field label="Source backend">
+            <select
+              aria-label="Winner source backend"
+              value={filters.get('backend') ?? ''}
+              onChange={(e) => filter('backend', e.target.value)}
+            >
+              <option value="">All backends</option>
+              {[...new Set(observations.map((o) => o.run.backend))].sort().map((x) => (
+                <option key={x}>{x}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Delivery">
+            <select
+              aria-label="Winner delivery"
+              value={filters.get('mode') ?? ''}
+              onChange={(e) => filter('mode', e.target.value)}
+            >
+              <option value="">All modes</option>
+              <option value="stream">stream</option>
+              <option value="replay">replay</option>
+            </select>
+          </Field>
+          <Field label="Workload">
+            <select
+              aria-label="Winner workload"
+              value={filters.get('workload') ?? ''}
+              onChange={(e) => filter('workload', e.target.value)}
+            >
+              <option value="">All workloads</option>
+              {workloads.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Acquired from (UTC)">
+            <input
+              aria-label="Winner acquired from (UTC)"
+              type="date"
+              value={filters.get('from') ?? ''}
+              onChange={(e) => filter('from', e.target.value)}
+            />
+          </Field>
+          <Field label="Acquired through (UTC)">
+            <input
+              aria-label="Winner acquired through (UTC)"
+              type="date"
+              value={filters.get('to') ?? ''}
+              onChange={(e) => filter('to', e.target.value)}
+            />
+          </Field>
+        </div>
+      </section>
       {kind !== 'benchmark' && (
         <div className="notice">
           <p>
@@ -154,7 +154,7 @@ export function WinnersPage({
           </p>
         </div>
       )}
-      <div className="section-line">
+      <div className="panel-head">
         <div>
           <h2>
             {kind === 'benchmark'
@@ -163,14 +163,13 @@ export function WinnersPage({
                 ? 'Best observed smoke results'
                 : 'Best observed diagnostic results'}
           </h2>
-          <p className="muted">
+          <p className="muted small">
             {collection.boards.length} comparison cases · {collection.excludedGroups} groups
             excluded for missing rates or incomplete context
           </p>
         </div>
-        <a href="#winners">Reset</a>
       </div>
-      <p className="aggregation-note">
+      <p className="muted small aggregation-note">
         One best record per frontend and case, drawn from any host. Source revision, workload,
         backend, delivery mode and durations stay separate. Rates within {tolerance}% of the fastest
         remaining configuration form a band. Within each band: lower median peak RSS first, then
@@ -191,10 +190,15 @@ export function WinnersPage({
               {collection.boards.length} cases
             </span>
             <div>
-              <button disabled={page === 0} onClick={() => setPage((n) => n - 1)}>
+              <button
+                className="btn-soft"
+                disabled={page === 0}
+                onClick={() => setPage((n) => n - 1)}
+              >
                 Previous cases
               </button>
               <button
+                className="btn-soft"
                 disabled={(page + 1) * pageSize >= collection.boards.length}
                 onClick={() => setPage((n) => n + 1)}
               >
@@ -215,7 +219,7 @@ export function WinnersPage({
             {allKinds
               .filter((k) => k !== kind)
               .map((k) => (
-                <a className="button" key={k} href={'#winners?kind=' + k}>
+                <a className="btn-soft" key={k} href={'#winners?kind=' + k}>
                   View{' '}
                   {k === 'smoke'
                     ? 'smoke checks'
@@ -224,7 +228,7 @@ export function WinnersPage({
                       : 'diagnostics'}
                 </a>
               ))}
-            <a className="button" href="#results">
+            <a className="btn-soft" href="#results">
               Explore all recorded runs
             </a>
           </div>
@@ -253,13 +257,13 @@ function Board({ board, select }: { board: WinnerBoard; select: (o: Observation)
           <p>
             {workloadLabel(r.config)} · seed {r.config.seed}
           </p>
-          <div className="badges">
-            <Badge>
+          <div className="pills">
+            <Pill>
               {r.backend} · {r.mode}
-            </Badge>
-            <Badge>
+            </Pill>
+            <Pill>
               {r.warmup_seconds}s warmup + {r.measurement_seconds}s measurement
-            </Badge>
+            </Pill>
           </div>
         </div>
         <div className="winner-score">
@@ -290,7 +294,7 @@ function Board({ board, select }: { board: WinnerBoard; select: (o: Observation)
       </div>
       {board.records.length > leaders.length && (
         <details
-          className="other-records"
+          className="disclosure other-records"
           open={expanded}
           onToggle={(e) => setExpanded(e.currentTarget.open)}
         >
@@ -351,19 +355,21 @@ function Record({ record, select }: { record: FrontendRecord; select: (o: Observ
                   ? 'unavailable'
                   : `${format(g.resources.cpuPercent)}%`}
               </span>
-              {g.limited > 0 && <Badge tone="amber">{g.limited} source-limited</Badge>}
+              {g.limited > 0 && <Pill tone="amber">{g.limited} source-limited</Pill>}
               {g.successful < g.attempted && (
-                <Badge tone="danger">{g.attempted - g.successful} without valid rate</Badge>
+                <Pill tone="danger">{g.attempted - g.successful} without valid rate</Pill>
               )}
             </li>
           );
         })}
       </ul>
       {limit < record.groups.length && (
-        <button onClick={() => setLimit((n) => n + 10)}>Show more tied configurations</button>
+        <button className="btn-soft btn-small" onClick={() => setLimit((n) => n + 10)}>
+          Show more tied configurations
+        </button>
       )}
       <details
-        className="winner-evidence"
+        className="disclosure winner-evidence"
         open={open}
         onToggle={(e) => setOpen(e.currentTarget.open)}
       >
