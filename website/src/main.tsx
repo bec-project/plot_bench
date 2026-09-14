@@ -371,15 +371,7 @@ function App() {
                                             ? 'Waveform'
                                             : 'Waveform + image'}
                                       </span>
-                                      <span className="cell-sub">
-                                        {r.config.view !== 'image'
-                                          ? `${format(r.config.points, 0)} pts · ${r.config.waveform_mode}`
-                                          : ''}
-                                        {r.config.view === 'both' ? ' / ' : ''}
-                                        {r.config.view !== 'waveform'
-                                          ? `${r.config.width}×${r.config.height} ${r.config.image_mode}`
-                                          : ''}
-                                      </span>
+                                      <span className="cell-sub">{workloadLabel(r.config)}</span>
                                     </td>
                                     <td>
                                       <span className="rate">

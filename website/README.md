@@ -10,8 +10,8 @@ runs, host histories, exact workload filters, source backends, delivery modes,
 failures, and acquisition/build/display context. Compatible campaigns on the same
 host receive equal weight through a median of campaign medians. It does not
 calculate a global score or pool different configurations. Submitted updates/s
-are not displayed FPS. The initial eight observations come from a real, short
-PyQtGraph/Matplotlib campaign and are labeled as smoke checks.
+are not displayed FPS. Until a campaign is submitted, the collection is empty and
+every page shows its empty state; the tests use a private fixture instead.
 
 UI previews: [desktop](docs/results-desktop.png) · [mobile](docs/results-mobile.png).
 
@@ -64,9 +64,9 @@ target cannot establish maximum rendering capacity. Cases with only one eligible
 frontend are explicitly marked as having one entrant.
 
 **Benchmarks** is the default collection; **Smoke checks** and **Diagnostics** are
-separate selections and never compete against benchmark campaigns. The initial
-seed has only smoke checks, so the benchmark winners view explains its empty state
-and links to smoke records. Incomplete-context and no-valid-rate groups cannot
+separate selections and never compete against benchmark campaigns. Without any
+benchmark campaign, the winners view explains its empty state and links to the
+collections that do exist. Incomplete-context and no-valid-rate groups cannot
 win; their excluded count is shown, and the Results page retains their observations.
 Source-limited groups with valid observations remain eligible with visible flags
 and attempted/successful counts, including any failed repetitions.
@@ -84,8 +84,8 @@ or raw record. Date filters select inclusive acquisition dates in UTC, before
 aggregation. View mode and filters survive reloads and can be shared in the URL.
 
 A group requires an exact match on public host ID and hardware/OS snapshot,
-frontend, backend, delivery mode, every workload field (including seed and target
-rate), measurement/warmup duration, campaign classification, and the complete
+frontend, backend, delivery mode, every workload field (including seed, target
+rate and the number of plots and curves), measurement/warmup duration, campaign classification, and the complete
 recorded context (including its fingerprint, source/build identity, versions,
 rendering and display fields). Friendly host labels, scenario names and dates do
 not define compatibility. Opaque context hashes are deliberately conservative:
