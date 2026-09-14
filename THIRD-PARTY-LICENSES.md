@@ -47,15 +47,18 @@ redistributing binaries or applications.
 - png: MIT OR Apache-2.0 License, see [here](https://github.com/image-rs/image-png/blob/master/LICENSE-MIT)
 - url: MIT OR Apache-2.0 License, see [here](https://github.com/servo/rust-url/blob/main/LICENSE-MIT)
 
-## Web UI (Plotly frontend and matrix editor / source controls)
+## Web UI (Plotly frontend, matrix editor / source controls, results website)
 
 - plotly.js: MIT License, see [here](https://github.com/plotly/plotly.js/blob/master/LICENSE)
 - react / react-dom: MIT License, see [here](https://github.com/facebook/react/blob/main/LICENSE)
+- ajv: MIT License, see [here](https://github.com/ajv-validator/ajv/blob/master/LICENSE)
+- ajv-formats: MIT License, see [here](https://github.com/ajv-validator/ajv-formats/blob/master/LICENSE)
 - preact: MIT License, see [here](https://github.com/preactjs/preact/blob/main/LICENSE)
 - @preact/preset-vite: MIT License, see [here](https://github.com/preactjs/preset-vite/blob/main/LICENSE)
 - vite: MIT License, see [here](https://github.com/vitejs/vite/blob/main/LICENSE)
 - vite-plugin-singlefile: MIT License, see [here](https://github.com/richardtallent/vite-plugin-singlefile/blob/main/LICENSE)
 - tsx: MIT License, see [here](https://github.com/privatenumber/tsx/blob/master/LICENSE)
+- prettier: MIT License, see [here](https://github.com/prettier/prettier/blob/main/LICENSE)
 - typescript: Apache License 2.0, see [here](https://github.com/microsoft/TypeScript/blob/main/LICENSE.txt)
 - type definitions (`@types/*`, DefinitelyTyped): MIT License, see [here](https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/LICENSE)
 

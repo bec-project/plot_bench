@@ -1,0 +1,4 @@
+# Browser QA only; install into a repository-local virtual environment.
+aiohttp==3.14.3
+playwright==1.62.0
+pytest==9.1.1

@@ -19,6 +19,8 @@ DOCS = sorted(
         *ROOT.glob("docs/*.md"),
         *ROOT.glob("core/README.md"),
         *ROOT.glob("core/webui/README.md"),
+        *ROOT.glob("website/README.md"),
+        *ROOT.glob("website/results/README.md"),
         *ROOT.glob("frontends/*/README.md"),
         *ROOT.glob("backends/*/README.md"),
         *ROOT.glob(".agents/skills/*/SKILL.md"),
@@ -98,7 +100,8 @@ def test_documented_npm_commands_have_a_package_and_script(arguments):
 
 
 @pytest.mark.parametrize(
-    "location,block", [pytest.param(*item, id=item[0]) for item in fenced_blocks("sh|bash")]
+    "location,block",
+    [pytest.param(*item, id=item[0]) for item in fenced_blocks("sh|bash")],
 )
 def test_documented_shell_blocks_parse(location, block):
     result = subprocess.run(["bash", "-n"], input=block, text=True, capture_output=True)

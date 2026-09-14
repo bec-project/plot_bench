@@ -20,7 +20,9 @@ Before submitting a change:
   for transport, source, scheduling, or measurement changes.
 - Update user-facing instructions and examples when commands or behavior change.
 - Include screenshots for UI changes, captured outside measurement windows.
-- Keep generated results, build outputs, IDE settings, and local paths out of Git.
+- Keep raw generated results, build outputs, IDE settings, and local paths out of Git.
+  For reviewed community measurements, use the explicit
+  [`website/results/` submission procedure](website/results/README.md).
 
 Python follows the root Ruff configuration and Black's 100-character line length.
 Rust uses `cargo fmt` and Clippy; TypeScript uses its strict compiler and test suite.
@@ -34,6 +36,12 @@ changing the UI, run `npm --prefix core/webui run typecheck` and
 `npm --prefix core/webui run build` from the repository root and commit the
 regenerated output. CI checks bundle reproducibility and browser interactions for
 both pages. See its [README](core/webui/README.md).
+
+The separate [community results website](website/README.md) uses React and Vite.
+Run `npm --prefix website test` and `npm --prefix website run build` after changes.
+Its static output is generated in CI, not committed. Result submissions must pass
+`npm --prefix website run validate`; the PR review covers data provenance and
+public-field review in addition to the automated schema checks.
 
 See [adding a frontend](docs/frontends.md) before introducing a renderer. Its
 limitations and custom rendering work must be explicit, and frontend code must

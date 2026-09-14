@@ -1,0 +1,79 @@
+name: Results website
+
+on:
+  pull_request:
+    paths:
+      - 'website/**'
+      - '.github/workflows/results-pages.yml'
+      - '.node-version'
+  push:
+    branches: [main]
+    paths:
+      - 'website/**'
+      - '.github/workflows/results-pages.yml'
+      - '.node-version'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      PLOTBENCH_SITE_BASE: /${{ github.event.repository.name }}/
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - run: npm --prefix website ci
+      - run: npm --prefix website test
+      - run: npm --prefix website run format:check
+      - run: npm --prefix website run validate
+      - name: Build for the repository's Pages path
+        run: npm --prefix website run build
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install isolated browser test dependencies
+        run: |
+          python -m venv .envs/results-browser
+          .envs/results-browser/bin/pip install -r website/tests/requirements.txt
+          .envs/results-browser/bin/python -m playwright install --with-deps chromium
+      - name: Test browser interactions (functional only)
+        env:
+          PLOTBENCH_QA_SCREENSHOTS: ${{ runner.temp }}/results-screenshots
+        run: |
+          export PLOTBENCH_TEST_BROWSER="$(.envs/results-browser/bin/python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print(p.chromium.executable_path); p.stop()')"
+          .envs/results-browser/bin/python -m pytest website/tests/browser_smoke.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: results-ui-screenshots
+          path: ${{ runner.temp }}/results-screenshots
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: website/dist
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy reviewed results
+        id: deployment
+        uses: actions/deploy-pages@v4

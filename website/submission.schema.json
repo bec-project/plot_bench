@@ -1,0 +1,427 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Plotbench community submission v1",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,79}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "input_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "host": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,79}$"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "cpu": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "gpu": {
+          "type": ["string", "null"],
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "memory_gib": {
+          "type": ["number", "null"],
+          "exclusiveMinimum": 0
+        },
+        "os": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "architecture": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      },
+      "required": ["id", "label", "cpu", "gpu", "memory_gib", "os", "architecture"],
+      "additionalProperties": false
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "classification": {
+      "enum": ["smoke", "benchmark", "diagnostic"]
+    },
+    "completion_status": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]{1,80}$"
+    },
+    "planned_runs": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "runs": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2000,
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{0,79}$"
+          },
+          "scenario": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "frontend": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{0,79}$"
+          },
+          "backend": {
+            "enum": ["python", "rust"]
+          },
+          "mode": {
+            "enum": ["stream", "replay"]
+          },
+          "repetition": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "status": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]{1,80}$"
+          },
+          "config": {
+            "type": "object",
+            "properties": {
+              "hz": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 120
+              },
+              "points": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000000
+              },
+              "append_count": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000000
+              },
+              "width": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 8192
+              },
+              "height": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 8192
+              },
+              "waveform_mode": {
+                "enum": ["replace", "append"]
+              },
+              "image_mode": {
+                "enum": ["scalar", "rgb"]
+              },
+              "view": {
+                "enum": ["waveform", "image", "both"]
+              },
+              "seed": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "hz",
+              "points",
+              "append_count",
+              "width",
+              "height",
+              "waveform_mode",
+              "image_mode",
+              "view",
+              "seed"
+            ],
+            "additionalProperties": false
+          },
+          "measurement_seconds": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "warmup_seconds": {
+            "type": "number",
+            "minimum": 0
+          },
+          "samples": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "context": {
+            "type": "object",
+            "properties": {
+              "fingerprint": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "source_hash": {
+                "type": ["string", "null"],
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "commit": {
+                "type": ["string", "null"],
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              "dirty": {
+                "type": ["boolean", "null"]
+              },
+              "renderer": {
+                "type": ["string", "null"],
+                "minLength": 1,
+                "maxLength": 300
+              },
+              "measurement_stage": {
+                "type": ["string", "null"],
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "versions": {
+                "type": "object",
+                "maxProperties": 50,
+                "propertyNames": {
+                  "pattern": "^[a-zA-Z0-9_.+-]{1,64}$"
+                },
+                "additionalProperties": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                }
+              },
+              "pixel_ratio": {
+                "type": ["number", "null"],
+                "exclusiveMinimum": 0
+              },
+              "viewport_size": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "minItems": 2,
+                    "maxItems": 2
+                  }
+                ]
+              },
+              "plot_viewports": {
+                "type": "object",
+                "properties": {
+                  "waveform": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        "minItems": 2,
+                        "maxItems": 2
+                      }
+                    ]
+                  },
+                  "image": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "number",
+                          "exclusiveMinimum": 0
+                        },
+                        "minItems": 2,
+                        "maxItems": 2
+                      }
+                    ]
+                  }
+                },
+                "required": ["waveform", "image"],
+                "additionalProperties": false
+              },
+              "display_protocol": {
+                "enum": ["native", "wayland", "x11", "offscreen", "headless", null]
+              },
+              "refresh_hz": {
+                "type": ["number", "null"],
+                "exclusiveMinimum": 0
+              },
+              "headless": {
+                "type": ["boolean", "null"]
+              }
+            },
+            "required": [
+              "fingerprint",
+              "source_hash",
+              "commit",
+              "dirty",
+              "renderer",
+              "measurement_stage",
+              "versions",
+              "pixel_ratio",
+              "viewport_size",
+              "plot_viewports",
+              "display_protocol",
+              "refresh_hz",
+              "headless"
+            ],
+            "additionalProperties": false
+          },
+          "metrics": {
+            "type": "object",
+            "properties": {
+              "submitted_hz": {
+                "type": ["number", "null"],
+                "minimum": 0
+              },
+              "update_p50_ms": {
+                "type": ["number", "null"],
+                "minimum": 0
+              },
+              "update_p95_ms": {
+                "type": ["number", "null"],
+                "minimum": 0
+              },
+              "cpu_mean_percent": {
+                "type": ["number", "null"],
+                "minimum": 0
+              },
+              "rss_peak_mib": {
+                "type": ["number", "null"],
+                "minimum": 0
+              },
+              "source_hz": {
+                "type": ["number", "null"],
+                "minimum": 0
+              },
+              "source_deadline_misses": {
+                "type": ["number", "null"],
+                "minimum": 0
+              },
+              "source_mailbox_drops": {
+                "type": ["number", "null"],
+                "minimum": 0
+              },
+              "gap_percent": {
+                "type": ["number", "null"],
+                "minimum": 0,
+                "maximum": 100
+              }
+            },
+            "required": [
+              "submitted_hz",
+              "update_p50_ms",
+              "update_p95_ms",
+              "cpu_mean_percent",
+              "rss_peak_mib",
+              "source_hz",
+              "source_deadline_misses",
+              "source_mailbox_drops",
+              "gap_percent"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "scenario",
+          "frontend",
+          "backend",
+          "mode",
+          "repetition",
+          "status",
+          "config",
+          "measurement_seconds",
+          "warmup_seconds",
+          "samples",
+          "context",
+          "metrics"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "links": {
+      "type": "object",
+      "properties": {
+        "report": {
+          "type": ["string", "null"],
+          "format": "uri",
+          "pattern": "^https://[^\\s]+$",
+          "maxLength": 2000
+        },
+        "extended_report": {
+          "type": ["string", "null"],
+          "format": "uri",
+          "pattern": "^https://[^\\s]+$",
+          "maxLength": 2000
+        },
+        "raw_data": {
+          "type": ["string", "null"],
+          "format": "uri",
+          "pattern": "^https://[^\\s]+$",
+          "maxLength": 2000
+        }
+      },
+      "required": ["report", "extended_report", "raw_data"],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "id",
+    "title",
+    "recorded_at",
+    "input_sha256",
+    "host",
+    "notes",
+    "classification",
+    "completion_status",
+    "planned_runs",
+    "runs",
+    "links"
+  ],
+  "additionalProperties": false
+}

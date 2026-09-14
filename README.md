@@ -84,6 +84,17 @@ or **report-extended.html** for complete evidence. Both work offline. Raw sample
 logs, the selected suite and JSON/CSV summaries remain under `results/`.
 Short smoke runs verify operation; they do not establish stable performance rankings.
 
+## Community results
+
+The [React results website](website/README.md) collects reviewed campaigns from
+different hosts and platforms. Explore individual measurements, filter by hardware,
+frontend and workload, and inspect the acquisition context before comparing runs.
+Use its **Contribute** page to prepare a public JSON export locally, then submit it
+through a pull request to [`website/results/`](website/results/README.md).
+Raw benchmark output remains in the ignored root `results/` directory.
+The site builds as static files for GitHub Pages; see its README for local preview
+and deployment instructions.
+
 ## Documentation
 
 New here? Read [setup](docs/setup.md), then follow the Quick start above. This page
