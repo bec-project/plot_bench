@@ -220,132 +220,160 @@ ApplicationWindow {
             }
         }
 
-        RowLayout {
+        // Shared layout rule: waveform plots first, then image plots, in a
+        // ceil(sqrt(n)) column grid of equal cells; trailing cells stay empty.
+        GridLayout {
+            id: plotGrid
+            objectName: "plotGrid"
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: 16
+            columns: benchmark.gridColumns
+            columnSpacing: 16
+            rowSpacing: 16
 
-            Panel {
-                Layout.fillWidth: true
-                Layout.preferredWidth: 1
-                Layout.fillHeight: true
-                visible: benchmark.waveformVisible
-                Text {
-                    x: 16; y: 16
-                    text: "Waveform"
-                    color: "#d8e6ed"
-                    font.pixelSize: 16
-                    font.weight: Font.DemiBold
-                }
-                Caption { x: 16; y: 42; text: benchmark.workload.waveformSubtitle }
-                GraphsView {
-                    id: graph
-                    objectName: "waveformGraph"
-                    anchors.fill: parent
-                    anchors.topMargin: 64
-                    anchors.bottomMargin: 12
-                    anchors.leftMargin: 4
-                    anchors.rightMargin: 12
-                    antialiasing: false
-                    axisXSmoothing: 0
-                    axisYSmoothing: 0
-                    gridSmoothing: 0
-                    shadowVisible: false
-                    theme: GraphsTheme {
-                        colorScheme: GraphsTheme.ColorScheme.Dark
-                        plotAreaBackgroundColor: "#111e28"
-                        backgroundColor: "#111e28"
-                        gridVisible: false
-                        labelTextColor: "#8fa7b6"
-                        labelFont.pixelSize: 11
-                        labelFont.family: "Helvetica Neue"
-                        axisXLabelFont.pixelSize: 11
-                        axisXLabelFont.family: "Helvetica Neue"
-                        axisYLabelFont.pixelSize: 11
-                        axisYLabelFont.family: "Helvetica Neue"
-                        axisX.mainColor: "#253745"
-                        axisX.subColor: "#253745"
-                        axisX.mainWidth: 1
-                        axisY.mainColor: "#253745"
-                        axisY.subColor: "#253745"
-                        axisY.mainWidth: 1
+            Repeater {
+                model: benchmark.waveformPlots
+                Panel {
+                    id: waveformPanel
+                    required property int index
+                    objectName: "waveformPanel-" + index
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.preferredWidth: 1
+                    Layout.preferredHeight: 1
+                    Text {
+                        x: 16; y: 16
+                        text: benchmark.waveformTitles[waveformPanel.index]
+                        color: "#d8e6ed"
+                        font.pixelSize: 16
+                        font.weight: Font.DemiBold
                     }
-                    axisX: ValueAxis {
-                        min: 0
-                        max: benchmark.xMaximum
-                        tickInterval: Math.max(1, benchmark.xMaximum / 4)
-                        labelDecimals: 0
-                        titleText: "Sample"
+                    Caption { x: 16; y: 42; text: benchmark.workload.waveformSubtitle }
+                    GraphsView {
+                        id: graph
+                        objectName: "waveformGraph-" + waveformPanel.index
+                        anchors.fill: parent
+                        anchors.topMargin: 64
+                        anchors.bottomMargin: 12
+                        anchors.leftMargin: 4
+                        anchors.rightMargin: 12
+                        antialiasing: false
+                        axisXSmoothing: 0
+                        axisYSmoothing: 0
+                        gridSmoothing: 0
+                        shadowVisible: false
+                        theme: GraphsTheme {
+                            colorScheme: GraphsTheme.ColorScheme.Dark
+                            plotAreaBackgroundColor: "#111e28"
+                            backgroundColor: "#111e28"
+                            gridVisible: false
+                            labelTextColor: "#8fa7b6"
+                            labelFont.pixelSize: 11
+                            labelFont.family: "Helvetica Neue"
+                            axisXLabelFont.pixelSize: 11
+                            axisXLabelFont.family: "Helvetica Neue"
+                            axisYLabelFont.pixelSize: 11
+                            axisYLabelFont.family: "Helvetica Neue"
+                            axisX.mainColor: "#253745"
+                            axisX.subColor: "#253745"
+                            axisX.mainWidth: 1
+                            axisY.mainColor: "#253745"
+                            axisY.subColor: "#253745"
+                            axisY.mainWidth: 1
+                        }
+                        axisX: ValueAxis {
+                            min: 0
+                            max: benchmark.xMaximum
+                            tickInterval: Math.max(1, benchmark.xMaximum / 4)
+                            labelDecimals: 0
+                            titleText: "Sample"
+                        }
+                        axisY: ValueAxis {
+                            min: -1.5
+                            max: 1.5
+                            tickInterval: 0.5
+                            labelDecimals: 1
+                            titleText: "Amplitude"
+                        }
                     }
-                    axisY: ValueAxis {
-                        min: -1.5
-                        max: 1.5
-                        tickInterval: 0.5
-                        labelDecimals: 1
-                        titleText: "Amplitude"
-                    }
-                    LineSeries {
-                        objectName: "waveformSeries"
-                        color: "#64dccc"
-                        width: 1 / root.Screen.devicePixelRatio
+                    // LineSeries is not an Item, so a Repeater cannot build it and GraphsView's
+                    // default seriesList property cannot hold a Repeater; an Instantiator creates
+                    // one series per curve and registers it with the graph explicitly.
+                    Instantiator {
+                        model: benchmark.curves
+                        delegate: LineSeries {
+                            required property int index
+                            objectName: "waveformSeries-" + waveformPanel.index + "-" + index
+                            color: benchmark.curveColors[index % benchmark.curveColors.length]
+                            width: 1 / root.Screen.devicePixelRatio
+                        }
+                        onObjectAdded: (index, object) => graph.addSeries(object)
+                        onObjectRemoved: (index, object) => graph.removeSeries(object)
                     }
                 }
             }
 
-            Panel {
-                Layout.fillWidth: true
-                Layout.preferredWidth: 1
-                Layout.fillHeight: true
-                visible: benchmark.imageVisible
-                Text {
-                    x: 16; y: 16
-                    text: "Image"
-                    color: "#d8e6ed"
-                    font.pixelSize: 16
-                    font.weight: Font.DemiBold
-                }
-                Caption { x: 16; y: 42; text: benchmark.workload.imageSubtitle }
-                Item {
-                    anchors.fill: parent
-                    anchors.topMargin: 68
-                    anchors.bottomMargin: 44
-                    anchors.leftMargin: 56
-                    anchors.rightMargin: 24
-                    Image {
-                        id: streamImage
-                        objectName: "streamImage"
-                        anchors.fill: parent
-                        source: benchmark.imageUrl
-                        cache: false
-                        asynchronous: false
-                        smooth: false
-                        mipmap: false
-                        fillMode: Image.PreserveAspectFit
+            Repeater {
+                model: benchmark.imagePlots
+                Panel {
+                    id: imagePanel
+                    required property int index
+                    objectName: "imagePanel-" + index
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.preferredWidth: 1
+                    Layout.preferredHeight: 1
+                    Text {
+                        x: 16; y: 16
+                        text: benchmark.imageTitles[imagePanel.index]
+                        color: "#d8e6ed"
+                        font.pixelSize: 16
+                        font.weight: Font.DemiBold
                     }
-                    Rectangle {
-                        anchors.centerIn: parent
-                        width: streamImage.paintedWidth
-                        height: streamImage.paintedHeight
-                        color: "transparent"
-                        border.color: "#253745"
-                        border.width: 1 / root.Screen.devicePixelRatio
-                        Caption { anchors.right: parent.left; anchors.rightMargin: 9; anchors.top: parent.top; text: "0" }
-                        Caption {
-                            anchors.right: parent.left; anchors.rightMargin: 9; anchors.bottom: parent.bottom
-                            text: benchmark.imageHeight - 1
+                    Caption { x: 16; y: 42; text: benchmark.workload.imageSubtitle }
+                    Item {
+                        anchors.fill: parent
+                        anchors.topMargin: 68
+                        anchors.bottomMargin: 44
+                        anchors.leftMargin: 56
+                        anchors.rightMargin: 24
+                        Image {
+                            id: streamImage
+                            objectName: "streamImage-" + imagePanel.index
+                            anchors.fill: parent
+                            source: imagePanel.index < benchmark.imageUrls.length
+                                ? benchmark.imageUrls[imagePanel.index] : ""
+                            cache: false
+                            asynchronous: false
+                            smooth: false
+                            mipmap: false
+                            fillMode: Image.PreserveAspectFit
                         }
-                        Caption {
-                            anchors.right: parent.left; anchors.rightMargin: 30; anchors.verticalCenter: parent.verticalCenter
-                            text: "Row"; rotation: -90
-                        }
-                        Caption { anchors.left: parent.left; anchors.top: parent.bottom; anchors.topMargin: 6; text: "0" }
-                        Caption {
-                            anchors.right: parent.right; anchors.top: parent.bottom; anchors.topMargin: 6
-                            text: benchmark.imageWidth - 1
-                        }
-                        Caption {
-                            anchors.horizontalCenter: parent.horizontalCenter; anchors.top: parent.bottom; anchors.topMargin: 6
-                            text: "Column"
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: streamImage.paintedWidth
+                            height: streamImage.paintedHeight
+                            color: "transparent"
+                            border.color: "#253745"
+                            border.width: 1 / root.Screen.devicePixelRatio
+                            Caption { anchors.right: parent.left; anchors.rightMargin: 9; anchors.top: parent.top; text: "0" }
+                            Caption {
+                                anchors.right: parent.left; anchors.rightMargin: 9; anchors.bottom: parent.bottom
+                                text: benchmark.imageHeight - 1
+                            }
+                            Caption {
+                                anchors.right: parent.left; anchors.rightMargin: 30; anchors.verticalCenter: parent.verticalCenter
+                                text: "Row"; rotation: -90
+                            }
+                            Caption { anchors.left: parent.left; anchors.top: parent.bottom; anchors.topMargin: 6; text: "0" }
+                            Caption {
+                                anchors.right: parent.right; anchors.top: parent.bottom; anchors.topMargin: 6
+                                text: benchmark.imageWidth - 1
+                            }
+                            Caption {
+                                anchors.horizontalCenter: parent.horizontalCenter; anchors.top: parent.bottom; anchors.topMargin: 6
+                                text: "Column"
+                            }
                         }
                     }
                 }
