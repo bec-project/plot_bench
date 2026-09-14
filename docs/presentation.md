@@ -29,15 +29,63 @@ The image colormap remains the protocol's shared scientific color table.
    and mode, and a PLOTS control with checkable 1D / 2D buttons. Active buttons use
    the accent color; at least one plot stays enabled. Accessible names identify
    the waveform and image. Controls are locked during requests and recorded runs.
+   When a workload has several plots or curves, the WAVEFORM item gains the suffix
+   ` · 2 plots × 3 curves` (omitted when both counts are one) and the IMAGE item
+   gains ` · 3 plots` when `image_plots` is greater than one, for example
+   `10,000 · replace · 2 plots × 3 curves` and `256 × 256 · scalar · 3 plots`.
+   Counts are pluralised grammatically: `1 plot × 3 curves`, `4 plots × 1 curve`,
+   `3 plots` — never `1 plots` or `1 curves`. The report's workload labels follow
+   the same rule.
 3. Four performance indicators, in order: Submitted, Update time, Skipped, Receive
    age. Include units and show a dash for receive age in replay mode. Each value
    has a small muted parenthesized target line inside the existing metric card:
    target rate, one-period update budget, zero skipped frames, and an indicative
    one-period receive-age goal (N/A in replay). Targets follow the confirmed rate.
    Tooltips explain that these are guides and do not measure GPU/display deadlines.
-4. Equal-width Waveform and Image cards in the combined view. A single selected
-   plot fills the available width. Titles and workload subtitles sit above plots.
+4. A grid of plot cards, see [Plot grid](#plot-grid) below. With one waveform and
+   one image plot this is the familiar pair of equal-width Waveform and Image
+   cards; a single selected plot fills the available width. Titles and workload
+   subtitles sit above plots.
 5. Footer: “Submitted updates · not displayed FPS” and a concise renderer note.
+
+## Plot grid
+
+A workload may ask for `waveform_plots` waveform widgets (each drawing `curves`
+curves) and `image_plots` image widgets. Every frontend arranges them with the same
+language-neutral rule so that screenshots and physical plot areas stay comparable:
+
+1. Order the visible plots waveform plots first (`Waveform 1..N`), then image plots
+   (`Image 1..M`). `n = N + M` counts only the kinds enabled by the current view.
+2. Use `columns = ceil(sqrt(n))` and `rows = ceil(n / columns)`, fill the grid
+   row-major with equal cell sizes, and leave trailing cells empty. Hence n = 1 is
+   1 × 1, n = 2 is two cards side by side as before, n = 3 and 4 are 2 × 2,
+   n = 5 and 6 are 3 × 2 (three columns, two rows) and n = 9 is 3 × 3.
+3. Title a plot `Waveform` or `Image` when it is the only one of its kind, else
+   `Waveform 1`, `Waveform 2`, … and `Image 1`, `Image 2`, …. Subtitles keep the
+   existing `points · mode` and `width × height · mode` forms; waveform plots add
+   `· K curves` when `curves` is greater than one.
+4. Rebuild the widget set when the source generation changes the counts. One
+   update submission per frame covers all plots, and the recorded metadata keeps
+   `plot_viewports` as the data area of the first plot of each kind (all cells are
+   equal) and adds `plot_counts` and `curves`.
+
+### Curve palette
+
+Curve `c` of every waveform plot uses `CURVE_COLORS[c % 8]` from
+`plotbench.palette`; curve 0 keeps the accent colour. Stroke width, antialiasing,
+fixed axes (y in [-1.5, 1.5], x in [0, points − 1] for every curve of a plot), no
+markers and no decimation are unchanged.
+
+| Curve | Colour |
+|---|---|
+| 0 (and 8, 16, …) | `#64dccc` |
+| 1 | `#f5c76e` |
+| 2 | `#7aa6ff` |
+| 3 | `#ff9d7a` |
+| 4 | `#c39bff` |
+| 5 | `#9be564` |
+| 6 | `#ff7ab8` |
+| 7 | `#6ee7ff` |
 
 The source control page uses the same colors and typography. The native demos open
 this page in a browser; Plotly also provides controls within its application.

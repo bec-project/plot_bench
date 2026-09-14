@@ -94,18 +94,55 @@ Seeded job shuffling and expansion order are deterministic.
 Do not combine a `resolution` matrix axis with `width` or `height` axes in the
 same group; use explicit dimensions for rectangular combinations.
 
+`curves`, `waveform_plots` and `image_plots` are ordinary axes too. This sweep
+puts several waveform plots with several curves each into one window, the way a
+beamline operator keeps several plots open, and expands to 2 × 2 × 2 = 8 cases:
+
+```json
+{
+  "name": "Plots and curves per window",
+  "frontends": ["pyqtgraph", "plotly"],
+  "backends": ["rust"],
+  "modes": ["stream"],
+  "repetitions": 1,
+  "case_groups": [
+    {
+      "name": "layout",
+      "base": {"view": "both", "hz": 30, "points": 10000, "resolution": 256},
+      "matrix": {"waveform_plots": [1, 4], "curves": [1, 3], "image_plots": [1, 2]}
+    }
+  ]
+}
+```
+
+Case names list the axis values in matrix order (`layout-4-3-2` is four waveform
+plots with three curves each and two image plots). Every plot and curve receives
+distinct data in the same frame, so both transport and rendering scale with the
+counts; see [methodology](methodology.md).
+
 ## Fields and limits
 
-Workload fields: `hz`, `points`, `append_count`, `width`, `height`,
-`waveform_mode` (`replace`/`append`), `image_mode` (`scalar`/`rgb`), `view`
-(`waveform`/`image`/`both`) and `seed`. `generation` is source-managed; do not use it
-as an experiment axis. Unspecified fields use the shared `Config` defaults.
+Workload fields: `hz`, `points`, `append_count`, `curves`, `waveform_plots`,
+`width`, `height`, `image_plots`, `waveform_mode` (`replace`/`append`),
+`image_mode` (`scalar`/`rgb`), `view` (`waveform`/`image`/`both`) and `seed`.
+`generation` is source-managed; do not use it as an experiment axis. Unspecified
+fields use the shared `Config` defaults (one waveform plot with one curve and one
+image plot).
+
+`curves` is the number of curves drawn in every waveform plot (1–64);
+`waveform_plots` (1–16) and `image_plots` (1–16) are the numbers of waveform and
+image plot widgets in the window. `view` still decides which kinds are shown:
+`waveform_plots` is carried but ignored when `view` is `image`, and `image_plots`
+when `view` is `waveform`. `points` is the window of every curve, so a frame holds
+`waveform_plots × curves × points` waveform samples plus `image_plots` images.
 
 Rate must be positive and at most 120 Hz. Dimensions and counts must be positive
 integers; append count cannot exceed the window size. Limits are 10 million
-waveform points, 8192 pixels per image axis and 256 MiB per frame. Invalid or empty
-matrices fail before launching processes. These are input bounds, not performance
-guarantees. A suite is limited to 10,000 expanded cases and 100,000 runs to prevent
+waveform points per curve, 8192 pixels per image axis and 256 MiB per frame (all
+plots and curves together). Invalid or empty matrices fail before launching
+processes, with the field named in the error (for example
+`cases[0].config: curves must be between 1 and 64`). These are input bounds, not
+performance guarantees. A suite is limited to 10,000 expanded cases and 100,000 runs to prevent
 accidental unbounded expansion. The editor table previews the first 250 jobs;
 `--dry-run --json` contains the full schedule. Split larger campaigns into suites.
 The editor rejects integers outside JavaScript's exact range (±9,007,199,254,740,991)
@@ -126,8 +163,18 @@ Machine-specific browser paths belong in `--browser-executable`, not a shared
 scenario. `--json` is used with `--dry-run` and emits the resolved plan without
 starting services, building artifacts or creating result directories.
 
-Examples: `smoke.json` (short combined views), `isolated-smoke.json` (separate
-plots), `stress-smoke.json` (large functional checks), `standard.json` (large sweep),
-`streaming-comparison.json` (focused streaming comparison), and
-`backend-probe.json` (receiver-only Rust source probe; select both backends
-explicitly for a source comparison). Always preview large suites.
+Examples: `smoke.json` (short combined views, including one two-plot, two-curve,
+two-image case), `isolated-smoke.json` (separate plots), `stress-smoke.json` (large
+functional checks), `multi-plot-smoke.json` (short multi-plot and multi-curve
+checks), `standard.json` (large sweep), `streaming-comparison.json` (focused
+streaming comparison), `beamline-dashboard.json` (realistic operator windows with
+several plots and curves each), `multi-plot-sweep.json` (curve, waveform-plot and
+image-plot count sweep), and `backend-probe.json` (receiver-only Rust source probe;
+select both backends explicitly for a source comparison). Always preview large
+suites; for example:
+
+```sh
+./scripts/plotbench run --suite scenarios/multi-plot-smoke.json --dry-run
+./scripts/plotbench run --suite scenarios/beamline-dashboard.json --dry-run
+./scripts/plotbench run --suite scenarios/multi-plot-sweep.json --dry-run
+```

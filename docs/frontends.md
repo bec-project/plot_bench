@@ -18,6 +18,21 @@ preload. Support waveform-only, image-only and combined views, both waveform mod
 and scalar/RGB images. Match fixed axes, color limits, LUT, nearest-neighbor image
 sampling and full-data rendering. Describe any unsupported behavior explicitly.
 
+Support multi-plot workloads: create `waveform_plots` waveform widgets, each
+drawing `curves` curves, and `image_plots` image widgets from the current config,
+and rebuild that widget set when the generation changes the counts. Protocol v2
+always ships the waveform as `[waveform_plots, curves, points]` and images as
+`[image_plots, height, width(, 3)]`; validate the exact shape against the config
+and slice plots and curves without copying where the language allows. Arrange the
+visible plots with the shared grid rule (waveforms first, then images,
+`columns = ceil(sqrt(n))`, `rows = ceil(n / columns)`, row-major, equal cells),
+title them `Waveform 1..N` / `Image 1..M` (plain `Waveform` / `Image` for a single
+plot of a kind) and colour curve `c` with the shared `CURVE_COLORS[c % 8]`
+palette; see [presentation](presentation.md). One update submission per frame
+covers all plots: `update_ms` times the whole frame and `conversion_ms` all image
+conversions in it. Record `plot_counts` and `curves` in metadata, and keep
+`plot_viewports` as the data area of the first plot of each kind.
+
 Python adapters can reuse `FrameSource`, `MetricsSink` and `frontend_parser` from
 `plotbench.client`. Other languages implement the documented transport directly.
 Preserve bounded mailboxes, ACKs, authoritative append windows, reconnect behavior,
@@ -58,9 +73,11 @@ use read-only dependency resolution for builds, and register `.go`, `.mod` and
 ## Acceptance
 
 Test malformed frames, array layout, append/replay behavior, bounded delivery,
-conversion correctness and clean completion. Exercise both backends with visible
-short stream/replay runs and verify complete, usable telemetry. Test view changes
-outside recorded runs. Use screenshots only outside measurement windows.
+conversion correctness and clean completion, including the multi-plot slicing and
+the grid layout. Exercise both backends with visible short stream/replay runs
+(`scenarios/smoke.json` and `scenarios/multi-plot-smoke.json`) and verify
+complete, usable telemetry. Test view changes outside recorded runs. Use
+screenshots only outside measurement windows.
 
 Confirm repeated runs have stable runtime identity, source limitations stay
 visible, and failures remain in the report. State which OS/display combinations

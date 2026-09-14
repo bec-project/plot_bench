@@ -94,7 +94,7 @@ is the tour; the guides below go deeper.
 - **Build & run benchmarks** — [Configure a benchmark matrix](docs/suites.md) ·
   [Reports & retained evidence](docs/reports.md)
 - **How it works** — [Measurement & interpretation](docs/methodology.md) ·
-  [Protocol v1](docs/protocol.md) · [Validation & supported environments](docs/validation.md)
+  [Protocol v2](docs/protocol.md) · [Validation & supported environments](docs/validation.md)
 - **Extend & contribute** — [Contributing](CONTRIBUTING.md) ·
   [Adding a frontend](docs/frontends.md) · [Agent guide](AGENTS.md) ·
   [Web UI: matrix editor & source controls](core/webui/README.md)
@@ -169,6 +169,18 @@ All frontends receive centrally generated waveform replacement/append and
 scalar/RGB image workloads. Streaming uses bounded delivery and decoded-frame
 acknowledgements; replay uses a bounded centrally generated dataset in CPU memory.
 Formal runs launch one frontend at a time.
+
+Workloads can also hold several plots per window, because that is what a beamline
+operator actually looks at: `waveform_plots` waveform plots with `curves` curves
+each and `image_plots` detector images, up to 16 plots of each kind and 64 curves
+per plot. The source generates distinct data for every plot and curve, every
+frontend lays them out with the same grid rule, and one update per frame still
+covers all of them. The `multi-plot-smoke` scenario checks that path quickly,
+`beamline-dashboard` measures realistic operator windows (a monitor wall, a live
+detector view, a scan overview, a multi-detector wall and everything open at
+once), and `multi-plot-sweep` sweeps the plot and curve counts; the standard
+`smoke` suite includes one multi-plot case. See the
+[suite reference](docs/suites.md).
 
 The common metric is **submitted updates/s**, not displayed FPS. Adapter API timing
 boundaries differ and can exclude deferred GPU work. Reports keep workload, source,

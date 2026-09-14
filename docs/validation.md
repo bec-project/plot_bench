@@ -179,6 +179,49 @@ by this local release record.
 Generated validation results are local, ignored artifacts. Historical personal
 benchmark campaigns are not included in the public source repository.
 
+## Multi-plot workloads
+
+Protocol v2 adds multi-plot, multi-curve workloads (`curves`, `waveform_plots`,
+`image_plots`). Their automated coverage is the core contract tests, the shipped
+scenario checks in `core/tests/test_suites.py`, each frontend's layout and slicing
+tests and the documentation test. A passing offscreen test is not visible
+evidence; the visible check below is recorded separately from the release record.
+
+Validated on 2026-09-14 using macOS 15.7.5 on arm64 with the same repository-local
+toolchains as the release record (Python 3.13.15 environments, Rust 1.96.1, Go 1.25.4,
+PySide6/Qt 6.11.2, a Qt C++ 6.11.1 SDK, bundled Chromium 151). These checks
+establish that every adapter lays out and renders several plots and curves; they
+are functional smoke results, not rankings.
+
+- Automated: **634 core tests** (protocol v2 codec and shapes, plot-0/curve-0
+  bit-identity with the v1 formulas, Python/Rust source conformance for 8 workloads
+  including 2 × 3-curve + 2-image, 4 × 5-curve and 3-image cases, suite expansion
+  over the new axes, report labels, documentation examples), **41 PyQtGraph**,
+  **52 Matplotlib** and **30 Qt Graphs** offscreen tests, **17 + 1 Rust source tests**
+  (fixture error 1.2 × 10⁻⁷ against 22 Python-generated cases), **26 Iced tests**,
+  the Go race/vet suite, **2 C++ CTest checks**, **41 Plotly tests**, the web UI
+  typecheck, tests and bundle rebuild. Ruff, Black, rustfmt, Clippy and gofmt passed.
+- Visible macOS smoke: `scenarios/multi-plot-smoke.json` with all eight frontend
+  variants and both delivery modes on the Rust source (48 runs, one-second warmup,
+  three measured seconds). **46 runs were valid.** Two replay runs (Qt Graphs
+  4 × 4-curve waveforms, PyQtGraph 4 RGB images) were invalidated by the
+  display-stability check because their windows were moved between the built-in and
+  an external display during the measured seconds; a four-run repeat reproduced the
+  same operator interaction and both attempts are retained as diagnostics. Their
+  stream counterparts and the other replay combinations completed. Every adapter
+  reported `plot_counts` and `curves` in its telemetry.
+- Untimed visual QA (adapter-side captures outside measured windows) confirmed the
+  2 × 3-curve + 3-image layout, per-plot titles, the shared curve colours and the
+  summary-strip wording for PyQtGraph (raster), Matplotlib, Qt Graphs, Iced, Fyne
+  and Plotly; the captures are kept as `frontends/*/screenshots/*-multi-plot.png`.
+  The OpenGL PyQtGraph variant cannot be captured by a widget grab and was checked
+  through its telemetry only; the Qt Graphs C++ adapter has no capture facility.
+- Rates observed in this short smoke (not rankings): the 4 × 4-curve 60 Hz case was
+  sustained by PyQtGraph (raster), Fyne and Iced, and limited to roughly 12 Hz by
+  both Qt Graphs adapters and to roughly 40 Hz by Matplotlib; four 256² RGB images
+  at 30 Hz were sustained by every adapter except Iced and Plotly. These are the
+  documented per-plot update costs of each library, visible in the reports.
+
 ## Fyne integration validation
 
 The Go/Fyne frontend was checked on macOS arm64 with the native Fyne GLFW/OpenGL
