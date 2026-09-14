@@ -3,7 +3,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 from plotbench.config import Config
-from plotbench.palette import colorize
+from plotbench.palette import CURVE_COLORS, colorize
 from plotbench.protocol import Frame
 from pyqtgraph.graphicsItems.PlotDataItem import PlotDataset
 from qtpy.QtCore import QLineF, Qt
@@ -11,6 +11,7 @@ from qtpy.QtGui import QImage, QPainter
 from qtpy.QtWidgets import QApplication
 
 from plotbench_pyqtgraph import app
+from plotbench_pyqtgraph.dashboard import grid_shape
 
 
 class Source:
@@ -81,14 +82,14 @@ def test_dropped_frame_replaces_complete_authoritative_window(window, waveform_m
         points=8, append_count=2, view="waveform", waveform_mode=waveform_mode
     ).to_dict()
     for seq in (0, 4):
-        waveform = np.arange(8, dtype=np.float32) / 10 + seq / 100
+        waveform = (np.arange(8, dtype=np.float32) / 10 + seq / 100).reshape(1, 1, 8)
         window.source.frame = Frame(
             {"seq": seq, "generation": 0, "config": config}, {"waveform": waveform}
         )
         window.poll_frame()
         x, y = window.curve.getData()
         np.testing.assert_array_equal(x, np.arange(8))
-        np.testing.assert_array_equal(y, waveform)
+        np.testing.assert_array_equal(y, waveform[0, 0])
     assert window.error is None
     assert len(window.sink.samples) == 2
     assert window.curve.opts["autoDownsample"] is False
@@ -103,12 +104,12 @@ def test_image_switches_rgb_scalar_and_resolution(window):
         config = Config(
             width=shape[1], height=shape[0], view="image", image_mode=image_mode
         ).to_dict()
-        image = np.ones(shape, dtype=np.uint8 if image_mode == "rgb" else np.float32)
+        image = np.ones((1, *shape), dtype=np.uint8 if image_mode == "rgb" else np.float32)
         window.source.frame = Frame(
             {"seq": 0, "generation": generation, "config": config}, {"image": image}
         )
         window.poll_frame()
-        expected = image if image_mode == "rgb" else np.full(shape, 255, dtype=np.uint8)
+        expected = image[0] if image_mode == "rgb" else np.full(shape, 255, dtype=np.uint8)
         np.testing.assert_array_equal(window.image_item.image, expected)
         assert (window.image_item.lut is None) == (image_mode == "rgb")
     assert window.error is None
@@ -121,13 +122,13 @@ def test_fixed_finite_waveform_skips_dynamic_range_bounds_scan(window, monkeypat
     monkeypatch.setattr(PlotDataset, "_getArrayBounds", unexpected_bounds_scan)
     config = Config(points=8, append_count=2, view="waveform").to_dict()
     for seq in (0, 1):
-        values = np.linspace(-1, 1, 8, dtype=np.float32)
+        values = np.linspace(-1, 1, 8, dtype=np.float32).reshape(1, 1, 8)
         window.source.frame = Frame(
             {"seq": seq, "generation": 0, "config": config}, {"waveform": values}
         )
         window.poll_frame()
         assert window.error is None
-        np.testing.assert_array_equal(window.curve.getData()[1], values)
+        np.testing.assert_array_equal(window.curve.getData()[1], values[0, 0])
     assert window.curve.opts["dynamicRangeLimit"] is None
     assert len(window.sink.samples) == 2
 
@@ -171,13 +172,204 @@ def test_native_image_lut_matches_protocol_at_every_index_boundary(window):
             np.nextafter(boundaries, np.float32(-np.inf)),
             np.nextafter(boundaries, np.float32(np.inf)),
         ]
-    )[None, :]
-    config = Config(width=values.shape[1], height=1, view="image", image_mode="scalar").to_dict()
+    )[None, None, :]
+    config = Config(width=values.shape[2], height=1, view="image", image_mode="scalar").to_dict()
     window.source.frame = Frame({"seq": 0, "generation": 0, "config": config}, {"image": values})
     window.poll_frame()
     window.image_item.render()
     actual = np.array(
-        [[window.image_item.qimage.pixelColor(x, 0).getRgb()[:3] for x in range(values.shape[1])]],
+        [[window.image_item.qimage.pixelColor(x, 0).getRgb()[:3] for x in range(values.shape[2])]],
         dtype=np.uint8,
     )
-    np.testing.assert_array_equal(actual, colorize(values))
+    np.testing.assert_array_equal(actual, colorize(values[0]))
+
+
+def submit(window, config, generation=0, seq=0):
+    """Feed one synthetic frame whose arrays have the protocol v2 shapes for `config`."""
+    arrays = {}
+    if config["view"] != "image":
+        shape = (config["waveform_plots"], config["curves"], config["points"])
+        arrays["waveform"] = np.arange(np.prod(shape), dtype=np.float32).reshape(shape) / 100
+    if config["view"] != "waveform":
+        shape = (config["image_plots"], config["height"], config["width"])
+        if config["image_mode"] == "rgb":
+            shape += (3,)
+        dtype = np.uint8 if config["image_mode"] == "rgb" else np.float32
+        arrays["image"] = (np.arange(np.prod(shape)) % 251).astype(dtype).reshape(shape)
+        if dtype is np.float32:
+            arrays["image"] /= 250
+    window.source.frame = Frame({"seq": seq, "generation": generation, "config": config}, arrays)
+    window.poll_frame()
+    assert window.error is None
+    return arrays
+
+
+def test_multi_plot_frame_updates_every_curve_of_every_plot_with_its_slice(window):
+    config = Config(points=6, append_count=1, curves=3, waveform_plots=2, view="waveform").to_dict()
+    arrays = submit(window, config)
+    waveform = arrays["waveform"]
+    assert len(window.curves) == 2 and all(len(curves) == 3 for curves in window.curves)
+    assert window.image_plots == [] and window.image_items == []
+    for plot_index, curves in enumerate(window.curves):
+        for curve_index, curve in enumerate(curves):
+            x, y = curve.getData()
+            np.testing.assert_array_equal(x, np.arange(6))
+            np.testing.assert_array_equal(y, waveform[plot_index, curve_index])
+            assert np.shares_memory(curve.yData, waveform), "curves must hold NumPy views"
+            assert curve.opts["pen"].color().name() == CURVE_COLORS[curve_index % 8]
+            assert curve.opts["autoDownsample"] is False
+            assert curve.opts["dynamicRangeLimit"] is None
+    assert [card.title.text() for card in window.waveform_cards] == ["Waveform 1", "Waveform 2"]
+    assert all(
+        card.subtitle.text() == "6 points · replace · 3 curves" for card in window.waveform_cards
+    )
+    for plot in window.waveform_plots:
+        assert plot.getViewBox().viewRange() == [[0, 5], [-1.5, 1.5]]
+    assert len(window.sink.samples) == 1
+
+
+def test_count_changes_rebuild_widgets_and_reuse_survivors(window):
+    config = Config(
+        points=4, append_count=1, curves=2, waveform_plots=2, image_plots=2, width=3, height=2
+    )
+    submit(window, config.to_dict(), generation=0)
+    first_waveform, first_image = window.waveform_plots[0], window.image_plots[0]
+    second_waveform_card = window.waveform_cards[1]
+    first_curves = list(window.curves[0])
+    assert window.dashboard.plots.count() == 4
+
+    config = config.updated({"waveform_plots": 3, "curves": 1, "image_plots": 1})
+    submit(window, config.to_dict(), generation=config.generation)
+    assert window.waveform_plots[0] is first_waveform
+    assert window.image_plots == [first_image]
+    assert len(window.waveform_plots) == 3 and len(window.curves) == 3
+    assert all(len(curves) == 1 for curves in window.curves)
+    assert window.curves[0] == [first_curves[0]]
+    assert first_curves[1] not in first_waveform.getPlotItem().listDataItems()
+    assert second_waveform_card is window.waveform_cards[1]
+    assert window.dashboard.plots.count() == 4
+    assert [card.title.text() for card in window.waveform_cards] == [
+        "Waveform 1",
+        "Waveform 2",
+        "Waveform 3",
+    ]
+    assert window.image_cards[0].title.text() == "Image"
+    assert window.waveform_cards[0].subtitle.text() == "4 points · replace"
+
+    config = config.updated({"waveform_plots": 1, "curves": 4, "view": "waveform"})
+    submit(window, config.to_dict(), generation=config.generation)
+    assert window.waveform_plots == [first_waveform]
+    assert len(window.curves[0]) == 4 and window.curves[0][0] is first_curves[0]
+    assert window.image_plots == [] and window.image_item is None
+    assert window.dashboard.plots.count() == 1
+    assert window.waveform_cards[0].title.text() == "Waveform"
+    assert not second_waveform_card.isVisible() and second_waveform_card.parent() is None
+
+    config = config.updated({"view": "image", "image_plots": 3})
+    submit(window, config.to_dict(), generation=config.generation)
+    assert window.waveform_plots == [] and window.curve is None and window.waveform is None
+    assert len(window.image_plots) == 3 and window.dashboard.plots.count() == 3
+    assert [card.title.text() for card in window.image_cards] == ["Image 1", "Image 2", "Image 3"]
+
+
+@pytest.mark.parametrize("image_mode", ["scalar", "rgb"])
+def test_image_plots_receive_their_own_plane_in_both_modes(window, image_mode):
+    config = Config(view="image", image_plots=3, width=5, height=4, image_mode=image_mode).to_dict()
+    arrays = submit(window, config)
+    assert len(window.image_items) == 3
+    for plot_index, item in enumerate(window.image_items):
+        plane = arrays["image"][plot_index]
+        expected = plane if image_mode == "rgb" else (np.clip(plane, 0, 1) * 255).astype(np.uint8)
+        np.testing.assert_array_equal(item.image, expected)
+        assert item.image.dtype == np.uint8
+        assert (item.lut is None) == (image_mode == "rgb")
+        if image_mode == "rgb":
+            assert np.shares_memory(item.image, arrays["image"])
+    assert [card.subtitle.text() for card in window.image_cards] == [
+        f"5 × 4 · {'RGB' if image_mode == 'rgb' else 'scalar colormap'}"
+    ] * 3
+
+
+def test_image_plots_switch_scalar_and_rgb_per_generation(window):
+    scalar = Config(view="image", image_plots=2, width=3, height=2)
+    submit(window, scalar.to_dict(), generation=0)
+    items = list(window.image_items)
+    assert all(item.lut is not None for item in items)
+    rgb = scalar.updated({"image_mode": "rgb"})
+    arrays = submit(window, rgb.to_dict(), generation=rgb.generation)
+    assert window.image_items == items, "unchanged counts reuse the ImageItems"
+    for plot_index, item in enumerate(items):
+        assert item.lut is None
+        np.testing.assert_array_equal(item.image, arrays["image"][plot_index])
+
+
+def test_mismatched_frame_shape_is_reported_not_silently_truncated(window, monkeypatch):
+    monkeypatch.setattr(window, "update_hud", lambda: None)
+    config = Config(points=4, append_count=1, curves=2, waveform_plots=2, view="waveform").to_dict()
+    window.source.frame = Frame(
+        {"seq": 0, "generation": 0, "config": config},
+        {"waveform": np.zeros((2, 1, 4), dtype=np.float32)},
+    )
+    window.poll_frame()
+    assert window.error is not None and "Plot update failed" in window.error
+    assert window.sink.samples == []
+
+
+@pytest.mark.parametrize(
+    "count, expected",
+    [(1, (1, 1)), (2, (2, 1)), (3, (2, 2)), (4, (2, 2)), (5, (3, 2)), (6, (3, 2)), (9, (3, 3))],
+)
+def test_grid_shape_follows_shared_layout_rule(count, expected):
+    assert grid_shape(count) == expected
+    assert grid_shape(0) == (0, 0)
+
+
+@pytest.mark.parametrize("waveform_plots, image_plots", [(2, 3), (3, 0), (0, 5), (4, 5)])
+def test_plots_are_laid_out_row_major_with_equal_stretch(window, waveform_plots, image_plots):
+    view = "both" if waveform_plots and image_plots else ("waveform" if waveform_plots else "image")
+    config = Config(
+        points=4,
+        append_count=1,
+        waveform_plots=waveform_plots or 1,
+        image_plots=image_plots or 1,
+        width=3,
+        height=2,
+        view=view,
+    ).to_dict()
+    submit(window, config)
+    grid = window.dashboard.plots
+    cards = window.waveform_cards + window.image_cards
+    count = waveform_plots + image_plots
+    columns, rows = grid_shape(count)
+    assert grid.count() == count == len(cards)
+    for index, card in enumerate(cards):
+        row, column, row_span, column_span = grid.getItemPosition(grid.indexOf(card))
+        assert (row, column, row_span, column_span) == (index // columns, index % columns, 1, 1)
+    assert [grid.columnStretch(column) for column in range(grid.columnCount())] == [1] * columns
+    assert [grid.rowStretch(row) for row in range(grid.rowCount())] == [1] * rows
+
+
+def test_hud_records_plot_counts_curves_and_first_plot_viewports(window, monkeypatch):
+    monkeypatch.setattr(window.sink, "snapshot", dict, raising=False)
+    monkeypatch.setattr(window.dashboard, "update_metrics", lambda *args: None)
+    config = Config(
+        points=4, append_count=1, curves=3, waveform_plots=2, image_plots=3, width=3, height=2
+    )
+    submit(window, config.to_dict())
+    window.show()
+    QApplication.processEvents()
+    window.update_hud()
+    assert window.metadata["plot_counts"] == {"waveform": 2, "image": 3}
+    assert window.metadata["curves"] == 3
+    first = window.waveform_plots[0].getViewBox().sceneBoundingRect()
+    ratio = window.devicePixelRatioF()
+    assert window.metadata["plot_viewports"]["waveform"] == [
+        first.width() * ratio,
+        first.height() * ratio,
+    ]
+    assert window.metadata["plot_viewports"]["image"] is not None
+    config = config.updated({"view": "image"})
+    submit(window, config.to_dict(), generation=config.generation)
+    window.update_hud()
+    assert window.metadata["plot_counts"] == {"waveform": 0, "image": 3}
+    assert window.metadata["plot_viewports"]["waveform"] is None

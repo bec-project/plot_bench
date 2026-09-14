@@ -1,9 +1,12 @@
 """Presentation shell; plotting and measurement remain in the frontend adapter."""
 
+import math
+
 from qtpy.QtCore import QSignalBlocker, Qt, QUrl, Signal
 from qtpy.QtGui import QDesktopServices
 from qtpy.QtWidgets import (
     QFrame,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QPushButton,
@@ -28,6 +31,40 @@ def label(text, role):
     return widget
 
 
+def grid_shape(count):
+    """Shared layout rule: (columns, rows) for `count` visible plots, filled row-major.
+
+    columns = ceil(sqrt(n)) and rows = ceil(n / columns), so 1 → 1×1, 2 → 2×1,
+    3 and 4 → 2×2, 5 and 6 → 3×2, 9 → 3×3. An empty set of plots has no cells.
+    """
+    if count <= 0:
+        return 0, 0
+    columns = math.ceil(math.sqrt(count))
+    return columns, math.ceil(count / columns)
+
+
+def plot_title(kind, index, count):
+    """`Waveform` / `Image` for a single plot of a kind, else `Waveform 1`, `Waveform 2`, …"""
+    return kind if count == 1 else f"{kind} {index + 1}"
+
+
+def plural(count, noun):
+    return f"{count} {noun}{'' if count == 1 else 's'}"
+
+
+def waveform_layout_suffix(config):
+    """` · 2 plots × 3 curves` when either count exceeds one, else empty."""
+    plots, curves = config["waveform_plots"], config["curves"]
+    if plots == 1 and curves == 1:
+        return ""
+    return f" · {plural(plots, 'plot')} × {plural(curves, 'curve')}"
+
+
+def image_layout_suffix(config):
+    """` · 3 plots` when more than one image plot is shown, else empty."""
+    return f" · {plural(config['image_plots'], 'plot')}" if config["image_plots"] > 1 else ""
+
+
 class PlotCard(QFrame):
     def __init__(self, title):
         super().__init__()
@@ -36,7 +73,8 @@ class PlotCard(QFrame):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(16, 16, 16, 12)
         layout.setSpacing(5)
-        layout.addWidget(label(title, "plotTitle"))
+        self.title = label(title, "plotTitle")
+        layout.addWidget(self.title)
         self.subtitle = label("Waiting for source", "muted")
         layout.addWidget(self.subtitle)
         self.content = QVBoxLayout()
@@ -174,7 +212,7 @@ class Dashboard(QWidget):
         self.update_metric_targets(None)
         layout.addLayout(metrics)
 
-        self.plots = QHBoxLayout()
+        self.plots = QGridLayout()
         self.plots.setSpacing(16)
         layout.addLayout(self.plots, 1)
         footer = QHBoxLayout()
@@ -184,13 +222,36 @@ class Dashboard(QWidget):
         footer.addWidget(self.resources)
         layout.addLayout(footer)
 
+    def arrange_plots(self, cards):
+        """Place `cards` (waveform plots first, then image plots) on the shared grid.
+
+        Every cell gets the same stretch; cards no longer listed are detached from
+        the grid and hidden so the caller can delete them. Trailing cells stay empty.
+        """
+        while self.plots.count():
+            widget = self.plots.takeAt(0).widget()
+            if widget is not None and widget not in cards:
+                widget.hide()
+        for column in range(self.plots.columnCount()):
+            self.plots.setColumnStretch(column, 0)
+        for row in range(self.plots.rowCount()):
+            self.plots.setRowStretch(row, 0)
+        columns, rows = grid_shape(len(cards))
+        for index, card in enumerate(cards):
+            self.plots.addWidget(card, index // columns, index % columns)
+            card.show()
+        for column in range(columns):
+            self.plots.setColumnStretch(column, 1)
+        for row in range(rows):
+            self.plots.setRowStretch(row, 1)
+
     def update_summary(self, config):
         if config is None:
             return
         values = (
             f"{config['hz']:g} Hz",
-            f"{config['points']:,} · {config['waveform_mode']}",
-            f"{config['width']} × {config['height']} · {config['image_mode'].upper() if config['image_mode'] == 'rgb' else 'scalar'}",
+            f"{config['points']:,} · {config['waveform_mode']}{waveform_layout_suffix(config)}",
+            f"{config['width']} × {config['height']} · {config['image_mode'].upper() if config['image_mode'] == 'rgb' else 'scalar'}{image_layout_suffix(config)}",
         )
         for widget, value in zip(self.summary_values, values, strict=True):
             widget.setText(value)

@@ -105,3 +105,27 @@ def test_metric_targets_follow_active_frame_rate_and_replay_has_no_age(dashboard
         ]
     assert "deferred GPU" in dashboard.metric_targets[0].parent().toolTip()
     assert "indicative" in dashboard.metric_targets[3].parent().toolTip()
+
+
+@pytest.mark.parametrize(
+    "fields, waveform, image",
+    [
+        ({}, "10,000 · replace", "512 × 512 · scalar"),
+        (
+            {"curves": 3, "waveform_plots": 2, "image_plots": 3, "image_mode": "rgb"},
+            "10,000 · replace · 2 plots × 3 curves",
+            "512 × 512 · RGB · 3 plots",
+        ),
+        ({"curves": 3}, "10,000 · replace · 1 plot × 3 curves", "512 × 512 · scalar"),
+        (
+            {"waveform_plots": 4, "waveform_mode": "append"},
+            "10,000 · append · 4 plots × 1 curve",
+            "512 × 512 · scalar",
+        ),
+        ({"image_plots": 2, "view": "image"}, "10,000 · replace", "512 × 512 · scalar · 2 plots"),
+    ],
+)
+def test_summary_shows_plot_and_curve_counts_only_beyond_one(dashboard, fields, waveform, image):
+    dashboard.update_summary(Config(**fields).to_dict())
+    assert dashboard.summary_values[1].text() == waveform
+    assert dashboard.summary_values[2].text() == image

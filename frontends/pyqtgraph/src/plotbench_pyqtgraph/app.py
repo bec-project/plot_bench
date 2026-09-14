@@ -11,13 +11,13 @@ import numpy as np
 import psutil
 import pyqtgraph as pg
 from plotbench.client import FrameSource, MetricsSink, frontend_parser
-from plotbench.palette import COLORMAP
+from plotbench.palette import COLORMAP, CURVE_COLORS
 from plotbench.qt_metadata import qt_window_metadata
 from qtpy.QtCore import Qt, QTimer, Slot, qVersion
 from qtpy.QtGui import QFont, QSurfaceFormat
 from qtpy.QtWidgets import QApplication, QMainWindow
 
-from .dashboard import ACCENT, BORDER, MUTED, PANEL, Dashboard, PlotCard
+from .dashboard import BORDER, MUTED, PANEL, Dashboard, PlotCard, plot_title
 
 logger = logging.getLogger(__name__)
 
@@ -43,49 +43,18 @@ class PlotWindow(QMainWindow):
         )
         self.dashboard.viewRequested.connect(self.request_view)
         self.dashboard.sync_plot_controls(locked=bool(args.duration))
-        self.waveform_card = PlotCard("Waveform")
-        self.image_card = PlotCard("Image")
-        self.dashboard.plots.addWidget(self.waveform_card, 1)
-        self.dashboard.plots.addWidget(self.image_card, 1)
-        self.waveform = pg.PlotWidget(background=PANEL)
-        self.waveform.setLabel("bottom", "Sample")
-        self.waveform.setLabel("left", "Amplitude")
-        self.waveform.setMouseEnabled(x=False, y=False)
-        self.waveform.setMenuEnabled(False)
-        self.waveform.disableAutoRange()
-        self.curve = self.waveform.plot(
-            pen=pg.mkPen(ACCENT, width=1, cosmetic=True),
-            antialias=False,
-            connect="all",
-            skipFiniteCheck=True,
-        )
-        self.curve.setDownsampling(ds=1, auto=False)
-        self.curve.setClipToView(False)
-        self.curve.setDynamicRangeLimit(None)
-        self.waveform_card.content.addWidget(self.waveform, 1)
-        self.image_plot = pg.PlotWidget(background=PANEL)
-        self.image_plot.setLabel("bottom", "Column")
-        self.image_plot.setLabel("left", "Row")
-        self.image_plot.setMouseEnabled(x=False, y=False)
-        self.image_plot.setMenuEnabled(False)
-        self.image_plot.disableAutoRange()
-        self.image_plot.getViewBox().invertY(True)
-        self.image_plot.setAspectLocked(True)
-        self.image_item = pg.ImageItem(axisOrder="row-major", autoDownsample=False)
-        self.image_plot.addItem(self.image_item)
-        self.image_card.content.addWidget(self.image_plot, 1)
-        tick_font = QFont("Helvetica Neue")
-        tick_font.setPixelSize(11)
-        for plot in (self.waveform, self.image_plot):
-            plot.setMinimumSize(100, 100)
-            plot.getPlotItem().layout.setContentsMargins(0, 8, 0, 0)
-            plot.hideButtons()
-            for axis_name in ("left", "bottom"):
-                axis = plot.getAxis(axis_name)
-                axis.setPen(pg.mkPen(BORDER))
-                axis.setTextPen(pg.mkPen(MUTED))
-                axis.setStyle(tickFont=tick_font)
-                axis.label.setDefaultTextColor(pg.mkColor(MUTED))
+        self.tick_font = QFont("Helvetica Neue")
+        self.tick_font.setPixelSize(11)
+        # One PlotCard + PlotWidget per waveform plot (holding `curves` PlotDataItems) and per
+        # image plot (holding one ImageItem); rebuilt whenever a generation changes the counts.
+        self.waveform_cards = []
+        self.waveform_plots = []
+        self.curves = []
+        self.curve_count = 1
+        self.image_cards = []
+        self.image_plots = []
+        self.image_items = []
+        self.sync_plots(1, 1, 1)
         self.setCentralWidget(self.dashboard)
 
         self.metadata = {
@@ -105,7 +74,9 @@ class PlotWindow(QMainWindow):
             "downsampling": False,
             "dynamic_range_limit": None,
             "skip_finite_check": True,
-            "update_strategy": "full authoritative window setData in replace AND append mode",
+            "update_strategy": "full authoritative window setData per curve of every waveform "
+            "plot and setImage per image plot in replace AND append mode",
+            "curve_colors": "plotbench.palette.CURVE_COLORS[c % 8] per curve index c",
             "versions": {
                 "python": platform.python_version(),
                 "numpy": np.__version__,
@@ -132,28 +103,130 @@ class PlotWindow(QMainWindow):
         self.hud_timer.start(500)
         self.source.start()
 
+    # First plot of each kind; None while that kind is hidden by the source view.
+    @property
+    def waveform(self):
+        return self.waveform_plots[0] if self.waveform_plots else None
+
+    @property
+    def curve(self):
+        return self.curves[0][0] if self.curves else None
+
+    @property
+    def image_plot(self):
+        return self.image_plots[0] if self.image_plots else None
+
+    @property
+    def image_item(self):
+        return self.image_items[0] if self.image_items else None
+
+    def style_plot(self, plot):
+        plot.setMouseEnabled(x=False, y=False)
+        plot.setMenuEnabled(False)
+        plot.disableAutoRange()
+        plot.setMinimumSize(100, 100)
+        plot.getPlotItem().layout.setContentsMargins(0, 8, 0, 0)
+        plot.hideButtons()
+        for axis_name in ("left", "bottom"):
+            axis = plot.getAxis(axis_name)
+            axis.setPen(pg.mkPen(BORDER))
+            axis.setTextPen(pg.mkPen(MUTED))
+            axis.setStyle(tickFont=self.tick_font)
+            axis.label.setDefaultTextColor(pg.mkColor(MUTED))
+        return plot
+
+    def add_curve(self, plot, index):
+        curve = plot.plot(
+            pen=pg.mkPen(CURVE_COLORS[index % len(CURVE_COLORS)], width=1, cosmetic=True),
+            antialias=False,
+            connect="all",
+            skipFiniteCheck=True,
+        )
+        curve.setDownsampling(ds=1, auto=False)
+        curve.setClipToView(False)
+        curve.setDynamicRangeLimit(None)
+        return curve
+
+    def add_waveform_plot(self):
+        # PlotWidget reads the global useOpenGL option, so every plot shares the viewport kind.
+        plot = self.style_plot(pg.PlotWidget(background=PANEL))
+        plot.setLabel("bottom", "Sample")
+        plot.setLabel("left", "Amplitude")
+        card = PlotCard("Waveform")
+        card.content.addWidget(plot, 1)
+        self.waveform_cards.append(card)
+        self.waveform_plots.append(plot)
+        self.curves.append([])
+
+    def add_image_plot(self):
+        plot = self.style_plot(pg.PlotWidget(background=PANEL))
+        plot.setLabel("bottom", "Column")
+        plot.setLabel("left", "Row")
+        plot.getViewBox().invertY(True)
+        plot.setAspectLocked(True)
+        item = pg.ImageItem(axisOrder="row-major", autoDownsample=False)
+        plot.addItem(item)
+        card = PlotCard("Image")
+        card.content.addWidget(plot, 1)
+        self.image_cards.append(card)
+        self.image_plots.append(plot)
+        self.image_items.append(item)
+
+    def sync_plots(self, waveform_count, curve_count, image_count):
+        """Reuse existing widgets, add missing ones and delete surplus ones, then lay out."""
+        surplus = []
+        while len(self.waveform_plots) > waveform_count:
+            surplus.append(self.waveform_cards.pop())
+            self.waveform_plots.pop()
+            self.curves.pop()
+        while len(self.waveform_plots) < waveform_count:
+            self.add_waveform_plot()
+        for plot, curves in zip(self.waveform_plots, self.curves, strict=True):
+            while len(curves) > curve_count:
+                plot.removeItem(curves.pop())
+            while len(curves) < curve_count:
+                curves.append(self.add_curve(plot, len(curves)))
+        self.curve_count = curve_count
+        while len(self.image_plots) > image_count:
+            surplus.append(self.image_cards.pop())
+            self.image_plots.pop()
+            self.image_items.pop()
+        while len(self.image_plots) < image_count:
+            self.add_image_plot()
+        self.dashboard.arrange_plots(self.waveform_cards + self.image_cards)
+        for card in surplus:
+            card.setParent(None)
+            card.deleteLater()
+
     def apply_config(self, config):
         self.config = config
         self.dashboard.update_summary(config)
-        self.waveform_card.subtitle.setText(
-            f"{config['points']:,} points · {config['waveform_mode']}"
-        )
-        self.image_card.subtitle.setText(
+        waveform_count = config["waveform_plots"] if config["view"] in ("waveform", "both") else 0
+        image_count = config["image_plots"] if config["view"] in ("image", "both") else 0
+        self.sync_plots(waveform_count, config["curves"], image_count)
+        if self.x.size != config["points"]:
+            self.x = np.arange(config["points"], dtype=np.float32)
+        subtitle = f"{config['points']:,} points · {config['waveform_mode']}"
+        if config["curves"] > 1:
+            subtitle += f" · {config['curves']} curves"
+        for index, (card, plot) in enumerate(
+            zip(self.waveform_cards, self.waveform_plots, strict=True)
+        ):
+            card.title.setText(plot_title("Waveform", index, waveform_count))
+            card.subtitle.setText(subtitle)
+            plot.setXRange(0, max(1, config["points"] - 1), padding=0)
+            plot.setYRange(-1.5, 1.5, padding=0)
+        subtitle = (
             f"{config['width']} × {config['height']} · "
             f"{'RGB' if config['image_mode'] == 'rgb' else 'scalar colormap'}"
         )
-        self.waveform_card.setVisible(config["view"] in ("waveform", "both"))
-        self.image_card.setVisible(config["view"] in ("image", "both"))
-        self.waveform.setVisible(config["view"] in ("waveform", "both"))
-        self.image_plot.setVisible(config["view"] in ("image", "both"))
-        if self.x.size != config["points"]:
-            self.x = np.arange(config["points"], dtype=np.float32)
-        self.waveform.setXRange(0, max(1, config["points"] - 1), padding=0)
-        self.waveform.setYRange(-1.5, 1.5, padding=0)
-        self.image_plot.setRange(
-            xRange=(0, config["width"]), yRange=(0, config["height"]), padding=0
-        )
-        self.image_item.setLookupTable(COLORMAP if config["image_mode"] == "scalar" else None)
+        for index, (card, plot, item) in enumerate(
+            zip(self.image_cards, self.image_plots, self.image_items, strict=True)
+        ):
+            card.title.setText(plot_title("Image", index, image_count))
+            card.subtitle.setText(subtitle)
+            plot.setRange(xRange=(0, config["width"]), yRange=(0, config["height"]), padding=0)
+            item.setLookupTable(COLORMAP if config["image_mode"] == "scalar" else None)
 
     @Slot()
     def poll_frame(self):
@@ -166,15 +239,19 @@ class PlotWindow(QMainWindow):
                 self.apply_config(frame.header["config"])
                 self.generation = frame.generation
             if "waveform" in frame.arrays:
-                self.curve.setData(self.x, frame.arrays["waveform"])
+                # [waveform_plots, curves, points]; iterating yields contiguous views, no copies.
+                for curves, plot_data in zip(self.curves, frame.arrays["waveform"], strict=True):
+                    for curve, values in zip(curves, plot_data, strict=True):
+                        curve.setData(self.x, values)
             conversion_ms = 0.0
             if "image" in frame.arrays:
-                image = frame.arrays["image"]
-                if image.ndim == 2:
-                    conversion_started = perf_counter()
-                    image = (np.clip(image, 0, 1) * 255).astype(np.uint8)
-                    conversion_ms = (perf_counter() - conversion_started) * 1000
-                self.image_item.setImage(image, autoLevels=False, levels=None, autoDownsample=False)
+                # [image_plots, height, width] scalar or [image_plots, height, width, 3] RGB.
+                for item, image in zip(self.image_items, frame.arrays["image"], strict=True):
+                    if image.ndim == 2:
+                        conversion_started = perf_counter()
+                        image = (np.clip(image, 0, 1) * 255).astype(np.uint8)
+                        conversion_ms += (perf_counter() - conversion_started) * 1000
+                    item.setImage(image, autoLevels=False, levels=None, autoDownsample=False)
             self.sink.record(frame, (perf_counter() - started) * 1000, conversion_ms=conversion_ms)
             self.metadata.update(self.source.metadata)
             if self.args.duration and not self.duration_started:
@@ -211,33 +288,42 @@ class PlotWindow(QMainWindow):
         )
         ratio = self.devicePixelRatioF()
         self.metadata.update(qt_window_metadata(self, platform_name=QApplication.platformName()))
-        waveform_area = self.waveform.getViewBox().sceneBoundingRect()
-        image_area = self.image_item.mapRectToDevice(self.image_item.boundingRect())
+        # All grid cells are equal, so the first plot of each kind describes every plot.
+        waveform_area = image_area = None
+        if self.waveform is not None and self.waveform.isVisible():
+            waveform_area = self.waveform.getViewBox().sceneBoundingRect()
+        if self.image_plot is not None and self.image_plot.isVisible():
+            image_area = self.image_item.mapRectToDevice(self.image_item.boundingRect())
         self.metadata.update(
             pixel_ratio=ratio,
             viewport_size=[self.width(), self.height()],
             viewport_size_units="logical pixels",
-            plot_viewport_units="physical pixels; data drawing area excluding axes",
+            plot_viewport_units="physical pixels; data drawing area of the first plot of each "
+            "kind, excluding axes",
             plot_viewports={
                 "waveform": (
                     [waveform_area.width() * ratio, waveform_area.height() * ratio]
-                    if self.waveform.isVisible()
+                    if waveform_area is not None
                     else None
                 ),
                 "image": (
                     [image_area.width() * ratio, image_area.height() * ratio]
-                    if self.image_plot.isVisible() and image_area is not None
+                    if image_area is not None
                     else None
                 ),
             },
+            plot_counts={"waveform": len(self.waveform_plots), "image": len(self.image_plots)},
+            curves=self.curve_count,
         )
-        gl_viewport = (self.waveform if self.waveform.isVisible() else self.image_plot).viewport()
-        if self.args.opengl and gl_viewport.context():
+        gl_plot = self.waveform if self.waveform is not None else self.image_plot
+        gl_viewport = gl_plot.viewport() if gl_plot is not None else None
+        if self.args.opengl and gl_viewport is not None and gl_viewport.context():
             context = gl_viewport.context()
             self.metadata["opengl_context_valid"] = context.isValid()
             self.metadata["opengl_version"] = list(context.format().version())
             self.metadata["opengl_curve_shader_ready"] = (
-                self.waveform.viewport().retrieveProgram("PlotCurveItem") is not None
+                self.waveform is not None
+                and self.waveform.viewport().retrieveProgram("PlotCurveItem") is not None
             )
 
     @Slot()
