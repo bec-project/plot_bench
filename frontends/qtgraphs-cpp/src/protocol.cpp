@@ -24,7 +24,40 @@ qint64 requireNonNegativeInt(const QJsonObject &object, const char *key) {
     return static_cast<qint64>(number);
 }
 
+int configDimension(const QJsonObject &config, const char *key) {
+    const QJsonValue value = config.value(QLatin1String(key));
+    if (!value.isDouble() || value.toDouble() <= 0 || value.toDouble() != double(int(value.toDouble()))) {
+        throw ProtocolError("frame configuration lacks the protocol v2 plot fields");
+    }
+    return value.toInt();
+}
+
+QString shapeText(const QList<int> &shape) {
+    QStringList parts;
+    for (int dimension : shape) {
+        parts.append(QString::number(dimension));
+    }
+    return QLatin1Char('[') + parts.join(QStringLiteral(", ")) + QLatin1Char(']');
+}
+
 }  // namespace
+
+ExpectedLayout expectedLayout(const QJsonObject &config, const QString &name) {
+    if (name == QLatin1String("waveform")) {
+        return {QStringLiteral("float32"),
+                {configDimension(config, "waveform_plots"), configDimension(config, "curves"), configDimension(config, "points")}};
+    }
+    QList<int> shape{configDimension(config, "image_plots"), configDimension(config, "height"), configDimension(config, "width")};
+    const QJsonValue mode = config.value(QStringLiteral("image_mode"));
+    if (!mode.isString()) {
+        throw ProtocolError("frame configuration lacks the protocol v2 plot fields");
+    }
+    if (mode.toString() == QLatin1String("rgb")) {
+        shape.append(3);
+        return {QStringLiteral("uint8"), shape};
+    }
+    return {QStringLiteral("float32"), shape};
+}
 
 Frame decodeFrame(const QByteArray &packet) {
     if (packet.size() < 4 || packet.size() > kMaxPacket) {
@@ -41,14 +74,19 @@ Frame decodeFrame(const QByteArray &packet) {
     }
     Frame frame;
     frame.header = document.object();
-    if (frame.header.value(QStringLiteral("version")).toInt() != 1) {
+    if (frame.header.value(QStringLiteral("version")).toInt() != kProtocolVersion) {
         throw ProtocolError("unsupported protocol version");
     }
     frame.seq = requireNonNegativeInt(frame.header, "seq");
     frame.generation = requireNonNegativeInt(frame.header, "generation");
     frame.presentationSeq = frame.seq;
     frame.emittedAtMs = frame.header.value(QStringLiteral("emitted_at_ms")).toDouble();
-    frame.config = frame.header.value(QStringLiteral("config")).toObject();
+    const QJsonValue configValue = frame.header.value(QStringLiteral("config"));
+    const bool hasConfig = !configValue.isUndefined() && !configValue.isNull();
+    if (hasConfig && !configValue.isObject()) {
+        throw ProtocolError("frame configuration must be a JSON object");
+    }
+    frame.config = configValue.toObject();
     frame.packet = packet;
     frame.payloadBase = qsizetype((headerSize + 7) / 4) * 4;
     qsizetype end = 0;
@@ -66,7 +104,7 @@ Frame decodeFrame(const QByteArray &packet) {
             throw ProtocolError("unsupported dtype");
         }
         const QJsonArray shape = descriptor.value(QStringLiteral("shape")).toArray();
-        if (shape.isEmpty() || shape.size() > 3) {
+        if (shape.isEmpty() || shape.size() > 4) {
             throw ProtocolError("invalid shape");
         }
         view.count = 1;
@@ -76,6 +114,22 @@ Frame decodeFrame(const QByteArray &packet) {
             }
             view.shape.append(dimension.toInt());
             view.count *= dimension.toInt();
+        }
+        if (hasConfig) {
+            // Protocol v2: the header configuration fixes the exact dtype and shape of every array.
+            const ExpectedLayout expected = expectedLayout(frame.config, name);
+            const QString configView = frame.config.value(QStringLiteral("view")).toString();
+            if (configView != QLatin1String("both") && configView != name) {
+                throw ProtocolError(QStringLiteral("%1 array is not enabled by view '%2'").arg(name, configView).toStdString());
+            }
+            if (view.dtype != expected.dtype) {
+                throw ProtocolError(QStringLiteral("%1 dtype %2 does not match configuration").arg(name, view.dtype).toStdString());
+            }
+            if (view.shape != expected.shape) {
+                throw ProtocolError(QStringLiteral("%1 shape %2 does not match configuration %3")
+                                        .arg(name, shapeText(view.shape), shapeText(expected.shape))
+                                        .toStdString());
+            }
         }
         view.offset = qsizetype(descriptor.value(QStringLiteral("offset")).toDouble());
         view.nbytes = qsizetype(descriptor.value(QStringLiteral("nbytes")).toDouble());

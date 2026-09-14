@@ -2,8 +2,10 @@
 
 #include <QDesktopServices>
 #include <QElapsedTimer>
+#include <QCoreApplication>
 #include <QGuiApplication>
 #include <QLineSeries>
+#include <QQuickItem>
 #include <QQuickWindow>
 #include <QRectF>
 #include <QSGRendererInterface>
@@ -14,6 +16,7 @@
 #include <QtGlobal>
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 
 namespace plotbench {
 
@@ -39,7 +42,61 @@ QString formatThousands(qint64 value) {
     return QLocale(QLocale::English).toString(value);
 }
 
+// Grammatical count: "1 plot", "3 curves" (never "1 plots").
+QString countNoun(int count, const QString &singular) {
+    return QStringLiteral("%1 %2%3").arg(count).arg(singular, count == 1 ? QString() : QStringLiteral("s"));
+}
+
+// Repeater delegates have a visual parent but no QObject parent, so QObject::findChild cannot
+// reach them from the window; walk the item tree instead. The newest match wins because
+// released delegates linger until their deferred deletion runs.
+QQuickItem *findItem(QQuickItem *root, const QString &name) {
+    QQuickItem *found = nullptr;
+    if (!root) {
+        return found;
+    }
+    if (root->objectName() == name) {
+        found = root;
+    }
+    for (QQuickItem *child : root->childItems()) {
+        if (QQuickItem *match = findItem(child, name)) {
+            found = match;
+        }
+    }
+    return found;
+}
+
+// The v2 layouts the controller indexes: waveform [plots, curves, points], image
+// [plots, height, width] (float32) or [plots, height, width, 3] (uint8). The decoder accepts
+// any 1..4-D shape for a packet without a configuration, so check before slicing.
+QString layoutError(const Frame &frame) {
+    if (frame.has(QStringLiteral("waveform")) && frame.arrays.value(QStringLiteral("waveform")).shape.size() != 3) {
+        return QStringLiteral("waveform array must be [waveform_plots, curves, points]");
+    }
+    if (frame.has(QStringLiteral("image"))) {
+        const ArrayView &view = frame.arrays.value(QStringLiteral("image"));
+        const int expected = view.dtype == QLatin1String("float32") ? 3 : 4;
+        if (view.shape.size() != expected) {
+            return QStringLiteral("image array must be [image_plots, height, width] or [image_plots, height, width, 3]");
+        }
+    }
+    return QString();
+}
+
+QStringList plotTitles(const QString &kind, int count) {
+    QStringList titles;
+    for (int index = 0; index < count; ++index) {
+        titles.append(count == 1 ? kind : QStringLiteral("%1 %2").arg(kind).arg(index + 1));
+    }
+    return titles;
+}
+
 }  // namespace
+
+const QStringList kCurveColors{
+    QStringLiteral("#64dccc"), QStringLiteral("#f5c76e"), QStringLiteral("#7aa6ff"), QStringLiteral("#ff9d7a"),
+    QStringLiteral("#c39bff"), QStringLiteral("#9be564"), QStringLiteral("#ff7ab8"), QStringLiteral("#6ee7ff"),
+};
 
 Controller::Controller(Options options, FrameImageProvider *provider, QObject *parent)
     : QObject(parent), m_options(std::move(options)), m_provider(provider) {
@@ -63,8 +120,8 @@ Controller::Controller(Options options, FrameImageProvider *provider, QObject *p
     QVariantMap metadata{
         {QStringLiteral("measurement_stage"),
          QStringLiteral("QXYSeries::replace(QList<QPointF>) + scalar index conversion into an Indexed8 QImage with "
-                        "the shared colour table (RGB frames wrap the packet bytes) + synchronous QML image-provider "
-                        "submission; palette expansion and texture upload happen on the scene-graph render thread "
+                        "the shared colour table (RGB frames wrap the packet bytes) for every image plot + synchronous QML "
+                        "image-provider submission; all waveform plots, curves and image plots of a frame are timed together; palette expansion and texture upload happen on the scene-graph render thread "
                         "and are excluded; GPU work excluded")},
         {QStringLiteral("renderer"), QStringLiteral("Qt Graphs LineSeries / Qt Quick scene graph (C++)")},
         {QStringLiteral("language"), QStringLiteral("C++")},
@@ -77,8 +134,8 @@ Controller::Controller(Options options, FrameImageProvider *provider, QObject *p
          QStringLiteral("image provider, scalar index conversion, image-provider invalidation and QML image "
                         "axes/layout require additional implementation")},
         {QStringLiteral("update_strategy"),
-         QStringLiteral("full authoritative window QXYSeries::replace in replace AND append; one QList<QPointF> is "
-                        "rewritten per frame")},
+         QStringLiteral("full authoritative window QXYSeries::replace in replace AND append; one preallocated "
+                        "QList<QPointF> per (plot, curve) is rewritten per frame and every series replaced")},
         {QStringLiteral("downsampling"), false},
         {QStringLiteral("antialias"), false},
         {QStringLiteral("versions"),
@@ -101,12 +158,14 @@ Controller::Controller(Options options, FrameImageProvider *provider, QObject *p
     connect(m_pollTimer, &QTimer::timeout, this, &Controller::pollFrame);
     m_hudTimer = new QTimer(this);
     connect(m_hudTimer, &QTimer::timeout, this, &Controller::updateHud);
+    // Before the first frame the scene shows one waveform plot with one curve and one image.
+    m_series.resize(1);
+    m_provider->setPlotCount(1);
 }
 
 bool Controller::start(QQuickWindow *window) {
     m_window = window;
-    m_series = window->findChild<QLineSeries *>(QStringLiteral("waveformSeries"));
-    if (!m_series) {
+    if (!resolveSeries()) {
         m_error = QStringLiteral("QML did not create the required Qt Graphs LineSeries");
         return false;
     }
@@ -193,11 +252,26 @@ QVariantMap Controller::workload() const {
     const QString points = formatThousands(qint64(m_config.value(QStringLiteral("points")).toDouble()));
     const QString mode = m_config.value(QStringLiteral("waveform_mode")).toString();
     const QString size = QStringLiteral("%1 × %2").arg(m_config.value(QStringLiteral("width")).toInt()).arg(m_config.value(QStringLiteral("height")).toInt());
+    const int waveformPlots = configuredWaveformPlots();
+    const int imagePlots = configuredImagePlots();
+    const int curveCount = curves();
+    QString waveform = QStringLiteral("%1 · %2").arg(points, mode);
+    if (waveformPlots > 1 || curveCount > 1) {
+        waveform += QStringLiteral(" · %1 × %2").arg(countNoun(waveformPlots, QStringLiteral("plot")), countNoun(curveCount, QStringLiteral("curve")));
+    }
+    QString image = QStringLiteral("%1 · %2").arg(size, rgb ? QStringLiteral("RGB") : QStringLiteral("scalar"));
+    if (imagePlots > 1) {
+        image += QStringLiteral(" · %1").arg(countNoun(imagePlots, QStringLiteral("plot")));
+    }
+    QString waveformSubtitle = QStringLiteral("%1 points · %2").arg(points, mode);
+    if (curveCount > 1) {
+        waveformSubtitle += QStringLiteral(" · %1").arg(countNoun(curveCount, QStringLiteral("curve")));
+    }
     return {
         {QStringLiteral("target"), QStringLiteral("%1 Hz").arg(m_config.value(QStringLiteral("hz")).toDouble())},
-        {QStringLiteral("waveform"), QStringLiteral("%1 · %2").arg(points, mode)},
-        {QStringLiteral("image"), QStringLiteral("%1 · %2").arg(size, rgb ? QStringLiteral("RGB") : QStringLiteral("scalar"))},
-        {QStringLiteral("waveformSubtitle"), QStringLiteral("%1 points · %2").arg(points, mode)},
+        {QStringLiteral("waveform"), waveform},
+        {QStringLiteral("image"), image},
+        {QStringLiteral("waveformSubtitle"), waveformSubtitle},
         {QStringLiteral("imageSubtitle"), QStringLiteral("%1 · %2").arg(size, rgb ? QStringLiteral("RGB") : QStringLiteral("scalar colormap"))},
     };
 }
@@ -267,6 +341,81 @@ bool Controller::imageVisible() const {
     return current == QLatin1String("image") || current == QLatin1String("both");
 }
 
+int Controller::configuredWaveformPlots() const {
+    return std::max(1, m_config.value(QStringLiteral("waveform_plots")).toInt(1));
+}
+
+int Controller::configuredImagePlots() const {
+    return std::max(1, m_config.value(QStringLiteral("image_plots")).toInt(1));
+}
+
+int Controller::waveformPlots() const {
+    return waveformVisible() ? configuredWaveformPlots() : 0;
+}
+
+int Controller::imagePlots() const {
+    return imageVisible() ? configuredImagePlots() : 0;
+}
+
+int Controller::curves() const {
+    return std::max(1, m_config.value(QStringLiteral("curves")).toInt(1));
+}
+
+QVariantList Controller::waveformPanels() const {
+    QVariantList panels;
+    const int curveCount = curves();
+    for (int plot = 0; plot < waveformPlots(); ++plot) {
+        panels.append(curveCount);
+    }
+    return panels;
+}
+
+int Controller::gridColumns() const {
+    // Shared layout rule: n visible plots in a grid with columns = ceil(sqrt(n)), rows = ceil(n / columns).
+    const int visible = waveformPlots() + imagePlots();
+    return std::max(1, int(std::ceil(std::sqrt(double(visible)))));
+}
+
+QStringList Controller::waveformTitles() const {
+    return plotTitles(QStringLiteral("Waveform"), waveformPlots());
+}
+
+QStringList Controller::imageTitles() const {
+    return plotTitles(QStringLiteral("Image"), imagePlots());
+}
+
+void Controller::register_series(int plot, const QVariantList &series) {
+    // Only the current delegate for `plot` calls this (QML checks Repeater.itemAt); slots were
+    // sized for the current config before the QML rebuild ran.
+    const int curveCount = curves();
+    for (int curve = 0; curve < series.size(); ++curve) {
+        const int index = plot * curveCount + curve;
+        if (plot < 0 || curve >= curveCount || index >= m_series.size()) {
+            break;
+        }
+        m_series[index] = qobject_cast<QLineSeries *>(series.at(curve).value<QObject *>());
+    }
+}
+
+bool Controller::resolveSeries() {
+    // The QML delegates registered their series synchronously during the configChanged emission;
+    // fall back to the object names ("waveformGraph-<p>" item, "waveformSeries-<p>-<c>" child)
+    // for anything missing.
+    const int curveCount = curves();
+    for (int index = 0; index < m_series.size(); ++index) {
+        if (!m_series[index]) {
+            const int plot = index / curveCount;
+            if (QQuickItem *graph = findItem(m_window->contentItem(), QStringLiteral("waveformGraph-%1").arg(plot))) {
+                m_series[index] = graph->findChild<QLineSeries *>(QStringLiteral("waveformSeries-%1-%2").arg(plot).arg(index % curveCount));
+            }
+        }
+        if (!m_series[index]) {
+            return false;
+        }
+    }
+    return true;
+}
+
 double Controller::xMaximum() const {
     return double(std::max(1, m_config.value(QStringLiteral("points")).toInt(10000) - 1));
 }
@@ -302,6 +451,17 @@ void Controller::open_controls() {
     QDesktopServices::openUrl(QUrl(m_options.url));
 }
 
+void Controller::failFrame(const QString &message) {
+    // A frame the adapter cannot render: report it, flush telemetry with an error termination
+    // and close the window so the process exits with status 1.
+    if (m_error.isEmpty()) {
+        m_error = message;
+    }
+    m_pollTimer->stop();
+    m_sink->markStopped(QStringLiteral("error"));
+    m_window->close();
+}
+
 void Controller::pollFrame() {
     std::optional<Frame> frame = m_source->takeLatest();
     if (!frame) {
@@ -310,38 +470,85 @@ void Controller::pollFrame() {
     if (!m_source->viewPending()) {
         m_viewRequestPending = false;
     }
+    if (const QString problem = layoutError(*frame); !problem.isEmpty()) {
+        failFrame(QStringLiteral("Protocol error: %1").arg(problem));
+        return;
+    }
     QElapsedTimer timer;
     timer.start();
     if (frame->generation != m_generation) {
         m_config = frame->config;
         const int points = m_config.value(QStringLiteral("points")).toInt();
-        if (m_points.size() != points) {
-            m_points.resize(points);
-            for (int index = 0; index < points; ++index) {
-                m_points[index] = QPointF(index, 0.0);
+        const int seriesCount = waveformPlots() * curves();
+        m_points.resize(seriesCount);
+        for (QList<QPointF> &curve : m_points) {
+            if (curve.size() != points) {
+                curve.resize(points);
+                for (int index = 0; index < points; ++index) {
+                    curve[index] = QPointF(index, 0.0);
+                }
             }
         }
+        m_series.clear();
+        m_series.resize(seriesCount);
+        m_provider->setPlotCount(imagePlots());
+        m_imageUrls = QStringList(imagePlots(), QString());
         m_generation = frame->generation;
+        // Config-derived counts are recorded with the configuration itself so a batch flushed
+        // mid-run never pairs a new configuration with the previous counts; plot_viewports stay
+        // with the HUD tick because they need the rebuilt items to be laid out.
+        m_sink->metadata().insert(QStringLiteral("plot_counts"),
+                                  QVariantMap{{QStringLiteral("waveform"), waveformPlots()}, {QStringLiteral("image"), imagePlots()}});
+        m_sink->metadata().insert(QStringLiteral("curves"), curves());
+        m_sink->metadata().insert(QStringLiteral("grid_columns"), gridColumns());
+        // The QML Repeaters rebuild synchronously during this emission (the waveform panels are
+        // re-instantiated whenever the plot or curve count changes) and register the new
+        // LineSeries; the object-name fallback covers anything they missed.
         emit configChanged();
         emit plotControlsChanged();
+        if (!resolveSeries() && m_error.isEmpty()) {
+            m_error = QStringLiteral("QML did not create the Qt Graphs LineSeries for %1 plots × %2 curves")
+                          .arg(waveformPlots()).arg(curves());
+        }
     }
     if (frame->has(QStringLiteral("waveform"))) {
+        // [plots, curves, points]: series i = p * curves + c reads the contiguous slice i * points.
         const ArrayView &view = frame->arrays.value(QStringLiteral("waveform"));
         const uchar *data = reinterpret_cast<const uchar *>(frame->data(view));
-        const qsizetype count = std::min<qsizetype>(view.count, m_points.size());
-        QPointF *points = m_points.data();  // detaches from the series' shared copy: the true replace cost
-        for (qsizetype index = 0; index < count; ++index) {
-            points[index].setY(qFromLittleEndian<float>(data + index * 4));
+        const qsizetype points = view.shape.at(2);
+        const qsizetype seriesCount = std::min<qsizetype>(m_series.size(), points > 0 ? view.count / points : 0);
+        for (qsizetype series = 0; series < seriesCount; ++series) {
+            QList<QPointF> &list = m_points[series];
+            const qsizetype count = std::min<qsizetype>(points, list.size());
+            const uchar *slice = data + series * points * 4;
+            QPointF *target = list.data();  // detaches from the series' shared copy: the true replace cost
+            for (qsizetype index = 0; index < count; ++index) {
+                target[index].setY(qFromLittleEndian<float>(slice + index * 4));
+            }
+            if (QLineSeries *line = m_series[series]) {
+                line->replace(list);
+            }
         }
-        m_series->replace(m_points);
     }
     double conversionMs = 0;
     if (frame->has(QStringLiteral("image"))) {
+        // [plots, height, width(, 3)]: one QImage per image plot; conversion_ms sums all of them.
+        const ArrayView &view = frame->arrays.value(QStringLiteral("image"));
+        const int plots = std::min(view.plots(), imagePlots());
         QElapsedTimer conversion;
         conversion.start();
-        m_provider->updateImage(*frame, frame->arrays.value(QStringLiteral("image")));
+        try {
+            for (int plot = 0; plot < plots; ++plot) {
+                m_provider->updateImage(plot, *frame, view);
+            }
+        } catch (const ProtocolError &error) {
+            failFrame(QStringLiteral("Protocol error: %1").arg(QLatin1String(error.what())));
+            return;
+        }
         conversionMs = conversion.nsecsElapsed() / 1e6;
-        m_imageUrl = QStringLiteral("image://frames/%1/%2").arg(frame->generation).arg(frame->presentationSeq);
+        for (int plot = 0; plot < plots; ++plot) {
+            m_imageUrls[plot] = QStringLiteral("image://frames/%1/%2/%3").arg(plot).arg(frame->generation).arg(frame->presentationSeq);
+        }
         emit imageChanged();
     }
     const double updateMs = timer.nsecsElapsed() / 1e6;
@@ -445,23 +652,32 @@ void Controller::updateHud() {
         applyShapeRendererOverride();
     }
     recordDisplayMetadata(ratio);
-    m_series->setWidth(1.0 / ratio);
+    for (const QPointer<QLineSeries> &series : m_series) {
+        if (series) {
+            series->setWidth(1.0 / ratio);
+        }
+    }
     QVariantMap &metadata = m_sink->metadata();
     metadata.insert(QStringLiteral("pixel_ratio"), ratio);
     metadata.insert(QStringLiteral("viewport_size"), QVariantList{m_window->width(), m_window->height()});
     metadata.insert(QStringLiteral("viewport_size_units"), QStringLiteral("logical pixels"));
     metadata.insert(QStringLiteral("plot_viewport_units"), QStringLiteral("physical pixels; data drawing area excluding axes"));
     metadata.insert(QStringLiteral("graphics_api"), graphicsApi);
+    // First plot of each kind (all grid cells are equal).
     QVariantMap viewports{{QStringLiteral("waveform"), QVariant()}, {QStringLiteral("image"), QVariant()}};
-    if (QObject *graph = m_window->findChild<QObject *>(QStringLiteral("waveformGraph")); graph && waveformVisible()) {
+    if (QQuickItem *graph = findItem(m_window->contentItem(), QStringLiteral("waveformGraph-0")); graph && waveformPlots() > 0) {
         const QRectF area = graph->property("plotArea").toRectF();
         viewports.insert(QStringLiteral("waveform"), QVariantList{area.width() * ratio, area.height() * ratio});
     }
-    if (QObject *image = m_window->findChild<QObject *>(QStringLiteral("streamImage")); image && imageVisible()) {
+    if (QQuickItem *image = findItem(m_window->contentItem(), QStringLiteral("streamImage-0")); image && imagePlots() > 0) {
         viewports.insert(QStringLiteral("image"), QVariantList{image->property("paintedWidth").toDouble() * ratio,
                                                                image->property("paintedHeight").toDouble() * ratio});
     }
     metadata.insert(QStringLiteral("plot_viewports"), viewports);
+    metadata.insert(QStringLiteral("plot_counts"),
+                    QVariantMap{{QStringLiteral("waveform"), waveformPlots()}, {QStringLiteral("image"), imagePlots()}});
+    metadata.insert(QStringLiteral("curves"), curves());
+    metadata.insert(QStringLiteral("grid_columns"), gridColumns());
 }
 
 void Controller::finishDuration() {
