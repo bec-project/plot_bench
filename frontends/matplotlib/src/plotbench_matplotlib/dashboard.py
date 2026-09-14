@@ -21,6 +21,11 @@ ERROR = "#ffa7a7"
 METRIC_GUIDE = "Targets follow the current input frame rate. The update budget is one source period and excludes deferred GPU and display presentation work. The receive-age goal is indicative; it is not a latency guarantee. These are not displayed-FPS measurements. Replay has no receive age."
 
 
+def plural(count, noun):
+    """Grammatical count label: "1 plot", "3 curves"."""
+    return f"{count} {noun}{'' if count == 1 else 's'}"
+
+
 def label(text, role):
     widget = QLabel(text)
     widget.setObjectName(role)
@@ -170,11 +175,13 @@ class Dashboard(QWidget):
     def update_summary(self, config):
         if config is None:
             return
-        values = (
-            f"{config['hz']:g} Hz",
-            f"{config['points']:,} · {config['waveform_mode']}",
-            f"{config['width']} × {config['height']} · {config['image_mode'].upper() if config['image_mode'] == 'rgb' else 'scalar'}",
-        )
+        waveform = f"{config['points']:,} · {config['waveform_mode']}"
+        if config["waveform_plots"] > 1 or config["curves"] > 1:
+            waveform += f" · {plural(config['waveform_plots'], 'plot')} × {plural(config['curves'], 'curve')}"
+        image = f"{config['width']} × {config['height']} · {config['image_mode'].upper() if config['image_mode'] == 'rgb' else 'scalar'}"
+        if config["image_plots"] > 1:
+            image += f" · {plural(config['image_plots'], 'plot')}"
+        values = (f"{config['hz']:g} Hz", waveform, image)
         for widget, value in zip(self.summary_values, values, strict=True):
             widget.setText(value)
         self.update_metric_targets(config["hz"])

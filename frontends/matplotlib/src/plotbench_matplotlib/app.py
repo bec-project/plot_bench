@@ -1,6 +1,7 @@
 """Stream central waveform and image frames through Matplotlib's QtAgg backend."""
 
 import logging
+import math
 import platform
 import sys
 from importlib.metadata import version
@@ -14,147 +15,270 @@ from matplotlib.colors import ListedColormap, NoNorm
 from matplotlib.figure import Figure
 from matplotlib.patches import FancyBboxPatch
 from plotbench.client import FrameSource, MetricsSink, frontend_parser
-from plotbench.palette import COLORMAP
+from plotbench.palette import COLORMAP, CURVE_COLORS
 from plotbench.qt_metadata import qt_window_metadata
 from qtpy.QtCore import Qt, QTimer, Slot, qVersion
 from qtpy.QtWidgets import QApplication, QMainWindow
 
-from .dashboard import ACCENT, BACKGROUND, BORDER, MUTED, PANEL, TEXT, Dashboard
+from .dashboard import BACKGROUND, BORDER, MUTED, PANEL, TEXT, Dashboard
 
 logger = logging.getLogger(__name__)
 
 
+def plot_grid(count):
+    """Shared layout rule: columns = ceil(sqrt(n)), rows = ceil(n / columns), row-major."""
+    if count <= 0:
+        return 0, 0
+    columns = math.ceil(math.sqrt(count))
+    return columns, math.ceil(count / columns)
+
+
 class PlotCanvas(FigureCanvasQTAgg):
-    """Keep axes/limits static between configuration changes and blit changing artists."""
+    """Keep axes/limits static between configuration changes and blit changing artists.
+
+    One axes per waveform plot (holding `curves` Line2D artists) and one per image plot
+    (holding one AxesImage) sit on the shared grid; the set is rebuilt only when the
+    plot or curve counts change, so artists survive ordinary configuration updates.
+    """
 
     def __init__(self):
         figure = Figure(facecolor=BACKGROUND, dpi=100)
         super().__init__(figure)
         self.setMinimumSize(100, 100)
-        self.waveform_axis = figure.add_axes((0.09, 0.58, 0.86, 0.35))
-        self.image_axis = figure.add_axes((0.09, 0.08, 0.86, 0.35))
+        self.colormap = ListedColormap(COLORMAP / 255.0, name="plotbench")
+        self.waveform_axes = []
+        self.image_axes = []
+        self.lines = []
+        self.image_artists = []
         self.cards = []
-        for title in ("Waveform", "Image"):
-            panel = FancyBboxPatch(
-                (0, 0),
-                1,
-                1,
-                boxstyle="round,pad=0,rounding_size=0.012",
-                transform=figure.transFigure,
-                facecolor=PANEL,
-                edgecolor=BORDER,
-                linewidth=0.7,
-                zorder=-1,
-            )
-            figure.patches.append(panel)
-            heading = figure.text(0, 0, title, color=TEXT, fontsize=11.5, weight="bold", va="top")
-            subtitle = figure.text(0, 0, "Waiting for source", color=MUTED, fontsize=8, va="top")
-            self.cards.append((panel, heading, subtitle))
-        for axis in (self.waveform_axis, self.image_axis):
-            axis.set_facecolor(PANEL)
-            axis.tick_params(colors=MUTED, labelsize=8, length=3, width=0.6)
-            for spine in axis.spines.values():
-                spine.set_color(BORDER)
-                spine.set_linewidth(0.6)
-            axis.xaxis.label.set_color(MUTED)
-            axis.yaxis.label.set_color(MUTED)
-            axis.xaxis.label.set_size(8)
-            axis.yaxis.label.set_size(8)
-        self.waveform_axis.set_xlabel("Sample")
-        self.waveform_axis.set_ylabel("Amplitude")
-        self.image_axis.set_xlabel("Column")
-        self.image_axis.set_ylabel("Row")
-        (self.line,) = self.waveform_axis.plot(
-            [], [], color=ACCENT, linewidth=0.72, antialiased=False, animated=True
-        )
-        self.image_artist = self.image_axis.imshow(
-            np.zeros((2, 2), dtype=np.float32),
-            cmap=ListedColormap(COLORMAP / 255.0, name="plotbench"),
-            norm=NoNorm(),
-            origin="upper",
-            interpolation="nearest",
-            interpolation_stage="rgba",
-            animated=True,
-        )
+        self.curves = 0
+        self.plot_counts = None
         self.background = None
         self.config = None
+        self.linewidth = None
         self.x = np.empty(0, dtype=np.float32)
+        self.build_plots(1, 1, 1)
         self.layout_plots()
         self.mpl_connect("resize_event", self.invalidate_background)
+
+    @property
+    def waveform_axis(self):
+        """First waveform axes (metadata and tests), or None when the kind is hidden."""
+        return self.waveform_axes[0] if self.waveform_axes else None
+
+    @property
+    def image_axis(self):
+        return self.image_axes[0] if self.image_axes else None
+
+    @property
+    def line(self):
+        """Curve 0 of the first waveform plot."""
+        return self.lines[0][0] if self.lines else None
+
+    @property
+    def image_artist(self):
+        return self.image_artists[0] if self.image_artists else None
+
+    @property
+    def animated_artists(self):
+        return [line for plot_lines in self.lines for line in plot_lines] + self.image_artists
 
     def invalidate_background(self, event=None):
         self.layout_plots()
         self.background = None
 
+    def _make_card(self, title):
+        figure = self.figure
+        panel = FancyBboxPatch(
+            (0, 0),
+            1,
+            1,
+            boxstyle="round,pad=0,rounding_size=0.012",
+            transform=figure.transFigure,
+            facecolor=PANEL,
+            edgecolor=BORDER,
+            linewidth=0.7,
+            zorder=-1,
+        )
+        figure.add_artist(panel)
+        heading = figure.text(0, 0, title, color=TEXT, fontsize=11.5, weight="bold", va="top")
+        subtitle = figure.text(0, 0, "Waiting for source", color=MUTED, fontsize=8, va="top")
+        card = (panel, heading, subtitle)
+        self.cards.append(card)
+        return card
+
+    def _make_axis(self, xlabel, ylabel):
+        axis = self.figure.add_axes((0.1, 0.1, 0.8, 0.8))
+        axis.set_facecolor(PANEL)
+        axis.tick_params(colors=MUTED, labelsize=8, length=3, width=0.6)
+        for spine in axis.spines.values():
+            spine.set_color(BORDER)
+            spine.set_linewidth(0.6)
+        axis.xaxis.label.set_color(MUTED)
+        axis.yaxis.label.set_color(MUTED)
+        axis.xaxis.label.set_size(8)
+        axis.yaxis.label.set_size(8)
+        axis.set_xlabel(xlabel)
+        axis.set_ylabel(ylabel)
+        return axis
+
+    def build_plots(self, waveform_count, curves, image_count):
+        """Create the plot set for the given counts; a no-op while the counts are unchanged."""
+        if self.plot_counts == (waveform_count, curves, image_count):
+            return
+        for axis in self.waveform_axes + self.image_axes:
+            self.figure.delaxes(axis)
+        for card in self.cards:
+            for item in card:
+                item.remove()
+        self.waveform_axes, self.image_axes, self.lines, self.image_artists = [], [], [], []
+        self.cards = []
+        for index in range(waveform_count):
+            self._make_card("Waveform" if waveform_count == 1 else f"Waveform {index + 1}")
+            axis = self._make_axis("Sample", "Amplitude")
+            self.waveform_axes.append(axis)
+            self.lines.append(
+                [
+                    axis.plot(
+                        [],
+                        [],
+                        color=CURVE_COLORS[curve % len(CURVE_COLORS)],
+                        linewidth=0.72,
+                        antialiased=False,
+                        animated=True,
+                    )[0]
+                    for curve in range(curves)
+                ]
+            )
+        for index in range(image_count):
+            self._make_card("Image" if image_count == 1 else f"Image {index + 1}")
+            axis = self._make_axis("Column", "Row")
+            self.image_axes.append(axis)
+            self.image_artists.append(
+                axis.imshow(
+                    np.zeros((2, 2), dtype=np.float32),
+                    cmap=self.colormap,
+                    norm=NoNorm(),
+                    origin="upper",
+                    interpolation="nearest",
+                    interpolation_stage="rgba",
+                    animated=True,
+                )
+            )
+        self.curves = curves
+        self.plot_counts = (waveform_count, curves, image_count)
+        self.linewidth = None
+        self.background = None
+
     def layout_plots(self):
+        """Place every card and axes on the shared grid with pixel margins per cell."""
         width, height = max(1, self.width()), max(1, self.height())
-        view = self.config["view"] if self.config else "both"
-        gap = 16 / width
-        for index, (axis, card) in enumerate(
-            zip((self.waveform_axis, self.image_axis), self.cards, strict=True)
-        ):
-            panel, heading, subtitle = card
-            visible = view == "both" or view == ("waveform", "image")[index]
-            for item in (axis, panel, heading, subtitle):
-                item.set_visible(visible)
-            card_width = (1 - gap) / 2 if view == "both" else 1
-            left = index * (card_width + gap) if view == "both" else 0
-            panel.set_bounds(left + 0.001, 0.003, card_width - 0.002, 0.994)
-            heading.set_position((left + 16 / width, 1 - 16 / height))
-            subtitle.set_position((left + 16 / width, 1 - 42 / height))
+        plots = list(zip(self.waveform_axes + self.image_axes, self.cards, strict=True))
+        columns, rows = plot_grid(len(plots))
+        if not plots:
+            return
+        gap_x, gap_y = 16 / width, 16 / height
+        cell_width = (1 - gap_x * (columns - 1)) / columns
+        cell_height = (1 - gap_y * (rows - 1)) / rows
+        for index, (axis, (panel, heading, subtitle)) in enumerate(plots):
+            column, row = index % columns, index // columns
+            left = column * (cell_width + gap_x)
+            bottom = 1 - (row + 1) * cell_height - row * gap_y
+            panel.set_bounds(left + 0.001, bottom + 0.003, cell_width - 0.002, cell_height - 0.006)
+            heading.set_position((left + 16 / width, bottom + cell_height - 16 / height))
+            subtitle.set_position((left + 16 / width, bottom + cell_height - 42 / height))
             axis.set_position(
                 (
                     left + 62 / width,
-                    46 / height,
-                    max(30 / width, card_width - 82 / width),
-                    max(40 / height, 1 - 114 / height),
+                    bottom + 46 / height,
+                    max(30 / width, cell_width - 82 / width),
+                    max(40 / height, cell_height - 114 / height),
                 )
             )
 
     def apply_config(self, config):
         self.config = config
-        self.cards[0][2].set_text(f"{config['points']:,} points · {config['waveform_mode']}")
-        self.cards[1][2].set_text(
+        waveform_count = config["waveform_plots"] if config["view"] != "image" else 0
+        image_count = config["image_plots"] if config["view"] != "waveform" else 0
+        self.build_plots(waveform_count, config["curves"], image_count)
+        waveform_subtitle = f"{config['points']:,} points · {config['waveform_mode']}"
+        if config["curves"] > 1:
+            waveform_subtitle += f" · {config['curves']} curves"
+        image_subtitle = (
             f"{config['width']} × {config['height']} · "
             f"{'RGB' if config['image_mode'] == 'rgb' else 'scalar colormap'}"
         )
+        for index, card in enumerate(self.cards):
+            card[2].set_text(waveform_subtitle if index < waveform_count else image_subtitle)
         self.layout_plots()
         if self.x.size != config["points"]:
             self.x = np.arange(config["points"], dtype=np.float32)
-        self.waveform_axis.set_xlim(0, max(1, config["points"] - 1))
-        self.waveform_axis.set_ylim(-1.5, 1.5)
-        self.image_artist.set_extent((-0.5, config["width"] - 0.5, config["height"] - 0.5, -0.5))
-        self.image_axis.set_xlim(-0.5, config["width"] - 0.5)
-        self.image_axis.set_ylim(config["height"] - 0.5, -0.5)
+        for axis in self.waveform_axes:
+            axis.set_xlim(0, max(1, config["points"] - 1))
+            axis.set_ylim(-1.5, 1.5)
+        for axis, artist in zip(self.image_axes, self.image_artists, strict=True):
+            artist.set_extent((-0.5, config["width"] - 0.5, config["height"] - 0.5, -0.5))
+            axis.set_xlim(-0.5, config["width"] - 0.5)
+            axis.set_ylim(config["height"] - 0.5, -0.5)
         self.background = None
 
     def update_frame(self, frame):
-        if "waveform" in frame.arrays:
-            self.line.set_data(self.x, frame.arrays["waveform"])
+        waveform = frame.arrays.get("waveform")
+        if waveform is not None:
+            expected = (len(self.lines), self.curves, self.x.size)
+            if waveform.shape != expected:
+                raise ValueError(f"waveform shape {waveform.shape} does not match {expected}")
+            for plot_lines, plot in zip(self.lines, waveform, strict=True):
+                for line, curve in zip(plot_lines, plot, strict=True):
+                    line.set_data(self.x, curve)
         conversion_ms = 0.0
-        if "image" in frame.arrays:
-            image = frame.arrays["image"]
-            if image.ndim == 2:
+        image = frame.arrays.get("image")
+        if image is not None:
+            expected_size = (self.config["height"], self.config["width"])
+            if image.ndim not in (3, 4) or image.shape[0] != len(self.image_artists):
+                raise ValueError(
+                    f"image shape {image.shape} does not match {len(self.image_artists)} plots"
+                )
+            if tuple(image.shape[1:3]) != expected_size:
+                raise ValueError(
+                    f"image shape {image.shape} does not match {expected_size[0]} × "
+                    f"{expected_size[1]} (height × width)"
+                )
+            if image.ndim == 3:
+                # One vectorized conversion covers every image plot of the frame.
                 conversion_started = perf_counter()
                 image = (np.clip(image, 0, 1) * 255).astype(np.uint8)
                 conversion_ms = (perf_counter() - conversion_started) * 1000
-            self.image_artist.set_data(image)
+            for artist, plot in zip(self.image_artists, image, strict=True):
+                artist.set_data(plot)
         # Matplotlib uses points for stroke width, while figure.dpi includes Retina scaling.
-        self.line.set_linewidth(72 / self.figure.dpi)
+        linewidth = 72 / self.figure.dpi
+        if linewidth != self.linewidth:
+            self.linewidth = linewidth
+            for plot_lines in self.lines:
+                for line in plot_lines:
+                    line.set_linewidth(linewidth)
+        artists = self.animated_artists
         if self.background is None:
-            self.line.set_visible(False)
-            self.image_artist.set_visible(False)
+            for artist in artists:
+                artist.set_visible(False)
             self.draw()
             self.background = self.copy_from_bbox(self.figure.bbox)
-            self.line.set_visible(True)
-            self.image_artist.set_visible(True)
+            for artist in artists:
+                artist.set_visible(True)
         self.restore_region(self.background)
-        if "waveform" in frame.arrays:
-            self.waveform_axis.draw_artist(self.line)
-        if "image" in frame.arrays:
-            self.image_axis.draw_artist(self.image_artist)
+        for axis, plot_lines in zip(self.waveform_axes, self.lines, strict=True):
+            for line in plot_lines:
+                axis.draw_artist(line)
+        for axis, artist in zip(self.image_axes, self.image_artists, strict=True):
+            axis.draw_artist(artist)
         self.blit(self.figure.bbox)
         return conversion_ms
+
+
+def axis_viewport(axis):
+    """Physical data area of the first plot of a kind, or None when that kind is hidden."""
+    return None if axis is None else [axis.bbox.width, axis.bbox.height]
 
 
 class PlotWindow(QMainWindow):
@@ -222,6 +346,8 @@ class PlotWindow(QMainWindow):
                 self.canvas.apply_config(frame.header["config"])
                 self.dashboard.update_summary(frame.header["config"])
                 self.generation = frame.generation
+                # Publish the plot set at once so metadata never shows the placeholder 1+1.
+                self.sink.metadata.update(self.plot_metadata())
             conversion_ms = self.canvas.update_frame(frame)
             self.sink.record(frame, (perf_counter() - started) * 1000, conversion_ms=conversion_ms)
             self.sink.metadata.update(self.source.metadata)
@@ -265,20 +391,23 @@ class PlotWindow(QMainWindow):
             viewport_size=[self.width(), self.height()],
             viewport_size_units="logical pixels",
             canvas_size=[self.canvas.width(), self.canvas.height()],
-            plot_viewport_units="physical pixels; data drawing area excluding axes",
-            plot_viewports={
-                "waveform": (
-                    [self.canvas.waveform_axis.bbox.width, self.canvas.waveform_axis.bbox.height]
-                    if self.canvas.waveform_axis.get_visible()
-                    else None
-                ),
-                "image": (
-                    [self.canvas.image_axis.bbox.width, self.canvas.image_axis.bbox.height]
-                    if self.canvas.image_axis.get_visible()
-                    else None
-                ),
-            },
+            **self.plot_metadata(),
         )
+
+    def plot_metadata(self):
+        """Plot counts, curves and first-plot viewports of the current plot set."""
+        return {
+            "plot_viewport_units": "physical pixels; data drawing area excluding axes",
+            "plot_viewports": {
+                "waveform": axis_viewport(self.canvas.waveform_axis),
+                "image": axis_viewport(self.canvas.image_axis),
+            },
+            "plot_counts": {
+                "waveform": len(self.canvas.waveform_axes),
+                "image": len(self.canvas.image_axes),
+            },
+            "curves": self.canvas.curves,
+        }
 
     @Slot()
     def finish_duration(self):
