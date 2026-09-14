@@ -20,26 +20,71 @@ The Python source is supported with `--backend python` for demos or
 `--backends python` for campaigns. See [platform setup](../../docs/setup.md).
 The scenario exercises both sources, both delivery modes, combined scalar and RGB
 plots, and the two single-plot views. Preview before running it.
+The Go tests cover the multi-plot path (several waveform plots with several
+curves plus several images); to see it on screen run
+`./scripts/plotbench run --suite scenarios/multi-plot-smoke.json --frontends fyne`
+(that scenario's frontend list does not include fyne by default).
+
+## Protocol v2: plots and curves
+
+![Fyne with two three-curve waveform plots and three images](screenshots/fyne-multi-plot.png)
+
+The capture above is untimed visual QA of the 2 × 3-curve + 3-image smoke workload on macOS (2× pixel ratio).
+
+The decoder requires header `version == 2` and rejects v1 frames. The
+configuration must carry `curves` (1 … 64), `waveform_plots` (1 … 16) and
+`image_plots` (1 … 16), and every array must match the full-rank shape implied by
+it exactly: `waveform` is float32 `[waveform_plots, curves, points]`, `image` is
+float32 `[image_plots, height, width]` or uint8 `[image_plots, height, width, 3]`.
+Offsets, contiguity, byte sizes and the 256 MiB replay bound are checked as before.
+Plot `p` curve `c` and image plot `p` are re-sliced from the owned packet with
+`Frame.waveformCurve` / `waveformPlot` / `imagePlot` — no copies.
+
+The window holds one card per plot: `waveform_plots` waveform cards (only when the
+view is not `image`) followed by `image_plots` image cards (only when the view is
+not `waveform`), titled `Waveform` / `Image` for a single widget of that kind and
+`Waveform 1`, `Waveform 2`, … / `Image 1`, … otherwise. The cards are laid out with
+the shared rule: `n` visible plots fill a `container.GridWithColumns` with
+`columns = ceil(sqrt(n))`, `rows = ceil(n / columns)`, row-major, equal cells;
+trailing cells are padded with empty rectangles so they stay empty and equal
+(n=2 → 2×1, n=3 → 2×2, n=5 → 3×2, n=9 → 3×3). The widget set is rebuilt when a
+frame's generation changes the visible plot set (view, plot counts or curves);
+Fyne lays the new cards out during the rebuild, so the first raster already uses
+their real size. The HUD workload strip appends `· 2 plots × 3 curves` to the
+waveform item when either exceeds 1 and `· 3 plots` to the image item when
+`image_plots > 1`; waveform subtitles add `· K curves` when `curves > 1`.
+
+Curve `c` of every waveform plot is stroked with the shared palette
+`CURVE_COLORS[c % 8]` (`#64dccc`, `#f5c76e`, `#7aa6ff`, `#ff9d7a`, `#c39bff`,
+`#9be564`, `#ff7ab8`, `#6ee7ff`), so curve 0 keeps the accent colour. Curves are
+drawn in index order into the same image, so later curves overdraw earlier ones
+where they cross; stroke width, fixed axes, no markers and no decimation are
+unchanged for every curve.
 
 ## Rendering and timing
 
 Fyne is a GUI toolkit, not a plotting library. This adapter implements custom
-waveform rasterization: it visits **every source sample** and draws each connecting
-segment into a CPU RGBA image with an opaque, un-antialiased, one-physical-pixel
-Bresenham stroke. Axes have fixed x=[0,points−1], y=[−1.5,1.5] bounds. Endpoint
-labels identify those ranges; there are no tick marks or grid lines. Full rolling
-windows replace the previous image in both replace and append modes. No point
-markers, decimation or incremental history are used.
+waveform rasterization: for every waveform plot it visits **every source sample of
+every curve** and draws each connecting segment into one CPU RGBA image per plot
+with an opaque, un-antialiased, one-physical-pixel Bresenham stroke in the curve's
+colour. Axes have fixed x=[0,points−1], y=[−1.5,1.5] bounds shared by all curves of
+a plot. Endpoint labels identify those ranges; there are no tick marks or grid
+lines. Full rolling windows replace the previous image in both replace and append
+modes. No point markers, decimation or incremental history are used. The raster
+cost therefore scales with `waveform_plots × curves × points` plus the pixel area
+of every plot cell.
 
-Scalar images are expanded to RGBA at source resolution using the source's exact
-256-entry LUT and `floor(clamp(value,0,1)*255)`. RGB arrays are copied to RGBA with
-opaque alpha. Fyne `canvas.Image` presents both textures using nearest-neighbour
-sampling; the scientific image retains its aspect ratio. Only the currently
-adopted CPU images are submitted to Fyne, including during cyclic replay.
+Each image plot is expanded from its own contiguous block: scalar images to RGBA at
+source resolution using the source's exact 256-entry LUT and
+`floor(clamp(value,0,1)*255)`, RGB arrays copied to RGBA with opaque alpha. Fyne
+`canvas.Image` presents every texture using nearest-neighbour sampling; the
+scientific images retain their aspect ratio. Only the currently adopted CPU images
+are submitted to Fyne, including during cyclic replay.
 
-`update_ms` includes full-waveform CPU rasterization, image conversion, assignment
-and canvas refresh submission. `conversion_ms` measures source-image RGBA
-conversion inside that interval. Fyne performs texture upload and OpenGL drawing
+One update per frame covers every plot. `update_ms` includes the CPU rasterization
+of every waveform plot, the conversion of every image plot, assignment and canvas
+refresh submission of all cards. `conversion_ms` is the sum of all image-plot RGBA
+conversions inside that interval. Fyne performs texture upload and OpenGL drawing
 later; no GPU completion or presentation measurement is claimed. This boundary
 includes more CPU work than a setter-only adapter and less than a synchronous
 raster-and-blit path. Submitted updates/s is **not displayed FPS**.
@@ -66,7 +111,10 @@ unavailable.
 
 Metadata records Fyne/Go versions, physical pixel ratio (including Retina texture
 scaling via `PixelCoordinateForPosition`), logical viewport, physical plot
-areas, renderer overrides and compiled display protocol. Fyne's public canvas API
+areas, renderer overrides and compiled display protocol. `plot_viewports` is the
+physical data area of the **first** plot of each kind (all grid cells are equal;
+`null` for a kind hidden by the view), `plot_counts` the visible widget counts
+(0 when hidden) and `curves` the curves per waveform plot. Fyne's public canvas API
 does not expose monitor identity, physical refresh or absolute window position;
 these remain unknown and require operator `--display-context`. Windows start
 centered. The HUD refreshes around 2 Hz; a slow render limits its refresh too.
@@ -81,9 +129,12 @@ go -C frontends/fyne vet -tags ci ./...
 ```
 
 `ci` selects Fyne's test driver for functional checks only. The tests cover packet
-validation/layout, authoritative append windows, malformed replay, LUT/RGB
-conversion, full-data raster endpoints, mailbox skips, WebSocket ACK and shutdown,
-replay scheduling and final/error telemetry. Native visible validation is separate.
+validation/layout (version 2 only, full-rank shapes, plot and curve limits, missing
+plot fields), zero-copy plot/curve slicing, authoritative append windows, malformed
+replay, per-plot LUT/RGB conversion, full-data raster endpoints, per-curve colours
+and overdraw order, the grid-columns rule with equal padded cells, card order and
+titles after a rebuild, workload/subtitle suffixes, mailbox skips, WebSocket ACK
+and shutdown, replay scheduling and final/error telemetry. Native visible validation is separate.
 `--screenshot PATH` captures and closes an **untimed demo** after two seconds;
 it is rejected for a non-demo run or positive duration. Screenshots are canvas QA,
 not evidence of compositor presentation.

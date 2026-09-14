@@ -30,7 +30,7 @@ func TestStreamAcknowledgesDecodedFrameAndCloses(t *testing.T) {
 		}
 		defer c.Close()
 		defer close(closed)
-		_ = c.WriteMessage(websocket.BinaryMessage, testPacket(17, "both", "rgb"))
+		_ = c.WriteMessage(websocket.BinaryMessage, multiPacket(17, "both", "rgb", 2, 3, 2))
 		var a map[string]uint64
 		_ = c.ReadJSON(&a)
 		ack <- a
@@ -48,8 +48,8 @@ func TestStreamAcknowledgesDecodedFrameAndCloses(t *testing.T) {
 		t.Fatal("missing ACK")
 	}
 	f, _ := s.take()
-	if f == nil || f.Seq != 17 {
-		t.Fatal("frame not offered before ACK")
+	if f == nil || f.Seq != 17 || f.Header.Config.Curves != 3 || len(f.waveformPlot(1)) != 3 || len(f.imagePlot(1)) != 12 {
+		t.Fatal("multi-plot frame not offered before ACK")
 	}
 	s.close()
 	select {

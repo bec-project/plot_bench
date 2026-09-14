@@ -42,6 +42,48 @@ func (t benchTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.Colo
 	}
 	return t.Theme.Color(n, theme.VariantDark)
 }
+
+// plotCard is one plot widget: a bold title, the physical-pixel image and a subtitle.
+type plotCard struct {
+	image    *canvas.Image
+	title    *widget.Label
+	subtitle *widget.Label
+	object   fyne.CanvasObject
+}
+
+func newPlotCard(title string, fill canvas.ImageFill) *plotCard {
+	img := canvas.NewImageFromImage(image.NewRGBA(image.Rect(0, 0, 1, 1)))
+	img.ScaleMode = canvas.ImageScalePixels
+	img.FillMode = fill
+	t := widget.NewLabelWithStyle(title, fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+	s := widget.NewLabel("")
+	return &plotCard{image: img, title: t, subtitle: s, object: container.NewBorder(t, s, nil, nil, container.NewStack(canvas.NewRectangle(plotBackground), img))}
+}
+
+// buildPlots replaces the grid's widgets with `waveform_plots` waveform cards
+// followed by `image_plots` image cards (only the kinds enabled by view), arranged
+// with the shared rule columns = ceil(sqrt(n)) and equal cells, trailing cells empty.
+func buildPlots(c Config, plots *fyne.Container) (waveCards, imgCards []*plotCard) {
+	waveforms, images := visiblePlots(c)
+	objects := []fyne.CanvasObject{}
+	for i := 0; i < waveforms; i++ {
+		card := newPlotCard(plotTitle("Waveform", i, waveforms), canvas.ImageFillStretch)
+		card.subtitle.SetText(waveformSubtitle(c))
+		waveCards = append(waveCards, card)
+		objects = append(objects, card.object)
+	}
+	for i := 0; i < images; i++ {
+		card := newPlotCard(plotTitle("Image", i, images), canvas.ImageFillContain)
+		card.subtitle.SetText(imageSubtitle(c))
+		imgCards = append(imgCards, card)
+		objects = append(objects, card.object)
+	}
+	columns := gridColumns(len(objects))
+	plots.Objects = padGrid(objects, columns)
+	plots.Layout = layout.NewGridLayoutWithColumns(columns)
+	plots.Refresh()
+	return waveCards, imgCards
+}
 func versions() map[string]string {
 	v := map[string]string{"go": runtime.Version(), "fyne": "unknown"}
 	if b, ok := debug.ReadBuildInfo(); ok {
@@ -93,16 +135,10 @@ func main() {
 	w := a.NewWindow("Plotbench · Fyne")
 	w.Resize(fyne.NewSize(float32(*width), float32(*height)))
 	w.CenterOnScreen()
-	wave := canvas.NewImageFromImage(image.NewRGBA(image.Rect(0, 0, 1, 1)))
-	wave.ScaleMode = canvas.ImageScalePixels
-	wave.FillMode = canvas.ImageFillStretch
-	img := canvas.NewImageFromImage(image.NewRGBA(image.Rect(0, 0, 1, 1)))
-	img.ScaleMode = canvas.ImageScalePixels
-	img.FillMode = canvas.ImageFillContain
-	waveRange := widget.NewLabel("x: 0 … —     y: −1.5 … 1.5")
-	waveCard := container.NewBorder(widget.NewLabelWithStyle("Waveform", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}), waveRange, nil, nil, container.NewStack(canvas.NewRectangle(plotBackground), wave))
-	imageCard := container.NewBorder(widget.NewLabelWithStyle("Image · nearest neighbour", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}), widget.NewLabel("Fixed scalar levels: 0 … 1"), nil, nil, container.NewStack(canvas.NewRectangle(plotBackground), img))
-	plots := container.NewGridWithColumns(2, waveCard, imageCard)
+	// Plot widgets are created from the first frame's configuration and rebuilt
+	// whenever a generation change alters the visible plot set (see buildPlots).
+	var waveCards, imgCards []*plotCard
+	plots := container.NewGridWithColumns(1)
 	status := widget.NewLabel("Connecting")
 	workload := widget.NewLabel("Waiting for authoritative source frames")
 	submitted := widget.NewLabel("Submitted\n— updates/s")
@@ -110,6 +146,7 @@ func main() {
 	skips := widget.NewLabel("Skipped\n—")
 	age := widget.NewLabel("Receive age\n—")
 	currentView := "both"
+	var currentPlots [3]int // view-visible waveform plots, image plots, curves of the built widgets
 	one := widget.NewCheck("1D", nil)
 	two := widget.NewCheck("2D", nil)
 	one.Checked = true
@@ -156,9 +193,9 @@ func main() {
 	footer := widget.NewLabel("Submitted updates · not displayed FPS\nCustom CPU waveform + RGBA conversion; Fyne canvas upload/paint deferred")
 	w.SetContent(container.New(layout.NewCustomPaddedLayout(24, 24, 24, 24), container.NewBorder(header, footer, nil, nil, plots)))
 	meta := runtimeInfo()
-	meta["renderer"] = "Fyne canvas.Image / custom CPU waveform raster"
-	meta["measurement_stage"] = "CPU full-waveform rasterization, source-image RGBA conversion and Fyne canvas refresh submission; excludes deferred texture upload, OpenGL draw and presentation"
-	meta["update_strategy"] = "authoritative full windows; every waveform sample; per-update CPU RGBA images; no GPU replay preload"
+	meta["renderer"] = "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve"
+	meta["measurement_stage"] = "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, OpenGL draw and presentation"
+	meta["update_strategy"] = "authoritative full windows; every waveform sample of every curve; per-update CPU RGBA image per image plot; no GPU replay preload"
 	meta["renderer_environment"] = map[string]string{"FYNE_SCALE": os.Getenv("FYNE_SCALE"), "LIBGL_ALWAYS_SOFTWARE": os.Getenv("LIBGL_ALWAYS_SOFTWARE"), "GALLIUM_DRIVER": os.Getenv("GALLIUM_DRIVER")}
 	meta["display_protocol_requested"] = displayProtocol
 	metrics := newMetrics(*base, *mode, *runID, meta)
@@ -202,18 +239,13 @@ func main() {
 		f, skipped := source.take()
 		if f != nil {
 			c := f.Header.Config
+			waveforms, images := visiblePlots(c)
+			if wanted := [3]int{waveforms, images, c.Curves}; wanted != currentPlots || count == 0 {
+				currentPlots = wanted
+				waveCards, imgCards = buildPlots(c, plots)
+			}
 			if c.View != currentView || count == 0 {
 				currentView = c.View
-				objects := []fyne.CanvasObject{}
-				if c.View != "image" {
-					objects = append(objects, waveCard)
-				}
-				if c.View != "waveform" {
-					objects = append(objects, imageCard)
-				}
-				plots.Objects = objects
-				plots.Layout = container.NewGridWithColumns(len(objects)).Layout
-				plots.Refresh()
 				changing = true
 				one.SetChecked(c.View != "image")
 				two.SetChecked(c.View != "waveform")
@@ -222,16 +254,16 @@ func main() {
 			scale := physicalScale(w.Canvas())
 			start := time.Now()
 			conversion := 0.0
-			if c.View != "image" {
-				size := wave.Size()
-				wave.Image = rasterWaveform(f.Arrays["waveform"], int(math.Round(float64(size.Width*scale))), int(math.Round(float64(size.Height*scale))))
-				wave.Refresh()
+			for p, card := range waveCards {
+				size := card.image.Size()
+				card.image.Image = rasterWaveform(f.waveformPlot(p), int(math.Round(float64(size.Width*scale))), int(math.Round(float64(size.Height*scale))))
+				card.image.Refresh()
 			}
-			if c.View != "waveform" {
+			for p, card := range imgCards {
 				before := time.Now()
-				img.Image = colorImage(f, source.palette)
-				conversion = float64(time.Since(before)) / 1e6
-				img.Refresh()
+				card.image.Image = colorImage(f.imagePlot(p), c, source.palette)
+				conversion += float64(time.Since(before)) / 1e6
+				card.image.Refresh()
 			}
 			elapsed := float64(time.Since(start)) / 1e6
 			now := time.Now()
@@ -259,22 +291,28 @@ func main() {
 					ageText = fmt.Sprintf("%.1f ms (<%.1f guide)", *receiveAge, period)
 				}
 				age.SetText("Receive age\n" + ageText)
-				workload.SetText(fmt.Sprintf("%.0f Hz · %d points / %s · %d×%d / %s", c.Hz, c.Points, c.WaveformMode, c.Width, c.Height, c.ImageMode))
-				waveRange.SetText(fmt.Sprintf("x: 0 … %d     y: −1.5 … 1.5", c.Points-1))
+				workload.SetText(workloadText(c))
+				for _, card := range waveCards {
+					card.subtitle.SetText(waveformSubtitle(c))
+				}
+				for _, card := range imgCards {
+					card.subtitle.SetText(imageSubtitle(c))
+				}
 				lastHUD = now
 				hudCount = count
 				size := w.Canvas().Size()
-				viewports := map[string]any{}
-				if c.View != "image" {
-					v := wave.Size()
+				// Physical data area of the FIRST plot of each kind; all grid cells are equal.
+				viewports := map[string]any{"waveform": nil, "image": nil}
+				if len(waveCards) > 0 {
+					v := waveCards[0].image.Size()
 					viewports["waveform"] = []float32{v.Width * scale, v.Height * scale}
 				}
-				if c.View != "waveform" {
-					v := img.Size()
+				if len(imgCards) > 0 {
+					v := imgCards[0].image.Size()
 					r := math.Min(float64(v.Width*scale)/float64(c.Width), float64(v.Height*scale)/float64(c.Height))
 					viewports["image"] = []float64{float64(c.Width) * r, float64(c.Height) * r}
 				}
-				metrics.set(map[string]any{"config": c, "pixel_ratio": scale, "viewport_size": []float32{size.Width, size.Height}, "plot_viewports": viewports, "display": nil, "receiver_connection_epoch": reconnects + 1, "replay_frames": replayCount, "replay_bytes": replayBytes})
+				metrics.set(map[string]any{"config": c, "pixel_ratio": scale, "viewport_size": []float32{size.Width, size.Height}, "plot_viewports": viewports, "plot_counts": map[string]int{"waveform": waveforms, "image": images}, "curves": c.Curves, "display": nil, "receiver_connection_epoch": reconnects + 1, "replay_frames": replayCount, "replay_bytes": replayBytes})
 			}
 		}
 		if time.Since(lastStatus) >= 500*time.Millisecond {
