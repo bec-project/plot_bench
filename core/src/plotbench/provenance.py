@@ -10,12 +10,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 ARTIFACTS = {
+    "jfreechart": "frontends/jfreechart/build",
     "fyne": "frontends/fyne/build/plotbench-fyne",
     "rust": "backends/rust/target/release/plotbench-source-rust",
     "iced": "frontends/iced/target/release/plotbench-iced",
     "plotly": "frontends/plotly/dist",
     "qtgraphs-cpp": "frontends/qtgraphs-cpp/build/plotbench-qtgraphs-cpp",
 }
+DIRECTORY_ENTRYPOINTS = {"plotly": "index.html", "jfreechart": "plotbench-jfreechart.jar"}
 _EXCLUDED_DIRECTORIES = {
     ".git",
     ".idea",
@@ -38,6 +40,7 @@ _EXCLUDED_DIRECTORIES = {
     "docs",
 }
 _SOURCE_SUFFIXES = {
+    ".java",
     ".go",
     ".mod",
     ".sum",
@@ -165,6 +168,7 @@ def capture_provenance(root=ROOT):
             "core/uv.lock",
             "frontends/*/uv.lock",
             "frontends/*/Cargo.lock",
+            "frontends/*/dependencies.lock.json",
             "frontends/*/go.mod",
             "frontends/*/go.sum",
             "backends/*/Cargo.lock",
@@ -185,15 +189,19 @@ def component_source_hash(component, root=ROOT):
 
 
 def _manifest_path(component, path):
-    return (path if component == "plotly" else path.parent) / "plotbench-build.json"
+    return (path if component in DIRECTORY_ENTRYPOINTS else path.parent) / "plotbench-build.json"
 
 
 def artifact_identity(component, root=ROOT):
     root = Path(root)
     path = root / ARTIFACTS[component]
     manifest = _manifest_path(component, path)
-    entrypoint = path / "index.html" if component == "plotly" else path
+    entrypoint = (
+        path / DIRECTORY_ENTRYPOINTS[component] if component in DIRECTORY_ENTRYPOINTS else path
+    )
     files = sorted(p for p in path.rglob("*") if p.is_file()) if path.is_dir() else [path]
+    if component == "jfreechart":
+        files = [entrypoint, *sorted((path / "lib").glob("*.jar"))]
     files = [p for p in files if p != manifest]
     identity = {
         "path": ARTIFACTS[component],
@@ -241,7 +249,9 @@ def require_current_artifact(component, root=ROOT):
 
 def record_build(component, root=ROOT):
     path = Path(root) / ARTIFACTS[component]
-    entrypoint = path / "index.html" if component == "plotly" else path
+    entrypoint = (
+        path / DIRECTORY_ENTRYPOINTS[component] if component in DIRECTORY_ENTRYPOINTS else path
+    )
     if not entrypoint.is_file():
         raise FileNotFoundError(entrypoint)
     identity = artifact_identity(component, root)
@@ -260,6 +270,6 @@ def record_build(component, root=ROOT):
 if __name__ == "__main__":
     if len(sys.argv) != 2 or sys.argv[1] not in ARTIFACTS:
         raise SystemExit(
-            "Usage: python -m plotbench.provenance rust|iced|fyne|plotly|qtgraphs-cpp (after building)"
+            "Usage: python -m plotbench.provenance rust|iced|fyne|jfreechart|plotly|qtgraphs-cpp (after building)"
         )
     record_build(sys.argv[1])

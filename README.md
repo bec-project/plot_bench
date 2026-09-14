@@ -2,7 +2,7 @@
 
 Plotbench measures how well plotting libraries keep up with streaming data. One
 source generates identical waveform and image frames, and every frontend adapter —
-PyQtGraph, Matplotlib, Qt Graphs (Python and C++), Iced, Fyne (Go) and Plotly — receives those
+PyQtGraph, Matplotlib, Qt Graphs (Python and C++), Iced, Fyne (Go), JFreeChart (Java) and Plotly — receives those
 same frames over the same protocol and renders them. Because none of the frontends
 generate their own data, what you compare is each library's update path: its data
 conversion, plot-update API and rendering, and whether it can sustain the requested
@@ -32,6 +32,7 @@ Windows and Linux ARM are outside the initial release.
 - **[Rust/Cargo](https://rustup.rs/)** with the pinned toolchain 1.96.1
   ([rust-toolchain.toml](rust-toolchain.toml)), for the default Rust source and the
   Iced frontend. A Python-only workflow can skip it.
+- **JDK 17+**, only for JFreeChart. Visible runs currently require macOS.
 - **Node/npm**, only to build the Plotly frontend or to develop the Preact web UI.
   Setup installs a pinned Node 24 ([.node-version](.node-version)) under `.envs/node`;
   the shipped matrix editor and source controls need no Node at runtime.
@@ -147,6 +148,7 @@ CLI filters and timing overrides remain available. See the
 | [Matplotlib](frontends/matplotlib/README.md) | QtAgg with reusable artists and fixed-axes blitting |
 | [Qt Graphs](frontends/qtgraphs/README.md) | PySide6 native waveform series; custom Qt Quick image provider |
 | [Qt Graphs C++](frontends/qtgraphs-cpp/README.md) | Native C++ waveform submission and custom Qt Quick image provider |
+| [JFreeChart](frontends/jfreechart/README.md) | Java/Swing; synchronous JFreeChart Java2D waveform/axes and custom image annotation (macOS) |
 | [Fyne](frontends/fyne/README.md) | Go/Fyne OpenGL canvas images with custom CPU waveform rasterization |
 | [Iced](frontends/iced/README.md) | Rust/wgpu with a custom waveform Canvas and image widget |
 | [Plotly/React](frontends/plotly/README.md) | Production TypeScript bundle; scattergl, heatmap and image |

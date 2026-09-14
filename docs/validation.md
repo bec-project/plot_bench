@@ -286,3 +286,37 @@ A dedicated workflow adds macOS and Ubuntu native build/test coverage; it is not
 a claim that remote CI has run. Linux/Wayland visible rendering remains
 **unqualified**, and Fyne on AlmaLinux has not been built or tested locally.
 Windows and X11 are outside this integration's supported host contract.
+
+## JFreeChart integration validation
+
+JFreeChart 1.5.6 was checked on macOS arm64 with Homebrew OpenJDK 25.0.1,
+Java 17 bytecode and a visible 60 Hz desktop at 1× scaling. All **16 combinations**
+in `scenarios/jfreechart-smoke.json` completed with usable telemetry: Python and
+Rust sources, stream and replay, combined replacement/scalar and append/RGB
+workloads, and waveform-only/image-only views. These short runs establish
+function, not steady-state JVM performance or a frontend ranking.
+
+A separate visible application test exercised both → waveform → image → both in
+stream and replay against Rust, confirmed the source generations and panel count,
+and exported an application render snapshot outside measured windows. The native
+UI automation service could not attach to the Java window; the snapshot is a
+Swing component rendering, not a capture of compositor presentation.
+
+Nine JUnit tests cover protocol/layout rejection, bounded delivery, replay,
+conversion and Java2D raster contents, and final telemetry. Core validation passed
+537 tests, with four optional browser tests skipped; web-UI type checking, proxy
+test and committed-bundle rebuild also passed. CI is configured for Java 17 and 25
+on macOS and Linux. Local checks used Java 25 only.
+
+Visible Linux remains **unsupported** for this adapter: stock Swing does not
+establish the repository's native Wayland contract. Headless Java2D tests on Linux
+are functional diagnostics, not visible platform qualification. Retina/HiDPI
+JFreeChart rendering has not been validated locally.
+
+A separate Rust-backed repeated campaign completed **12/12** runs: the two
+combined workloads, stream/replay and three repetitions, with 10 seconds of JVM
+warmup plus 10 seconds measured per run. Median submitted rates met the 30 and
+60 updates/s targets in all four groups; one 60 Hz replay repetition averaged
+59.4 updates/s. No source-limit flag, telemetry loss, reconnect or detected display
+change was recorded. This target-rate check is not a maximum-throughput ranking;
+the longer JVM warmup is a separate context from earlier campaigns.

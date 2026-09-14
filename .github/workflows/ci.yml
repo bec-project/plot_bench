@@ -200,3 +200,27 @@ jobs:
           test -z "$(gofmt -l frontends/fyne/*.go)"
           go -C frontends/fyne mod verify
           git diff --exit-code -- frontends/fyne/go.mod frontends/fyne/go.sum
+
+  jfreechart:
+    name: JFreeChart Java (${{ matrix.os }}, JDK ${{ matrix.java }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14]
+        java: ['17', '25']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+      - name: Build locked Java adapter
+        run: ./scripts/setup jfreechart --dev
+      - name: Protocol, transport, raster and telemetry tests (headless, not performance)
+        run: |
+          .envs/plotting-benchmark/bin/python frontends/jfreechart/build.py --test
+          .envs/plotting-benchmark/bin/python -m plotbench.provenance jfreechart
+          git diff --exit-code -- frontends/jfreechart/dependencies.lock.json

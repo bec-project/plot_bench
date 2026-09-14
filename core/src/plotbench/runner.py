@@ -19,12 +19,12 @@ from .campaign import finalize_campaign_manifest, write_campaign_manifest
 from .client import request
 from .config import Config
 from .provenance import capture_provenance, require_current_artifact
-from .runtime import frontend_environment, require_preflight
+from .runtime import frontend_environment, java_executable, require_preflight
 from .suites import FRONTENDS as FRONTENDS
 from .suites import expand_cases as expand_cases
 from .suites import plan_from_args, print_plan
 
-BUILT_COMPONENTS = ("rust", "iced", "fyne", "plotly", "qtgraphs-cpp")
+BUILT_COMPONENTS = ("rust", "iced", "fyne", "plotly", "qtgraphs-cpp", "jfreechart")
 ROOT = Path(__file__).resolve().parents[3]
 
 
@@ -37,6 +37,11 @@ def frontend_command(
     name, url, mode, run_id, duration=0, headless=False, screenshot=None, browser_executable=None
 ):
     args = ["--url", url, "--mode", mode, "--run-id", run_id, "--duration", str(duration)]
+    if name == "jfreechart":
+        executable = ROOT / "frontends/jfreechart/build/plotbench-jfreechart.jar"
+        if not executable.is_file():
+            raise FileNotFoundError(f"{executable} is missing; run ./scripts/setup {name}")
+        return [java_executable(), "-jar", str(executable), *args]
     if name == "iced":
         executable = ROOT / "frontends/iced/target/release/plotbench-iced"
     elif name == "fyne":

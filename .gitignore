@@ -27,3 +27,4 @@ frontends/fyne/build/
 
 # Generated public catalogue; reviewed submissions live in website/results.
 website/public/catalog.json
+frontends/jfreechart/build/

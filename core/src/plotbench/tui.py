@@ -51,6 +51,7 @@ INSTALLABLE = [
     "qtgraphs-cpp",
     "iced",
     "fyne",
+    "jfreechart",
     "plotly",
 ]
 
@@ -74,6 +75,7 @@ MARKERS = (
     "plotbench-source-rust",
     "plotbench-iced",
     "plotbench-fyne",
+    "plotbench-jfreechart.jar",
     "plotbench-qtgraphs-cpp",
     "/bin/plotbench-",
     "plotbench.cli",

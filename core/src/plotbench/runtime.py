@@ -100,6 +100,14 @@ def browser_launch_options(*, browser_executable=None, headless=False):
     return options
 
 
+def java_executable():
+    home = os.environ.get("PLOTBENCH_JAVA_HOME")
+    executable = str(Path(home) / "bin/java") if home else shutil.which("java")
+    if not executable or not Path(executable).is_file() or not os.access(executable, os.X_OK):
+        raise ValueError("JFreeChart requires Java 17+; select a JDK with PLOTBENCH_JAVA_HOME")
+    return executable
+
+
 def _executable(component):
     if component == "pyqtgraph-gl":
         component = "pyqtgraph"
@@ -108,6 +116,7 @@ def _executable(component):
     return {
         "rust": ROOT / "backends/rust/target/release/plotbench-source-rust",
         "iced": ROOT / "frontends/iced/target/release/plotbench-iced",
+        "jfreechart": ROOT / "frontends/jfreechart/build/plotbench-jfreechart.jar",
         "fyne": ROOT / "frontends/fyne/build/plotbench-fyne",
         "qtgraphs-cpp": ROOT / "frontends/qtgraphs-cpp/build/plotbench-qtgraphs-cpp",
     }[component]
@@ -136,7 +145,7 @@ def component_installed(component):
         executable = _executable(component)
     except KeyError:
         return False
-    return executable.is_file() and os.access(executable, os.X_OK)
+    return executable.is_file() and (component == "jfreechart" or os.access(executable, os.X_OK))
 
 
 def _run_check(command, *, environment=None, timeout=15):
@@ -228,7 +237,9 @@ def preflight(*, frontends=(), backends=(), browser_executable=None, headless=Fa
         executable = _executable(component)
 
         def installed(executable=executable, component=component):
-            if not executable.is_file() or not os.access(executable, os.X_OK):
+            if not executable.is_file() or (
+                component != "jfreechart" and not os.access(executable, os.X_OK)
+            ):
                 raise ValueError(f"Missing {component}; run ./scripts/setup {component}")
             package = "pyqtgraph" if component == "pyqtgraph-gl" else component
             if package in PYTHON_FRONTENDS:
@@ -258,6 +269,20 @@ def preflight(*, frontends=(), backends=(), browser_executable=None, headless=Fa
             else:
                 require_current_artifact(component, ROOT)
                 libraries_to_check = [str(executable)]
+                if component == "jfreechart":
+                    java = java_executable()
+                    details = json.loads(
+                        _run_check([java, "-jar", str(executable), "--runtime-info"])
+                    )
+                    details["executable_sha256"] = file_hash(java)
+                    runtime.setdefault("components", {})[component] = details
+                    libraries_to_check = []
+                    if details.get("java_feature", 0) < 17:
+                        raise ValueError("JFreeChart requires Java 17+")
+                    if system != "Darwin" or details.get("headless"):
+                        raise ValueError(
+                            "JFreeChart visible runs currently require macOS; native Wayland Swing is unvalidated"
+                        )
                 if component == "fyne":
                     details = json.loads(_run_check([str(executable), "--runtime-info"]))
                     runtime.setdefault("components", {})[component] = details
