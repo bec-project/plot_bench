@@ -219,9 +219,22 @@ test('catalogue loader checks filenames and refuses symlinks', async () => {
       path = join(directory, c.id + '.json');
     await writeFile(path, JSON.stringify(c));
     assert.equal((await loadCatalog(directory)).campaigns.length, 1);
-    await writeFile(join(directory, 'wrong.json'), JSON.stringify(c));
-    await assert.rejects(loadCatalog(directory), /filename/);
-    await rm(join(directory, 'wrong.json'));
+    await writeFile(join(directory, c.id + '-2.json'), JSON.stringify(c));
+    await assert.rejects(loadCatalog(directory), new RegExp(`rename it to ${c.id}\\.json`));
+    await rm(join(directory, c.id + '-2.json'));
+    const stale: any = sample();
+    stale.id = 'stale-export';
+    for (const run of stale.runs) {
+      delete run.config.waveform_plots;
+      delete run.config.curves;
+      delete run.config.image_plots;
+    }
+    await writeFile(join(directory, 'stale-export.json'), JSON.stringify(stale));
+    await assert.rejects(
+      loadCatalog(directory),
+      /stale-export\.json: .*\(\+23 more\)\. This file predates .*export it again/,
+    );
+    await rm(join(directory, 'stale-export.json'));
     await symlink(path, join(directory, 'linked.json'));
     await assert.rejects(loadCatalog(directory), /regular JSON/);
   } finally {

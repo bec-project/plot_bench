@@ -14,7 +14,9 @@ defined by [`submission.schema.json`](../submission.schema.json).
    paths, hostnames, display names and environment values. Free-text fields such
    as notes, hardware labels, renderer descriptions and version strings still
    require review. Use a friendly alias, not a hostname, username or serial number.
-4. Download and add the JSON here. Run validation and open a pull request describing
+4. Download and add the JSON here as `<campaign-id>.json`; rename it if your browser
+   appended a number to avoid overwriting an earlier download. Run validation and open
+   a pull request describing
    the hardware, operating conditions, campaign scope and retained evidence.
    Include failures and source-limited cases; do not cherry-pick the fastest runs.
 
