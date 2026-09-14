@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { exportSummary } from './export';
+import { exportSummary, suggestSubmission, type SubmissionDefaults } from './export';
 import { MAX_SUBMISSION_BYTES, validateCatalog } from './validation';
 import { groupObservations, inDateRange } from './aggregation';
 import { GroupedResults } from './grouped-results';
@@ -764,11 +764,25 @@ function Contribute() {
     [error, setError] = useState(''),
     [result, setResult] = useState<Submission | null>(null),
     [busy, setBusy] = useState(false),
-    [reviewed, setReviewed] = useState(false);
+    [reviewed, setReviewed] = useState(false),
+    [proposed, setProposed] = useState<SubmissionDefaults | null>(null);
   const invalidate = () => {
     setResult(null);
     setReviewed(false);
   };
+  // The summary's public fields fill the form; the contributor reviews and adjusts.
+  const apply = (defaults: SubmissionDefaults) => {
+    setId(defaults.id);
+    setHostId(defaults.hostId);
+    setHostLabel(defaults.hostLabel);
+    setNotes(defaults.notes);
+  };
+  const edited =
+    proposed !== null &&
+    (id !== proposed.id ||
+      hostId !== proposed.hostId ||
+      hostLabel !== proposed.hostLabel ||
+      notes !== proposed.notes);
   async function fileChanged(file?: File) {
     invalidate();
     setError('');
@@ -779,8 +793,11 @@ function Contribute() {
       if (file.size > 25 * 1024 * 1024)
         throw new Error('Summary exceeds 25 MiB; split a large campaign first.');
       const data = JSON.parse(await file.text());
+      const defaults = suggestSubmission(data);
       setRaw(data);
       setFilename(file.name);
+      setProposed(defaults);
+      apply(defaults);
     } catch (e) {
       setError((e as Error).message);
     }
@@ -807,8 +824,9 @@ function Contribute() {
       <section className="panel submission-form" aria-label="Prepare a submission">
         <h2>Prepare a submission</h2>
         <p className="muted small">
-          Choose the <code>summary.json</code> from a completed Plotbench campaign. Processing
-          happens in your browser; choosing a file does not upload it.
+          Choose the <code>summary.json</code> from a completed Plotbench campaign. The form
+          proposes the public fields from it; processing happens in your browser, and choosing a
+          file does not upload it.
         </p>
         <form onSubmit={prepare}>
           <label className="file-picker">
@@ -820,6 +838,13 @@ function Contribute() {
               onChange={(e) => void fileChanged(e.target.files?.[0])}
             />
           </label>
+          {proposed && (
+            <p className="muted small" role="status">
+              Campaign ID, host alias, label and notes were proposed from the summary’s CPU model,
+              OS, acquisition date, suite name, timings and display context. Review and adjust them
+              before previewing.
+            </p>
+          )}
           <Field label="Campaign ID">
             <input
               aria-label="Campaign ID"
@@ -873,10 +898,22 @@ function Contribute() {
               }}
             />
           </Field>
-          <div>
+          <div className="actions">
             <button className="btn-primary" type="submit" disabled={!raw || busy}>
               {busy ? 'Preparing…' : 'Preview public submission'}
             </button>
+            {edited && (
+              <button
+                className="btn-soft"
+                type="button"
+                onClick={() => {
+                  apply(proposed);
+                  invalidate();
+                }}
+              >
+                Restore proposed values
+              </button>
+            )}
           </div>
         </form>
         {error && (
@@ -929,8 +966,8 @@ function Contribute() {
             <div>
               <strong>Review the export</strong>
               <p>
-                Raw logs, local paths, command lines and environment values are omitted. Check
-                hardware labels, notes, and all public fields before sharing.
+                Raw logs, local paths, command lines and environment values are omitted. Check the
+                proposed host alias, labels, notes, and all public fields before sharing.
               </p>
             </div>
           </li>

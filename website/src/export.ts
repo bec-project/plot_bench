@@ -33,6 +33,19 @@ export async function digest(value: string): Promise<string> {
   const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
   return Array.from(new Uint8Array(bytes), (b) => b.toString(16).padStart(2, '0')).join('');
 }
+// Normalize the reported windowing system to the submission's protocol names.
+function displayProtocol(metadata: RecordValue, provenance: RecordValue): string | null {
+  const runtime = record(record(provenance.preflight).runtime);
+  const reported =
+    string(metadata.qt_platform_plugin) ??
+    string(metadata.display_protocol) ??
+    string(record(runtime.display).display_protocol);
+  return reported === 'cocoa' || reported === 'windows'
+    ? 'native'
+    : reported === 'xcb'
+      ? 'x11'
+      : reported;
+}
 export interface ExportOptions {
   id: string;
   hostId: string;
@@ -88,19 +101,9 @@ export async function exportSummary(raw: unknown, options: ExportOptions): Promi
         'source_mailbox_drops',
       ])
         metrics[key] = numeric(r[key]);
-      const runtime = record(record(p.preflight).runtime),
-        display = record(m.display);
+      const display = record(m.display);
       const headless = boolean(m.headless) ?? boolean(campaign.headless);
-      const reportedProtocol =
-        string(m.qt_platform_plugin) ??
-        string(m.display_protocol) ??
-        string(record(runtime.display).display_protocol);
-      const protocol =
-        reportedProtocol === 'cocoa' || reportedProtocol === 'windows'
-          ? 'native'
-          : reportedProtocol === 'xcb'
-            ? 'x11'
-            : reportedProtocol;
+      const protocol = displayProtocol(m, p);
       const versions: Record<string, string> = {};
       for (const [name, value] of Object.entries(record(m.versions)))
         if (typeof value === 'string') versions[name] = value;
@@ -203,4 +206,93 @@ export async function exportSummary(raw: unknown, options: ExportOptions): Promi
     links: { report: null, extended_report: null, raw_data: null },
   };
   return parseSubmission(result);
+}
+
+const slug = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+// Shorten a slug at a hyphen so a clipped identifier never ends mid-word.
+function clip(value: string, limit: number): string {
+  if (value.length <= limit) return value;
+  const cut = value.slice(0, limit + 1).lastIndexOf('-');
+  return (cut > 0 ? value.slice(0, cut) : value.slice(0, limit)).replace(/-+$/, '');
+}
+// "macOS 15.7.5 (24G624)" -> "macOS", "Ubuntu 24.04.1 LTS" -> "Ubuntu".
+function osFamily(os: string | null, platform: string | null): string | null {
+  const text = (os ?? platform ?? '').split(/\s*\d/)[0].replace(/-.*$/, '').trim();
+  return text.toLowerCase() === 'darwin' ? 'macOS' : text || null;
+}
+const seconds = (values: number[]): string | null =>
+  values.length === 0
+    ? null
+    : values.length === 1
+      ? `${values[0]} s`
+      : `${Math.min(...values)}–${Math.max(...values)} s`;
+const distinctNumbers = (values: Array<number | null>) => [
+  ...new Set(values.filter((v): v is number => v !== null)),
+];
+
+export type SubmissionDefaults = Required<ExportOptions>;
+
+// Propose the contributor-supplied fields from data the export publishes anyway:
+// CPU model, OS family, acquisition date, suite name, run timings and display
+// context. Hostnames, machine identifiers, display names and paths are never
+// used. Contributors review and adjust the proposal before publishing.
+export function suggestSubmission(raw: unknown): SubmissionDefaults {
+  const summary = record(raw),
+    campaign = record(summary.campaign),
+    hardware = record(campaign.hardware),
+    runs = (Array.isArray(summary.runs) ? summary.runs : []).map(record);
+  const cpu = string(hardware.cpu_model),
+    family = osFamily(string(hardware.os), string(hardware.platform));
+  const hostId = clip(slug(`${cpu ?? 'host'} ${family ?? ''}`) || 'host', 40);
+  const hostLabel = [cpu ?? 'Unknown CPU', family].filter(Boolean).join(' · ');
+  const date = (string(campaign.started_at) ?? '').slice(0, 10).replace(/-/g, '');
+  const stem = [hostId, /^\d{8}$/.test(date) ? date : ''].filter(Boolean).join('-');
+  const id = clip([stem, slug(string(campaign.suite_name) ?? '')].filter(Boolean).join('-'), 80);
+
+  const sentences: string[] = [];
+  const repetitions = Math.max(
+    numeric(campaign.repetitions) ?? 0,
+    ...runs.map((r) => numeric(r.repetition) ?? 0),
+  );
+  const warmup = seconds(distinctNumbers(runs.map((r) => numeric(r.warmup_seconds)))),
+    measurement = seconds(distinctNumbers(runs.map((r) => numeric(r.measurement_seconds))));
+  const timing = [warmup && `${warmup} warmup`, measurement && `${measurement} measurement`]
+    .filter(Boolean)
+    .join(' and ');
+  const setup = [
+    repetitions > 0 ? `${repetitions} repetition${repetitions === 1 ? '' : 's'} per case` : '',
+    timing ? `${timing} per run` : '',
+  ].filter(Boolean);
+  if (setup.length) sentences.push(setup.join(', ') + '.');
+  const contexts = [
+    ...new Set(
+      runs.map((r) => {
+        const m = record(r.metadata),
+          display = record(m.display);
+        const protocol = displayProtocol(m, record(r.provenance));
+        const headless = boolean(m.headless) ?? boolean(campaign.headless);
+        if (headless || protocol === 'offscreen' || protocol === 'headless')
+          return 'Headless or offscreen run without a visible desktop.';
+        const label =
+          protocol === 'native'
+            ? 'Native desktop'
+            : protocol === 'wayland'
+              ? 'Wayland'
+              : protocol === 'x11'
+                ? 'X11'
+                : 'Visible';
+        const refresh = numeric(display.refresh_hz),
+          scale = numeric(m.pixel_ratio) ?? numeric(display.device_pixel_ratio);
+        return `${label} display${refresh ? ` at ${refresh} Hz` : ''}${scale ? ` and ${scale}× scaling` : ''}.`;
+      }),
+    ),
+  ];
+  if (contexts.length === 1) sentences.push(contexts[0]);
+  else if (contexts.length > 1)
+    sentences.push('Runs were recorded in more than one display context.');
+  return { id, hostId, hostLabel, notes: sentences.join(' ').slice(0, 2000) };
 }

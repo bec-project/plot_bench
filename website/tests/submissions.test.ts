@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import seed from '../results/apple-m1-max-20260914-quick.json';
 import { classify, workloadKey, type Submission } from '../src/model';
 import { parseSubmission, parseSubmissionText, validateCatalog } from '../src/validation';
-import { exportSummary } from '../src/export';
+import { exportSummary, suggestSubmission } from '../src/export';
 import { loadCatalog } from '../scripts/catalog';
 
 const sample = (): Submission => parseSubmission(structuredClone(seed));
@@ -225,4 +225,44 @@ test('catalogue loader checks filenames and refuses symlinks', async () => {
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+test('submission fields are proposed from public summary data only', async () => {
+  const raw = rawSummary();
+  const proposed = suggestSubmission(raw);
+  assert.deepEqual(
+    { ...proposed, notes: undefined },
+    {
+      id: 'test-cpu-test-os-20260914-test-suite',
+      hostId: 'test-cpu-test-os',
+      hostLabel: 'Test CPU · Test OS',
+      notes: undefined,
+    },
+  );
+  assert.equal(
+    proposed.notes,
+    '1 repetition per case, 2 s warmup and 5 s measurement per run. Native desktop display.',
+  );
+  assert.doesNotMatch(JSON.stringify(proposed), /PRIVATE_/);
+  assert.equal((await exportSummary(raw, proposed)).host.label, 'Test CPU · Test OS');
+
+  raw.campaign.suite_name = 'A very long suite name '.repeat(8);
+  raw.campaign.hardware.os = 'macOS 15.7.5 (24G624)';
+  const runs: any[] = raw.runs;
+  runs[0].metadata = { ...runs[0].metadata, pixel_ratio: 2, display: { refresh_hz: 120 } };
+  const long = suggestSubmission(raw);
+  assert.match(long.id, /^[a-z0-9][a-z0-9-]{0,79}$/);
+  assert.ok(long.id.length <= 80 && !long.id.endsWith('-'));
+  assert.equal(long.hostId, 'test-cpu-macos');
+  assert.equal(long.hostLabel, 'Test CPU · macOS');
+  assert.match(long.notes, /more than one display context/);
+  for (const run of runs) run.metadata = runs[0].metadata;
+  assert.match(suggestSubmission(raw).notes, /Native desktop display at 120 Hz and 2× scaling\./);
+  // The run-level flag decides, as in the export; the campaign flag is the fallback.
+  for (const run of runs) run.metadata = { ...run.metadata, headless: true };
+  assert.match(suggestSubmission(raw).notes, /Headless or offscreen/);
+
+  const empty = suggestSubmission({});
+  assert.deepEqual(empty, { id: 'host', hostId: 'host', hostLabel: 'Unknown CPU', notes: '' });
+  assert.match(empty.id, /^[a-z0-9][a-z0-9-]{0,79}$/);
 });

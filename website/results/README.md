@@ -7,9 +7,9 @@ defined by [`submission.schema.json`](../submission.schema.json).
 
 1. Run a campaign using the [benchmark procedure](../../AGENTS.md#running-a-requested-benchmark).
    Record display context, keep all attempts, and preserve the suite and raw data.
-2. Open **Contribute** on the website, select that campaign's `summary.json`, and
-   assign a unique campaign ID and a public host alias. Alternatively use the
-   [CLI export](../README.md#contribute-results).
+2. Open **Contribute** on the website and select that campaign's `summary.json`.
+   Review the proposed campaign ID and public host alias, or replace them.
+   Alternatively use the [CLI export](../README.md#contribute-results).
 3. Inspect every public field. The exporter omits raw logs, command lines, local
    paths, hostnames, display names and environment values. Free-text fields such
    as notes, hardware labels, renderer descriptions and version strings still
