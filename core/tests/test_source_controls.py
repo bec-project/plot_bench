@@ -82,11 +82,14 @@ def test_source_controls_apply_preset_and_live_status(tmp_path):
                 # Option tooltips are present.
                 assert await page.locator(".infotip").count() > 0
                 await page.screenshot(path=str(tmp_path / "controls-desktop.png"), full_page=True)
-                await page.set_viewport_size({"width": 390, "height": 844})
-                await page.screenshot(path=str(tmp_path / "controls-mobile.png"), full_page=True)
-                assert await page.evaluate(
-                    "() => document.documentElement.scrollWidth <= innerWidth"
-                )
+                # Narrow widths expose header overflow even with compact macOS fonts.
+                for width in (390, 360, 320):
+                    await page.set_viewport_size({"width": width, "height": 844})
+                    await page.screenshot(
+                        path=str(tmp_path / f"controls-mobile-{width}.png"), full_page=True
+                    )
+                    page_width = await page.evaluate("() => document.documentElement.scrollWidth")
+                    assert page_width <= width, f"page width {page_width} exceeds viewport {width}"
                 assert not errors, errors
                 await browser.close()
 

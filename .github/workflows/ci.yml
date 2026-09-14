@@ -136,7 +136,8 @@ jobs:
     steps:
       - name: Bootstrap build and runtime packages
         run: |
-          dnf --enablerepo=crb install -y git curl gcc gcc-c++ make pkgconf-pkg-config cmake ninja-build \
+          # Accept curl-minimal from the base image as well as the full curl package.
+          dnf --enablerepo=crb install -y git /usr/bin/curl gcc gcc-c++ make pkgconf-pkg-config cmake ninja-build \
             wayland-devel libxkbcommon-devel mesa-libEGL mesa-libGL vulkan-loader \
             mesa-vulkan-drivers fontconfig freetype dbus-libs nodejs npm
       - uses: actions/checkout@v4
