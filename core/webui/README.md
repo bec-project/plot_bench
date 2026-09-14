@@ -9,6 +9,14 @@ in this directory. Preact is the UI framework here; the separate
 - **Source controls** — `./scripts/plotbench serve` serves a live workload form at
   the source URL. Python and Rust serve the same generated page.
 
+Both pages edit the full protocol v2 workload: besides rate, points, modes and
+image size, the Waveform group carries `waveform_plots` (1–16) and `curves`
+(1–64) and the Image group carries `image_plots` (1–16). The source controls
+offer a "Plot layout preset" next to the rate and resolution presets that fills
+the three counts and the view together; the matrix editor accepts the three
+fields as group axes and its schedule preview shows each run's layout in a
+`Plots` column (`2×3 wf · 3 img`).
+
 ## Source and generated files
 
 | File | Purpose |

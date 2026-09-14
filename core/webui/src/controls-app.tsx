@@ -10,9 +10,12 @@ const EDITABLE = [
   'points',
   'waveform_mode',
   'append_count',
+  'waveform_plots',
+  'curves',
   'image_mode',
   'width',
   'height',
+  'image_plots',
   'seed',
 ];
 
@@ -38,6 +41,28 @@ const RESOLUTION_PRESETS: Array<{ group: string; items: Array<{ label: string; v
     ],
   },
 ];
+
+// Plot layout presets fill the plot counts, curves per plot and the view together.
+// The value encodes waveform_plots x curves x image_plots and the view.
+interface LayoutPreset {
+  label: string;
+  waveform_plots: number;
+  curves: number;
+  image_plots: number;
+  view: string;
+}
+
+const LAYOUT_PRESETS: LayoutPreset[] = [
+  { label: '1 waveform + 1 image', waveform_plots: 1, curves: 1, image_plots: 1, view: 'both' },
+  { label: '2 waveforms × 3 curves + 3 images', waveform_plots: 2, curves: 3, image_plots: 3, view: 'both' },
+  { label: '4 waveforms × 2 curves + 2 images', waveform_plots: 4, curves: 2, image_plots: 2, view: 'both' },
+  { label: '6 waveforms × 4 curves', waveform_plots: 6, curves: 4, image_plots: 1, view: 'waveform' },
+  { label: '4 images', waveform_plots: 1, curves: 1, image_plots: 4, view: 'image' },
+];
+
+function layoutKey(layout: Omit<LayoutPreset, 'label'>): string {
+  return `${layout.waveform_plots}x${layout.curves}x${layout.image_plots}-${layout.view}`;
+}
 
 async function getJSON(path: string): Promise<any> {
   const response = await fetch(path);
@@ -136,6 +161,13 @@ export function ControlsApp() {
   )
     ? resolution
     : '';
+  const layout = layoutKey({
+    waveform_plots: Number(draft.waveform_plots),
+    curves: Number(draft.curves),
+    image_plots: Number(draft.image_plots),
+    view: String(draft.view),
+  });
+  const layoutValue = LAYOUT_PRESETS.some((preset) => layoutKey(preset) === layout) ? layout : '';
   const backend = health?.backend === 'rust' ? 'rust' : 'python';
   const sourceUrl = `'${window.location.origin.replaceAll("'", "'\\''")}'`;
 
@@ -222,6 +254,27 @@ export function ControlsApp() {
                     <option value={item.value}>{item.label}</option>
                   ))}
                 </optgroup>
+              ))}
+            </select>
+          </Field>
+          <Field
+            label="Plot layout preset"
+            tip="Fills the waveform plot, curve and image plot counts below, and switches the plots shown."
+          >
+            <select
+              aria-label="Plot layout preset"
+              value={layoutValue}
+              onChange={(event) => {
+                const value = (event.target as HTMLSelectElement).value;
+                const preset = LAYOUT_PRESETS.find((item) => layoutKey(item) === value);
+                if (!preset) return;
+                const { waveform_plots, curves, image_plots, view } = preset;
+                setDraft({ ...draft, waveform_plots, curves, image_plots, view });
+              }}
+            >
+              <option value="">Custom layout</option>
+              {LAYOUT_PRESETS.map((preset) => (
+                <option value={layoutKey(preset)}>{preset.label}</option>
               ))}
             </select>
           </Field>
