@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BenchmarkEngine, readOptions, type Options, type Status } from './engine';
 import type { Configuration } from './protocol';
 import { nextPlotView, plotToggleState, type PlotKind } from './plot-selection';
+import { gridTemplateColumns, imageLayoutLabel, visiblePlotCount, waveformLayoutLabel } from './plot-grid';
 import { ConfigurationDraft } from './config-draft';
 import { metricHints } from './metric-hints';
 import './style.css';
@@ -68,6 +69,8 @@ function App({ options }: { options: Options }) {
   };
   const number = (value: number | null | undefined, digits = 1) => value == null ? '—' : value.toFixed(digits);
   const activeView = config?.view ?? 'both';
+  const waveformLayout = config ? waveformLayoutLabel(config) : null;
+  const imageLayout = config ? imageLayoutLabel(config) : null;
   const error = formError || status?.error || status?.metrics_error;
   const hints = metricHints(config?.hz, options.mode === 'replay');
 
@@ -93,9 +96,12 @@ function App({ options }: { options: Options }) {
         <label>Points<input aria-label="Points" type="number" min="2" step="1" required value={form.points} onChange={(event) => change('points', Number(event.target.value))} /></label>
         <label>Waveform<select aria-label="Waveform mode" value={form.waveform_mode} onChange={(event) => change('waveform_mode', event.target.value as Configuration['waveform_mode'])}><option value="replace">Replace window</option><option value="append">Append / rolling</option></select></label>
         <label>Append samples<input aria-label="Append samples" type="number" min="1" max={form.points} step="1" required value={form.append_count} onChange={(event) => change('append_count', Number(event.target.value))} /></label>
+        <label>Curves per plot<input aria-label="Curves per plot" type="number" min="1" max="64" step="1" required value={form.curves} onChange={(event) => change('curves', Number(event.target.value))} /></label>
+        <label>Waveform plots<input aria-label="Waveform plots" type="number" min="1" max="16" step="1" required value={form.waveform_plots} onChange={(event) => change('waveform_plots', Number(event.target.value))} /></label>
         <label>Image width<input aria-label="Image width" type="number" min="1" step="1" required value={form.width} onChange={(event) => change('width', Number(event.target.value))} /></label>
         <label>Image height<input aria-label="Image height" type="number" min="1" step="1" required value={form.height} onChange={(event) => change('height', Number(event.target.value))} /></label>
         <label className="image-mode-field">Image mode<select aria-label="Image mode" value={form.image_mode} onChange={(event) => change('image_mode', event.target.value as Configuration['image_mode'])}><option value="scalar">Scalar + colormap</option><option value="rgb">RGB</option></select></label>
+        <label>Image plots<input aria-label="Image plots" type="number" min="1" max="16" step="1" required value={form.image_plots} onChange={(event) => change('image_plots', Number(event.target.value))} /></label>
         <div className="control-actions">
           <button type="button" className="secondary" onClick={() => {
             if (controls.current) controls.current.open = false;
@@ -111,8 +117,8 @@ function App({ options }: { options: Options }) {
     {error && <p role="alert" className="error-message">{error}</p>}
     <section className="workload" aria-label="Current workload">
       <div><span>TARGET RATE</span><strong>{number(status?.target_hz)} Hz</strong></div>
-      <div><span>WAVEFORM</span><strong>{config?.points.toLocaleString() ?? '—'} points <b>·</b> {config?.waveform_mode ?? 'replace'}</strong></div>
-      <div><span>IMAGE</span><strong>{config?.width ?? '—'} × {config?.height ?? '—'} <b>·</b> {config?.image_mode === 'rgb' ? 'RGB' : 'scalar'}</strong></div>
+      <div><span>WAVEFORM</span><strong>{config?.points.toLocaleString() ?? '—'}{waveformLayout ? '' : ' points'} <b>·</b> {config?.waveform_mode ?? 'replace'}{waveformLayout && <> <b>·</b> {waveformLayout}</>}</strong></div>
+      <div><span>IMAGE</span><strong>{config?.width ?? '—'} × {config?.height ?? '—'} <b>·</b> {config?.image_mode === 'rgb' ? 'RGB' : 'scalar'}{imageLayout && <> <b>·</b> {imageLayout}</>}</strong></div>
       <div className="plot-selection"><span>PLOTS</span><div className="plot-buttons" role="group" aria-label="Visible plots">
         {(['waveform', 'image'] as const).map((plot) => {
           const state = plotToggleState(config?.view, plot, applying, options.duration > 0, Boolean(status?.running));
@@ -128,9 +134,12 @@ function App({ options }: { options: Options }) {
       <div title="Source updates skipped"><span>Skipped</span><strong>{status?.skipped.toLocaleString() ?? '0'}</strong><small>{hints.skipped}</small></div>
       <div title={options.mode === 'replay' ? 'Not applicable to replay' : 'Approximate receive age from the same-host wall clock. One source period is a freshness goal, not measured presentation latency.'}><span>Receive age</span><strong>{number(status?.receive_age_ms)}{status?.receive_age_ms != null && <em> ms</em>}</strong><small>{hints.age}</small></div>
     </section>
-    <section className={`plots ${activeView}`} aria-label="Plots">
-      <article hidden={activeView === 'image'}><div className="plot-heading"><h2>Waveform</h2><span>{config?.points.toLocaleString() ?? '—'} points · {config?.waveform_mode ?? 'replace'}</span></div><div className="plot" ref={wave} /></article>
-      <article hidden={activeView === 'waveform'}><div className="plot-heading"><h2>Image</h2><span>{config?.width ?? '—'} × {config?.height ?? '—'} · {config?.image_mode === 'rgb' ? 'RGB' : 'scalar · fixed [0, 1]'}</span></div><div className="plot" ref={image} /></article>
+    {/* The adapter owns one <article> per waveform/image plot inside these two containers; the grid
+        columns follow the shared layout rule (waveform plots first, then image plots). */}
+    <section className={`plots ${activeView}`} aria-label="Plots"
+      style={{ gridTemplateColumns: gridTemplateColumns(config ? visiblePlotCount(config) : 0) }}>
+      <div className="plot-group" aria-label="Waveform plots" ref={wave} hidden={activeView === 'image'} />
+      <div className="plot-group" aria-label="Image plots" ref={image} hidden={activeView === 'waveform'} />
     </section>
     <footer><span>Submitted updates · not displayed FPS</span><span>scattergl · heatmap / image</span></footer>
   </main>;

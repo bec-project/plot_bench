@@ -59,21 +59,61 @@ Set the browser viewport to the requested dimensions in automation. Query parame
 the browser itself. The actual viewport, device pixel ratio and individual plot sizes are recorded
 in metadata. `plot_viewports` contains physical data-area dimensions excluding axes and margins;
 `plot_viewports_logical` records those lengths in CSS pixels and `plot_containers` separately records
-the outer chart boxes. Hidden plots are null. Data areas use Plotly 4's resolved axis lengths,
+the outer chart boxes. All three describe the **first** plot of each kind (every grid cell has the
+same size); `plot_counts: {waveform, image}` records the visible widget counts (0 for a kind hidden
+by `view`) and `curves` the curves per waveform plot. Hidden plots are null. Data areas use Plotly 4's resolved axis lengths,
 including aspect-ratio domain constraints; unavailable diagnostics remain null rather than guessed.
 Keep the window visible and foreground during comparative performance measurements;
 headless runs are useful for functional smoke tests.
 
 The header's **Source controls** drawer is collapsed initially to leave the plots visible. It
 contains the workload form, input-mode selector, a link to the common source page and `Stop & save`.
-The compact workload strip and four metric cards remain visible. Combined view uses equal-width
-plot cards; one selected view fills the width. The layout follows the browser viewport and supports
-860 × 640 through the default 1100 × 820 without hiding controls or metric values.
+The compact workload strip and four metric cards remain visible. The layout follows the browser
+viewport and supports 860 × 640 through the default 1100 × 820 without hiding controls or metric
+values.
+
+## Plot layout (protocol v2)
+
+The source configuration carries `waveform_plots` (1–16), `curves` per waveform plot (1–64) and
+`image_plots` (1–16). The page shows one card per plot: waveform plots first (`Waveform 1..N`), then
+image plots (`Image 1..M`); a single plot of a kind is titled plainly `Waveform` / `Image`. Subtitles
+show `points · mode` (plus `· K curves` above one curve) and `width × height · mode`. The visible
+plots (`n = N + M`, counting only the kinds enabled by `view`) fill a CSS grid with
+`columns = ceil(sqrt(n))` equal-width columns (`repeat(columns, minmax(0, 1fr))`) and
+`ceil(n / columns)` equal-height rows, row-major, trailing cells empty: 1 → 1×1, 2 → side by side,
+3–4 → 2×2, 5–6 → 3×2, 9 → 3×3, up to 6×6 for 16 + 16. `gridColumns` in
+[`src/plot-grid.ts`](src/plot-grid.ts) is the pure rule; the `.plots` section receives the column
+template as an inline style. Card headings truncate with an ellipsis rather than growing, so four or
+more columns still fit at 1100 × 820.
+
+Every curve `c` of every waveform plot is a separate `scattergl` trace coloured with the shared
+palette `CURVE_COLORS[c % 8]` (`#64dccc`, `#f5c76e`, `#7aa6ff`, `#ff9d7a`, `#c39bff`, `#9be564`,
+`#ff7ab8`, `#6ee7ff`); curve 0 keeps the accent colour. All curves of a plot share the fixed
+`[-1.5, 1.5]` / `[0, points-1]` axes, the one-physical-pixel stroke, no markers and no decimation.
+The workload strip shows `2,000 · replace · 2 plots × 3 curves` when plots or curves exceed one and
+`128 × 96 · scalar · 3 plots` for several image plots.
+
+The adapter owns the per-plot DOM: React renders the two kind containers, and
+[`PlotAdapter`](src/adapter.ts) creates one `<article>` (heading plus Plotly `<div>`) per waveform
+plot and per image plot from the frame configuration, purging (`Plotly.purge`) and removing cards
+when counts shrink. The widget set is therefore rebuilt synchronously with the first frame of a new
+generation and cannot lag behind a React render.
+
+![Plotly with two three-curve waveform plots and three images](screenshots/plotly-multi-plot.png)
+
+The capture above is untimed visual QA of the 2 × 3-curve + 3-image smoke workload on macOS (2× pixel ratio).
+
+**Cost:** each plot is its own Plotly figure, so one frame costs `waveform_plots + image_plots`
+`Plotly.react` calls (N + M per frame), each with a full relayout; `update_ms` covers all of them,
+`conversion_ms` covers every image plot's row views / RGB triples, and `update_complete_ms` waits for
+all N + M returned Promises. Curves add traces to a figure, not figures; images are sliced from the
+plot-major payload with `subarray` without copying.
 
 The controls change the **shared source** through `POST /api/config`, including frequency, point
-count, append size, image dimensions and scalar/RGB mode. The workload strip's **1D** and **2D**
-buttons select waveform, image or both by changing the source's `view` alone. Turning a plot off
-removes its array from source packets and gives the remaining plot the full card width. At least
+count, append size, curves per plot, waveform and image plot counts, image dimensions and scalar/RGB
+mode. The workload strip's **1D** and **2D** buttons select waveform, image or both by changing the
+source's `view` alone. Turning a plot kind off removes its array from source packets and its cards
+from the grid, which re-flows for the remaining plots. At least
 one plot stays enabled; enable the other first to switch between single plots. Buttons are disabled
 until configuration arrives, while a request is pending, after stopping and during duration-limited
 recorded runs. A failed request preserves the confirmed selection, shows an error and permits retry.
@@ -109,10 +149,10 @@ overhead retained and disclosed; it is not a detached plotting microbenchmark.
 
 | Workload | Implementation |
 | --- | --- |
-| Waveform replace | `scattergl`, full authoritative float32 window supplied to `Plotly.react` |
+| Waveform replace | One `scattergl` trace per curve (subarray views of the `[plots, curves, points]` payload), full authoritative float32 window supplied to one `Plotly.react` per waveform plot |
 | Waveform append | Same full-window submission, displaying the source's rolling window |
-| Scalar image | `heatmap`, row views over the float32 buffer, shared color table, fixed `[0, 1]` |
-| RGB image | Native Plotly `image` trace, materialized nested RGB triples |
+| Scalar image | `heatmap` per image plot, row views over that plot's block of the float32 buffer, shared color table, fixed `[0, 1]` |
+| RGB image | Native Plotly `image` trace per image plot, materialized nested RGB triples from that plot's block |
 
 Append is a data-semantics comparison here: **this adapter does not use `extendTraces`**. Full
 replacement preserves fixed sample indices and recovers immediately after dropped frames. It does
@@ -128,15 +168,17 @@ a different adapter, with URI preparation/loading included in its measurements. 
 path uses typed-array row views, leaving color mapping and rasterization to Plotly. These results
 describe the selected trace APIs and do not establish a ceiling for optimized browser image paths.
 
-* `update_ms`: monotonic elapsed time for conversion and synchronous `Plotly.react` calls.
-* `conversion_ms`: preparing traces, row views/RGB triples, layout and visibility.
+* `update_ms`: monotonic elapsed time for conversion and the synchronous `Plotly.react` calls of
+  every plot in the frame.
+* `conversion_ms`: preparing traces for all plots and curves, row views/RGB triples of every image
+  plot, layouts, visibility and the widget-set rebuild on a configuration change.
 * `draw_ms`: synchronous Plotly update calls; already included in `update_ms` and excludes waiting
   for their returned Promises. Adding it to `update_ms` would count that work twice.
 * `update_complete_ms`: elapsed time from adapter-call start through successful completion of all
-  active Plotly Promises. Includes conversion, synchronous calls, deferred library work and wait.
-  RGB rasterization/PNG creation can run after synchronous submission and is included here.
-  This is not GPU time, screen presentation time, or a measurement of CPU execution alone.
-* Submitted updates: increments after both active Plotly Promises resolve successfully. Calls are
+  active Plotly Promises (one per plot). Includes conversion, synchronous calls, deferred library
+  work and wait. RGB rasterization/PNG creation can run after synchronous submission and is included
+  here. This is not GPU time, screen presentation time, or a measurement of CPU execution alone.
+* Submitted updates: increments after every active Plotly Promise resolves successfully. Calls are
   serialized until that point. Promise resolution is not a GPU fence or proof of screen presentation.
 * Skipped updates: source sequence gaps between submitted frames, reset when configuration changes.
 * Approximate receive age: local wall-clock time at update start minus source emission time. Negative
@@ -183,21 +225,30 @@ process tree.
 
 ## Validation
 
-`npm --prefix frontends/plotly test` covers packet alignment, byte bounds,
-descriptors, replay containers, bounded scheduling,
+`npm --prefix frontends/plotly test` covers protocol v2 packet alignment, byte bounds,
+three-/four-dimensional descriptors and their exact configuration shapes, plot-major curve and
+image slices, rejection of version 1 and wrong shapes, the `curves` / `waveform_plots` /
+`image_plots` limits, the grid layout rule, titles, subtitles, strip suffixes and the curve palette,
+replay containers, bounded scheduling,
 asynchronous-update serialization and completion timing, skipped-frame accounting, bounded clock
 observation and metrics retry/drop/final-metadata behavior. Tests also cover the complete
 plot-selection transition matrix, the final-enabled-plot guard,
 configuration/pending/recorded-run locks, confirmed selection after a failed request, sparse
 configuration patches, active-edit preservation, edits during requests and dynamic metric hints.
 `npm --prefix frontends/plotly run build` runs strict TypeScript checking and creates
-the production bundle.
+the production bundle. Vite empties `dist/` first, so after every build the provenance
+must be re-recorded with `.envs/plotting-benchmark/bin/python -m plotbench.provenance plotly`
+(or by running `./scripts/setup plotly`, which builds and records in one step); otherwise the
+core rejects the artifact as stale.
 Core `tests/test_browser_worker.py` checks lifecycle completion, failure/timeout handling and
 post-completion capture order using a Playwright substitute without opening a browser.
 
 Functional Chrome smoke tests exercised scalar and RGB images, replace and append windows, both
 transport modes, all three views, configuration updates and automatic final metrics flushing.
-Headless smoke measurements are not performance rankings.
+Headless protocol v2 checks ran 2 waveform plots × 3 curves plus 3 scalar image plots (3×2 grid)
+in stream and replay mode, 4 plots × 9 curves plus 6 RGB image plots (4 columns × 3 rows, replay)
+and a single image-plot view (stream), verifying exit status, `plot_counts` metadata and the
+rendered grid. Headless smoke measurements are not performance rankings.
 
 Visible Chrome presentation checks used a private source and native device pixel ratio 2. They
 verified the collapsed drawer, open/apply/stop actions, both equal-width cards, each single view,

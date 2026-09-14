@@ -2,8 +2,11 @@ export interface Configuration {
   hz: number;
   points: number;
   append_count: number;
+  curves: number;
+  waveform_plots: number;
   width: number;
   height: number;
+  image_plots: number;
   waveform_mode: 'replace' | 'append';
   image_mode: 'scalar' | 'rgb';
   view: 'waveform' | 'image' | 'both';
@@ -34,6 +37,19 @@ function integer(value: unknown, label: string, minimum = 0): number {
   return value;
 }
 
+function bounded(value: unknown, label: string, maximum: number): number {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value)) throw new Error(`Invalid ${label}`);
+  if (value < 1 || value > maximum) throw new Error(`${label} must be between 1 and ${maximum}`);
+  return value;
+}
+
+/** Protocol v2 [dtype, shape] of an array implied by the frame configuration. */
+export function expectedLayout(config: Configuration, name: 'waveform' | 'image'): ['float32' | 'uint8', number[]] {
+  if (name === 'waveform') return ['float32', [config.waveform_plots, config.curves, config.points]];
+  const shape = [config.image_plots, config.height, config.width];
+  return config.image_mode === 'rgb' ? ['uint8', [...shape, 3]] : ['float32', shape];
+}
+
 export function parseConfiguration(value: unknown): Configuration {
   const config = object(value);
   if (typeof config.hz !== 'number' || !Number.isFinite(config.hz) || config.hz <= 0 || config.hz > 120) {
@@ -51,8 +67,11 @@ export function parseConfiguration(value: unknown): Configuration {
   if (!['waveform', 'image', 'both'].includes(String(config.view))) throw new Error('Invalid view');
   return {
     hz: config.hz, points, append_count,
+    curves: bounded(config.curves, 'curves', 64),
+    waveform_plots: bounded(config.waveform_plots, 'waveform_plots', 16),
     width: integer(config.width, 'width', 1),
     height: integer(config.height, 'height', 1),
+    image_plots: bounded(config.image_plots, 'image_plots', 16),
     waveform_mode: config.waveform_mode,
     image_mode: config.image_mode,
     view: config.view as Configuration['view'],
@@ -70,7 +89,7 @@ export function parseFrame(buffer: ArrayBuffer): Frame {
   const header = object(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(
     new Uint8Array(buffer, 4, headerLength),
   )));
-  if (header.version !== 1) throw new Error('Unsupported protocol version');
+  if (header.version !== 2) throw new Error('Unsupported protocol version');
   const config = parseConfiguration(header.config);
   if (typeof header.emitted_at_ms !== 'number' || !Number.isFinite(header.emitted_at_ms)) {
     throw new Error('Invalid emission timestamp');
@@ -89,10 +108,7 @@ export function parseFrame(buffer: ArrayBuffer): Frame {
     const name = descriptor.name;
     if (name !== 'waveform' && name !== 'image') throw new Error('Unknown array name');
     if (frame[name]) throw new Error(`Duplicate ${name} array`);
-    const expectedShape = name === 'waveform'
-      ? [config.points]
-      : config.image_mode === 'rgb' ? [config.height, config.width, 3] : [config.height, config.width];
-    const expectedDtype = name === 'image' && config.image_mode === 'rgb' ? 'uint8' : 'float32';
+    const [expectedDtype, expectedShape] = expectedLayout(config, name);
     if (descriptor.dtype !== expectedDtype) throw new Error(`Invalid ${name} dtype`);
     if (!Array.isArray(descriptor.shape) || descriptor.shape.length !== expectedShape.length ||
         descriptor.shape.some((size, index) => size !== expectedShape[index])) {

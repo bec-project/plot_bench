@@ -102,6 +102,7 @@ export class BenchmarkEngine {
       this.onConfig(config);
       this.status.target_hz = config.hz;
       this.adapter = new PlotAdapter(this.waveElement, this.imageElement, colormap);
+      this.adapter.prepare(config);
       const metadata = {
         ...PlotAdapter.metadata(), frontend: 'plotly',
         versions: { ...PlotAdapter.metadata().versions, react: reactVersion },

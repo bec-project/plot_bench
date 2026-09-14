@@ -4,7 +4,7 @@ import { ConfigurationDraft } from '../src/config-draft';
 import type { Configuration } from '../src/protocol';
 
 const baseline: Configuration = {
-  hz: 30, points: 10000, append_count: 1000, width: 512, height: 512,
+  hz: 30, points: 10000, append_count: 1000, curves: 1, waveform_plots: 1, width: 512, height: 512, image_plots: 1,
   view: 'both', waveform_mode: 'replace', image_mode: 'scalar', seed: 42, generation: 1,
 };
 
@@ -55,6 +55,19 @@ test('failed requests retain edits, reverting an edit clears it, and stale gener
   assert.equal(draft.receive(baseline)?.view, 'image');
   draft.change('hz', 30);
   assert.deepEqual(ConfigurationDraft.patch(draft.capture()), {});
+});
+
+test('plot-count fields are editable and patched sparsely like every other field', () => {
+  const draft = new ConfigurationDraft();
+  draft.receive(baseline);
+  draft.change('curves', 3);
+  draft.change('waveform_plots', 2);
+  draft.change('image_plots', 4);
+  draft.change('image_plots', 1);
+  assert.deepEqual(ConfigurationDraft.patch(draft.capture()), { curves: 3, waveform_plots: 2 });
+  const visible = draft.receive({ ...baseline, image_plots: 3, generation: 2 });
+  assert.equal(visible?.curves, 3);
+  assert.equal(visible?.image_plots, 3);
 });
 
 test('returning to the old confirmed value during a request is retained as a new edit', () => {
