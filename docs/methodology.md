@@ -16,11 +16,34 @@ results are never pooled. Numerical fixtures validate documented floating-point
 tolerances; cross-platform bit identity is not assumed.
 
 Workloads contain waveform replacement, waveform append, scalar images, RGB images,
-or both plots. Append sends the authoritative full rolling window; current adapters
+or both kinds of plot. Append sends the authoritative full rolling window; current adapters
 replace that window. This measures rolling-window display, not compressed append
 transport. Disabled plots are removed from generation and transport as well as
 rendering. Frontends may convert arrays for their renderer, but never synthesize
 benchmark data.
+
+## Multi-plot and multi-curve workloads
+
+Beamline operators keep several plot widgets open at once: several 1-D plots with
+several curves each, plus several detector images. A workload can therefore ask
+for `waveform_plots` waveform plots with `curves` curves each and `image_plots`
+image plots in one window (see [suites](suites.md) for the fields and limits). The
+source generates distinct data for every plot and every curve, so a frame carries
+`waveform_plots × curves × points` samples and `image_plots` images: transport,
+decoding, conversion and rendering all scale with the counts, and the 256 MiB
+frame limit applies to the whole frame.
+
+What is measured does not change. One update submission per frame covers all
+plots and curves, so **submitted updates/s** still counts frames, `update_ms`
+times the whole frame across every plot and `conversion_ms` covers every image
+conversion in it. A frontend that draws four plots with four curves each submits
+one update per frame, not sixteen. Every frontend arranges the plots with the same
+grid rule and equal cell sizes ([presentation](presentation.md)), and metadata
+records `plot_counts`, `curves` and the physical data area of the first plot of
+each kind, so compare plot-count workloads only against the same counts and
+window size: more plots in the same window means smaller plots. The bundled
+`multi-plot-smoke`, `beamline-dashboard` and `multi-plot-sweep` scenarios cover
+these workloads; the standard `smoke` suite includes one such case.
 
 Streaming uses uncompressed WebSockets, one frame in flight and one latest pending
 frame per receiver. Decoded-frame acknowledgements bound buffering. Slow renderers

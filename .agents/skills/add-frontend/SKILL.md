@@ -19,9 +19,18 @@ first. This skill lists every place a frontend is wired in, so nothing is missed
   closest existing adapter — `frontends/pyqtgraph` (Python/Qt),
   `frontends/iced` (Rust), `frontends/qtgraphs-cpp` (C++), `frontends/plotly`
   (browser bundle).
-- Decode the protocol frames — waveform replace and append windows, scalar and
-  RGB images — and submit them through the library's update API. Conversion a
-  renderer needs is allowed, but it must keep the documented timing boundary.
+- Decode the protocol v2 frames — waveform replace and append windows shaped
+  `[waveform_plots, curves, points]`, scalar and RGB images shaped
+  `[image_plots, height, width(, 3)]` — reject version 1, validate the exact
+  shapes against the config, and submit them through the library's update API.
+  Conversion a renderer needs is allowed, but it must keep the documented timing
+  boundary.
+- Support multi-plot workloads: `waveform_plots` waveform widgets with `curves`
+  curves each plus `image_plots` image widgets, rebuilt when the generation
+  changes the counts, laid out with the shared grid rule and titled/coloured as
+  `docs/presentation.md` describes. One update per frame covers all plots
+  (`update_ms` times the whole frame); record `plot_counts` and `curves` in the
+  metadata and keep `plot_viewports` for the first plot of each kind.
 - Accept the launch arguments the runner passes (`--url`, `--mode`, `--run-id`,
   `--duration`) and report telemetry the way existing adapters do ("Define
   telemetry" in `docs/frontends.md`). Honor bounded delivery and
@@ -48,8 +57,8 @@ first. This skill lists every place a frontend is wired in, so nothing is missed
 ## 3. Test and accept
 
 - Unit tests under `frontends/<name>/tests`: malformed frames, array layout,
-  append and replay behavior, bounded delivery, conversion correctness, clean
-  completion.
+  multi-plot slicing and grid layout, append and replay behavior, bounded
+  delivery, conversion correctness, clean completion.
 - Then, visibly, with both sources and both delivery modes (substitute your
   frontend's ID for `pyqtgraph`):
   ```sh
@@ -57,6 +66,7 @@ first. This skill lists every place a frontend is wired in, so nothing is missed
   ./scripts/plotbench doctor --frontends pyqtgraph
   ./scripts/plotbench demo pyqtgraph
   ./scripts/plotbench run --suite scenarios/smoke.json --frontends pyqtgraph --modes stream replay --dry-run
+  ./scripts/plotbench run --suite scenarios/multi-plot-smoke.json --frontends pyqtgraph --modes stream replay --dry-run
   ```
   Confirm complete, usable telemetry. Take screenshots only outside measured
   windows.

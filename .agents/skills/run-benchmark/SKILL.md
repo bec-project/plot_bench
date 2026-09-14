@@ -17,6 +17,13 @@ invariants"); read that file first if you have not.
    `scenarios/` or an example in `docs/suites.md`, and save the result under
    `scenarios_custom/` (git-ignored). Keep hardware-specific settings — display
    context, browser paths — out of the file. Fields and limits: `docs/suites.md`.
+   Besides rate, points, image size and modes, a workload can hold several plots
+   per window: `waveform_plots` (1–16) waveform plots with `curves` (1–64) curves
+   each and `image_plots` (1–16) image plots; all three work as group matrix axes.
+   For "several plots/curves per window" requests start from
+   `scenarios/multi-plot-smoke.json`, `scenarios/beamline-dashboard.json` or
+   `scenarios/multi-plot-sweep.json`; the standard `scenarios/smoke.json` also
+   contains one multi-plot case.
    The matrix editor (`./scripts/plotbench matrix`) writes the same JSON and shows
    the run count; stop it before any formal run.
 
@@ -43,8 +50,9 @@ invariants"); read that file first if you have not.
    ./scripts/plotbench run --suite scenarios_custom/my-suite.json \
      --warmup 1 --duration 3 --repetitions 1 --output results/quick-check
    ```
-   Confirm every combination starts and completes. Screenshots are visual QA only
-   and must be taken outside measured windows.
+   Confirm every combination starts and completes. For multi-plot workloads,
+   `scenarios/multi-plot-smoke.json` is the ready-made short check. Screenshots
+   are visual QA only and must be taken outside measured windows.
 
 5. **Run the campaign** sequentially on a controlled, visible desktop, into a new
    output directory, recording the display you used:
@@ -66,6 +74,8 @@ invariants"); read that file first if you have not.
 
 - Pool sources, modes, builds or display contexts, or present one as another.
 - Call submitted updates per second "FPS" — it is not the displayed frame rate.
+  One update covers every plot and curve of a frame; do not multiply it by the
+  plot count.
 - Reuse an output directory (existing campaigns are protected) or discard failed
   attempts; keep every raw file.
 - Edit source, dependencies or rendering settings mid-campaign; rebuild changed
