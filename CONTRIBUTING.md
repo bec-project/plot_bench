@@ -12,6 +12,9 @@ must select `--backend python` or `--backends python` explicitly.
 
 Before submitting a change:
 
+- Use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit messages: `<type>[optional scope]: <description>`.
+  For example, `fix(protocol): reject incomplete frames` or
+  `docs: clarify setup instructions`.
 - Explain the concrete problem, resulting behavior, and relevant test evidence.
 - Run the component's tests and formatting checks. Run protocol conformance checks
   for transport, source, scheduling, or measurement changes.
