@@ -158,13 +158,21 @@ artifact. These are UI functional checks, never rendering performance measuremen
 
 The **Contribute** page reads a campaign's `summary.json` locally, produces an
 allowlisted public document, and displays its exact contents for review. It sends
-no file to a server. After review, download the document and open a GitHub pull
-request adding it to `website/results/`. Contributors need GitHub access only for
-that final step. CI validates the submission; maintainers review it before merge.
+no file to a server. Choosing the file proposes the campaign ID, public host alias,
+host label and operating-condition notes from the summary's public fields only:
+CPU model, OS family, acquisition date, suite name, run timings and display context.
+Hostnames, machine identifiers, display names and paths are never used. Review and
+adjust the proposal (a button restores it), then download the document and open a
+GitHub pull request adding it to `website/results/`. Contributors need GitHub access
+only for that final step. CI validates the submission; maintainers review it before
+merge.
 
-For an equivalent command-line export (npm runs the script inside `website/`):
+For an equivalent command-line export (npm runs the script inside `website/`), only
+`--input` is required; omitted fields use the same proposals and the file is written
+to `results/<campaign-id>.json`:
 
 ```sh
+npm --prefix website run export -- --input ../results/my-comparison/summary.json
 npm --prefix website run export -- \
   --input ../results/my-comparison/summary.json \
   --output results/workstation-a-20260914.json \
@@ -174,7 +182,7 @@ npm --prefix website run export -- \
 npm --prefix website run validate
 ```
 
-The exporter refuses to overwrite an existing file. Read the
+The exporter prints the values it used and refuses to overwrite an existing file. Read the
 [submission requirements](results/README.md) before publishing. Preserve the
 original raw evidence locally; the website's JSON is a compact public index, not
 a replacement for the compact/extended reports or raw samples.

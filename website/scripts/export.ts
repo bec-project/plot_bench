@@ -1,6 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
-import { exportSummary } from '../src/export';
+import { exportSummary, suggestSubmission } from '../src/export';
 import { parseSubmissionText } from '../src/validation';
 const { values } = parseArgs({
   options: {
@@ -13,26 +13,30 @@ const { values } = parseArgs({
     help: { type: 'boolean' },
   },
 });
-if (values.help) {
+if (values.help || !values.input) {
   console.log(
-    'npm --prefix website run export -- --input ../results/CAMPAIGN/summary.json --output results/CAMPAIGN-ID.json --id CAMPAIGN-ID --host-id PUBLIC-HOST-ID --host-label "Public hardware label" [--notes "Operating conditions"]',
+    'npm --prefix website run export -- --input ../results/CAMPAIGN/summary.json [--output results/CAMPAIGN-ID.json] [--id CAMPAIGN-ID] [--host-id PUBLIC-HOST-ID] [--host-label "Public hardware label"] [--notes "Operating conditions"]\n' +
+      'Omitted fields are proposed from the summary (CPU model, OS, acquisition date, suite name, timings and display context); review the written file before submitting.',
   );
+  if (!values.help) process.exitCode = 1;
 } else {
-  for (const key of ['input', 'output', 'id', 'host-id', 'host-label'] as const)
-    if (!values[key]) throw new Error(`Missing --${key}; use --help`);
-  const text = await readFile(values.input!, 'utf8');
+  const text = await readFile(values.input, 'utf8');
   if (Buffer.byteLength(text) > 25 * 1024 * 1024)
     throw new Error('Input summary exceeds 25 MiB; split large campaigns before submitting');
-  const submission = await exportSummary(JSON.parse(text), {
-    id: values.id!,
-    hostId: values['host-id']!,
-    hostLabel: values['host-label']!,
-    notes: values.notes,
-  });
+  const raw = JSON.parse(text);
+  const proposed = suggestSubmission(raw);
+  const options = {
+    id: values.id ?? proposed.id,
+    hostId: values['host-id'] ?? proposed.hostId,
+    hostLabel: values['host-label'] ?? proposed.hostLabel,
+    notes: values.notes ?? proposed.notes,
+  };
+  const submission = await exportSummary(raw, options);
   const output = JSON.stringify(submission, null, 2) + '\n';
   parseSubmissionText(output);
-  await writeFile(values.output!, output, { flag: 'wx' });
+  const path = values.output ?? `results/${options.id}.json`;
+  await writeFile(path, output, { flag: 'wx' });
   console.log(
-    `Exported ${submission.runs.length} runs (${submission.classification}). Review ${values.output} before submitting a PR. Original data remains unchanged.`,
+    `Exported ${submission.runs.length} runs (${submission.classification}) as ${options.id} for host ${options.hostId} (${options.hostLabel}). Review ${path} before submitting a PR. Original data remains unchanged.`,
   );
 }

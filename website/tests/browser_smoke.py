@@ -160,6 +160,14 @@ def test_results_filters_details_submission_and_mobile():
                     "buffer": json.dumps(raw).encode(),
                 }
             )
+            # The public fields are proposed from the summary before the contributor edits them.
+            await expect(page.get_by_label("Campaign ID", exact=True)).to_have_value(
+                "test-cpu-20260914-ui-qa-campaign"
+            )
+            await expect(page.get_by_label("Host label", exact=True)).to_have_value("Test CPU")
+            await expect(page.get_by_label("Public host ID", exact=True)).to_have_value(
+                "test-cpu"
+            )
             await page.get_by_label("Campaign ID", exact=True).fill("qa-campaign")
             await page.get_by_label("Public host ID", exact=True).fill("qa-host")
             await page.get_by_label("Host label", exact=True).fill("QA workstation")
@@ -187,6 +195,10 @@ def test_results_filters_details_submission_and_mobile():
             await expect(
                 page.get_by_role("heading", name="Ready to review")
             ).to_have_count(0)
+            await page.get_by_role(
+                "button", name="Restore proposed values", exact=True
+            ).click()
+            await expect(page.get_by_label("Host label", exact=True)).to_have_value("Test CPU")
             await page.get_by_label("Campaign summary", exact=True).set_input_files(
                 {
                     "name": "bad.json",
