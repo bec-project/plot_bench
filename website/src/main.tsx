@@ -937,6 +937,11 @@ function Contribute() {
             <button className="btn-soft" disabled={!reviewed} onClick={() => download(result)}>
               Download {result.id}.json
             </button>
+            <p className="muted small">
+              Add it to <code>website/results/</code> under exactly that name. If your browser
+              appends a number because the file already exists, rename it before opening the pull
+              request.
+            </p>
           </section>
         )}
       </section>
