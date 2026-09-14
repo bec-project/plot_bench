@@ -1,0 +1,17 @@
+{
+  "name": "Plot and curve count sweep",
+  "description": "Sweeps the number of curves per waveform plot, the number of waveform plots and the number of image plots with the Rust source, streaming only, to show how each frontend scales when a beamline window holds several plots and curves. Long-running: preview the run count and time before launching.",
+  "warmup_seconds": 5,
+  "measurement_seconds": 30,
+  "repetitions": 3,
+  "cooldown_seconds": 2,
+  "order_seed": 42,
+  "backends": ["rust"],
+  "frontends": ["pyqtgraph", "pyqtgraph-gl", "matplotlib", "qtgraphs", "iced", "plotly"],
+  "modes": ["stream"],
+  "case_groups": [
+    {"name": "curves", "base": {"view": "waveform", "hz": 60, "points": 10000}, "matrix": {"curves": [1, 4, 16], "points": [10000, 100000]}},
+    {"name": "waveform-plots", "base": {"view": "waveform", "hz": 60, "points": 10000, "waveform_mode": "replace"}, "matrix": {"waveform_plots": [1, 2, 4, 8], "curves": [1, 4]}},
+    {"name": "image-plots", "base": {"view": "image", "hz": 30, "image_mode": "scalar"}, "matrix": {"image_plots": [1, 2, 4], "resolution": [256, 512]}}
+  ]
+}

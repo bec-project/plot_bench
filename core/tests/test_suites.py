@@ -10,6 +10,7 @@ from types import SimpleNamespace
 import pytest
 
 from plotbench import cli, probe, runner
+from plotbench.config import Config
 from plotbench.suites import expand_cases, plan_from_args, prepare_suite
 
 
@@ -289,3 +290,231 @@ def test_shipped_suites_validate_in_both_entrypoints():
         for kind in ("run", "probe"):
             plan = prepare_suite(suite, kind=kind)
             assert plan.jobs, path
+
+
+def test_multi_plot_axes_expand_with_derived_append_count_and_field_named_cases():
+    suite = dict(
+        case_groups=[
+            dict(
+                name="layout",
+                base={"view": "both", "points": 10000, "resolution": 256},
+                matrix={"waveform_plots": [1, 2], "curves": [1, 3], "image_plots": [4]},
+            )
+        ]
+    )
+    cases = expand_cases(suite)
+    assert [case["name"] for case in cases] == [
+        "layout-1-1-4",
+        "layout-1-3-4",
+        "layout-2-1-4",
+        "layout-2-3-4",
+    ]
+    assert cases[-1]["config"] == {
+        "view": "both",
+        "points": 10000,
+        "append_count": 1000,
+        "width": 256,
+        "height": 256,
+        "waveform_plots": 2,
+        "curves": 3,
+        "image_plots": 4,
+    }
+    job = prepare_suite(suite).to_dict()["jobs"][0]["config"]
+    assert {job["waveform_plots"], job["image_plots"]} <= {1, 2, 4} and job["curves"] in (1, 3)
+
+
+@pytest.mark.parametrize(
+    "config,message",
+    [
+        ({"curves": 0}, r"cases\[0\].config: curves must be between 1 and 64"),
+        ({"curves": 65}, r"cases\[0\].config: curves must be between 1 and 64"),
+        ({"waveform_plots": 17}, r"cases\[0\].config: waveform_plots must be between 1 and 16"),
+        ({"image_plots": 0}, r"cases\[0\].config: image_plots must be between 1 and 16"),
+        ({"curves": True}, r"cases\[0\].config: curves must be an integer"),
+        ({"waveform_plots": 2.0}, r"cases\[0\].config: waveform_plots must be an integer"),
+        ({"curves": 64, "waveform_plots": 16, "points": 10_000_000}, "256 MiB"),
+    ],
+)
+def test_invalid_plot_and_curve_counts_are_located_in_the_case(config, message):
+    with pytest.raises(ValueError, match=message):
+        prepare_suite({"cases": [dict(name="a", config=config)]})
+
+
+@pytest.mark.parametrize(
+    "matrix,message",
+    [
+        ({"curves": [1, 65]}, r"case_groups\[0\].config .*curves must be between 1 and 64"),
+        ({"waveform_plots": [0]}, r"case_groups\[0\].config .*waveform_plots must be between"),
+        ({"image_plots": [16, 17]}, r"case_groups\[0\].config .*image_plots must be between"),
+        ({"curves": [False]}, r"case_groups\[0\].config .*curves must be an integer"),
+    ],
+)
+def test_invalid_plot_and_curve_axes_fail_before_launch(matrix, message):
+    with pytest.raises(ValueError, match=message):
+        expand_cases({"case_groups": [dict(name="g", matrix=matrix)]})
+
+
+def _shipped(name):
+    root = Path(__file__).resolve().parents[2]
+    return json.loads((root / "scenarios" / f"{name}.json").read_text())
+
+
+def test_smoke_suite_exercises_the_multi_plot_path_of_every_adapter():
+    suite = _shipped("smoke")
+    case = {case["name"]: case["config"] for case in suite["cases"]}["multi-plots-30hz"]
+    assert case == {
+        "view": "both",
+        "hz": 30,
+        "points": 10000,
+        "append_count": 1000,
+        "curves": 2,
+        "waveform_plots": 2,
+        "width": 256,
+        "height": 256,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "image_plots": 2,
+    }
+    assert len(prepare_suite(suite).jobs) == 3 * 6 * 2
+
+
+SIX_FRONTENDS = ["pyqtgraph", "pyqtgraph-gl", "matplotlib", "qtgraphs", "iced", "plotly"]
+
+
+def test_multi_plot_smoke_scenario_matches_its_specification():
+    suite = _shipped("multi-plot-smoke")
+    assert suite["frontends"] == SIX_FRONTENDS and suite["modes"] == ["stream", "replay"]
+    assert (
+        suite["warmup_seconds"],
+        suite["measurement_seconds"],
+        suite["repetitions"],
+        suite["cooldown_seconds"],
+        suite["order_seed"],
+    ) == (1, 3, 1, 0.5, 42)
+    configs = {case["name"]: Config(**case["config"]) for case in suite["cases"]}
+    assert list(configs) == [
+        "two-waveforms-three-curves-three-images-30hz",
+        "four-waveforms-four-curves-60hz",
+        "four-images-rgb-30hz",
+    ]
+    combined = configs["two-waveforms-three-curves-three-images-30hz"]
+    assert (combined.view, combined.hz, combined.points, combined.append_count) == (
+        "both",
+        30,
+        10000,
+        1000,
+    )
+    assert (combined.curves, combined.waveform_plots, combined.image_plots) == (3, 2, 3)
+    assert (combined.width, combined.height, combined.image_mode) == (256, 256, "scalar")
+    waveforms = configs["four-waveforms-four-curves-60hz"]
+    assert (waveforms.view, waveforms.hz, waveforms.points, waveforms.waveform_mode) == (
+        "waveform",
+        60,
+        10000,
+        "replace",
+    )
+    assert (waveforms.curves, waveforms.waveform_plots) == (4, 4)
+    images = configs["four-images-rgb-30hz"]
+    assert (images.view, images.hz, images.width, images.height, images.image_mode) == (
+        "image",
+        30,
+        256,
+        256,
+        "rgb",
+    )
+    assert images.image_plots == 4
+    plan = prepare_suite(suite)
+    assert plan.backends == ["rust"] and len(plan.jobs) == 3 * 6 * 2
+
+
+def test_beamline_dashboard_scenario_matches_its_specification():
+    suite = _shipped("beamline-dashboard")
+    assert suite["backends"] == ["rust"] and suite["modes"] == ["stream"]
+    assert suite["frontends"] == SIX_FRONTENDS
+    assert (
+        suite["warmup_seconds"],
+        suite["measurement_seconds"],
+        suite["repetitions"],
+        suite["cooldown_seconds"],
+    ) == (5, 30, 3, 2)
+    configs = {case["name"]: Config(**case["config"]) for case in suite["cases"]}
+    expected = {
+        "monitor-wall-10hz": ("both", 10, 4, 2, 10000, "replace", 2, 512, "scalar"),
+        "detector-live-30hz": ("both", 30, 2, 4, 100000, "append", 1, 1024, "rgb"),
+        "scan-overview-60hz": ("waveform", 60, 6, 3, 10000, "append", 1, 512, "scalar"),
+        "multi-detector-30hz": ("image", 30, 1, 1, 10000, "replace", 4, 512, "scalar"),
+        "everything-open-30hz": ("both", 30, 4, 4, 100000, "replace", 4, 512, "scalar"),
+    }
+    assert list(configs) == list(expected)
+    for name, values in expected.items():
+        config = configs[name]
+        assert (
+            config.view,
+            config.hz,
+            config.waveform_plots,
+            config.curves,
+            config.points,
+            config.waveform_mode,
+            config.image_plots,
+            config.width,
+            config.image_mode,
+        ) == values, name
+        assert config.height == config.width
+        assert config.append_count == config.points // 10
+    assert len(prepare_suite(suite).jobs) == 5 * 6 * 3
+
+
+def test_multi_plot_sweep_scenario_matches_its_specification():
+    suite = _shipped("multi-plot-sweep")
+    assert suite["backends"] == ["rust"] and suite["modes"] == ["stream"]
+    assert suite["frontends"] == SIX_FRONTENDS
+    assert (
+        suite["warmup_seconds"],
+        suite["measurement_seconds"],
+        suite["repetitions"],
+        suite["cooldown_seconds"],
+    ) == (5, 30, 3, 2)
+    groups = {group["name"]: group for group in suite["case_groups"]}
+    assert groups["curves"]["matrix"] == {"curves": [1, 4, 16], "points": [10000, 100000]}
+    assert groups["curves"]["base"] == {"view": "waveform", "hz": 60, "points": 10000}
+    assert groups["waveform-plots"]["matrix"] == {"waveform_plots": [1, 2, 4, 8], "curves": [1, 4]}
+    assert groups["waveform-plots"]["base"]["waveform_mode"] == "replace"
+    assert groups["image-plots"]["matrix"] == {"image_plots": [1, 2, 4], "resolution": [256, 512]}
+    assert groups["image-plots"]["base"] == {"view": "image", "hz": 30, "image_mode": "scalar"}
+    cases = expand_cases(suite)
+    names = [case["name"] for case in cases]
+    assert len(names) == 6 + 8 + 6 and names[:2] == ["curves-1-10000", "curves-1-100000"]
+    assert "waveform-plots-8-4" in names and "image-plots-4-512" in names
+    assert all(Config(**case["config"]).append_count > 0 for case in cases)
+    assert len(prepare_suite(suite).jobs) == 20 * 6 * 3
+
+
+def test_serve_derives_plot_and_curve_options_from_config(monkeypatch, tmp_path):
+    launched = {}
+
+    def launch(config, output, host, port):
+        launched.update(config=config, output=output, host=host, port=port)
+
+    monkeypatch.setattr("plotbench.backends.launch_rust_source", launch)
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "plotbench",
+            "serve",
+            "--backend",
+            "rust",
+            "--output",
+            str(tmp_path / "demo"),
+            "--curves",
+            "3",
+            "--waveform-plots",
+            "2",
+            "--image-plots",
+            "4",
+        ],
+    )
+    cli.main()
+    config = launched["config"]
+    assert (config.curves, config.waveform_plots, config.image_plots) == (3, 2, 4)
+    assert config.generation == 1 and launched["port"] == 8765
+    assert not (tmp_path / "demo").exists()

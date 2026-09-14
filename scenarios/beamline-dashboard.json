@@ -1,0 +1,19 @@
+{
+  "name": "Beamline dashboard: several plots and curves per window",
+  "description": "Realistic beamline operator windows with the Rust source, streaming only: a monitor wall of several waveform plots with several curves each, a live detector view with a large RGB image next to append-mode waveforms, a scan overview of six plots, a multi-detector image wall and an everything-open case. Measures how each frontend copes when one update covers many plots and curves; three 30-second repetitions.",
+  "warmup_seconds": 5,
+  "measurement_seconds": 30,
+  "repetitions": 3,
+  "cooldown_seconds": 2,
+  "order_seed": 42,
+  "backends": ["rust"],
+  "frontends": ["pyqtgraph", "pyqtgraph-gl", "matplotlib", "qtgraphs", "iced", "plotly"],
+  "modes": ["stream"],
+  "cases": [
+    {"name": "monitor-wall-10hz", "config": {"view": "both", "hz": 10, "points": 10000, "append_count": 1000, "curves": 2, "waveform_plots": 4, "waveform_mode": "replace", "width": 512, "height": 512, "image_mode": "scalar", "image_plots": 2}},
+    {"name": "detector-live-30hz", "config": {"view": "both", "hz": 30, "points": 100000, "append_count": 10000, "curves": 4, "waveform_plots": 2, "waveform_mode": "append", "width": 1024, "height": 1024, "image_mode": "rgb", "image_plots": 1}},
+    {"name": "scan-overview-60hz", "config": {"view": "waveform", "hz": 60, "points": 10000, "append_count": 1000, "curves": 3, "waveform_plots": 6, "waveform_mode": "append"}},
+    {"name": "multi-detector-30hz", "config": {"view": "image", "hz": 30, "width": 512, "height": 512, "image_mode": "scalar", "image_plots": 4}},
+    {"name": "everything-open-30hz", "config": {"view": "both", "hz": 30, "points": 100000, "append_count": 10000, "curves": 4, "waveform_plots": 4, "waveform_mode": "replace", "width": 512, "height": 512, "image_mode": "scalar", "image_plots": 4}}
+  ]
+}
