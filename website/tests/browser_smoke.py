@@ -52,10 +52,18 @@ def test_results_filters_details_submission_and_mobile():
             matplotlib_count = min(
                 25, sum(r["frontend"] == "matplotlib" for r in all_runs)
             )
+            await expect(
+                page.get_by_role("button", name="Grouped", exact=True)
+            ).to_have_attribute("aria-pressed", "true")
+            await expect(page.locator(".result-group").first).to_be_visible()
+            await page.get_by_role("button", name="Individual runs", exact=True).click()
             await expect(page.locator("tbody tr")).to_have_count(min(25, len(all_runs)))
             await page.get_by_label("Frontend", exact=True).select_option("matplotlib")
             await expect(page.locator("tbody tr")).to_have_count(matplotlib_count)
             await page.reload()
+            await expect(
+                page.get_by_role("button", name="Individual runs", exact=True)
+            ).to_have_attribute("aria-pressed", "true")
             await expect(page.get_by_label("Frontend", exact=True)).to_have_value(
                 "matplotlib"
             )
@@ -156,6 +164,129 @@ def test_results_filters_details_submission_and_mobile():
             )
             await expect(page.get_by_role("alert")).to_be_visible()
             assert not errors
+            await browser.close()
+
+    asyncio.run(exercise())
+
+
+def test_grouped_campaign_weights_drilldown_dates_and_pagination():
+    import asyncio
+    import copy
+
+    from playwright.async_api import async_playwright, expect
+
+    seed = json.loads((ROOT / "results/apple-m1-max-20260914-quick.json").read_text())
+
+    def campaign(identifier, rates, day):
+        c = copy.deepcopy(seed)
+        c.update(
+            id=identifier,
+            input_sha256=identifier[0] * 64,
+            recorded_at=f"2026-09-{day}T12:00:00Z",
+            planned_runs=len(rates),
+            notes="UI QA fixture",
+        )
+        template = c["runs"][0]
+        c["runs"] = []
+        for index, rate in enumerate(rates):
+            r = copy.deepcopy(template)
+            r.update(
+                id=f"run-{index+1}",
+                repetition=index + 1,
+                status="failed" if rate is None else "ok",
+            )
+            r["metrics"]["submitted_hz"] = rate
+            if rate is None:
+                r["samples"] = 0
+                r["metrics"]["source_deadline_misses"] = 1
+            c["runs"].append(r)
+        return c
+
+    fixtures = [
+        campaign("aaa", [30] * 30, "14"),
+        campaign("bbb", [90, 90, None], "15"),
+        campaign("ccc", [None], "16"),
+    ]
+
+    async def exercise():
+        base = os.environ.get("PLOTBENCH_SITE_BASE", "/plot_bench/")
+        app = web.Application()
+
+        async def index(request):
+            return web.FileResponse(ROOT / "dist/index.html")
+
+        async def catalog(request):
+            return web.json_response({"schema_version": 1, "campaigns": fixtures})
+
+        app.router.add_get(base, index)
+        app.router.add_get(base + "catalog.json", catalog)
+        app.router.add_static(base, ROOT / "dist")
+        async with TestServer(app) as server, async_playwright() as playwright:
+            browser = await playwright.chromium.launch(
+                executable_path=os.environ["PLOTBENCH_TEST_BROWSER"], headless=True
+            )
+            page = await browser.new_page(viewport={"width": 1440, "height": 1080})
+            await page.goto(str(server.make_url(base)))
+            groups = page.locator(".result-group")
+            await expect(groups).to_have_count(1)
+            await expect(groups.locator(".rate")).to_have_text("60")
+            await expect(groups).to_contain_text("45–75")
+            await expect(groups).to_contain_text("32 / 34")
+            await expect(groups).to_contain_text("3 campaigns")
+            await expect(groups).to_contain_text("2 source-limited")
+            await groups.locator(":scope > summary").click()
+            await expect(page.locator(".campaign-group")).to_have_count(3)
+            failed = page.locator(".campaign-group").filter(has_text="ccc")
+            await failed.locator(":scope > summary").click()
+            await expect(failed.locator("tbody tr")).to_have_count(1)
+            await expect(failed.locator("tbody")).to_contain_text("failed")
+            await failed.get_by_role("button", name="Details for").click()
+            await expect(page.get_by_role("dialog")).to_be_visible()
+            await page.keyboard.press("Escape")
+            many = page.locator(".campaign-group").filter(has_text="aaa")
+            await many.locator(":scope > summary").click()
+            await expect(many.locator("tbody tr")).to_have_count(25)
+            await many.get_by_role("button", name="Show more runs").click()
+            await expect(many.locator("tbody tr")).to_have_count(30)
+            await page.get_by_label("Acquired through (UTC)").fill("2026-09-14")
+            await expect(groups.locator(".rate")).to_have_text("30")
+            await expect(groups).to_contain_text("1 campaign")
+            await page.reload()
+            await expect(page.get_by_label("Acquired through (UTC)")).to_have_value(
+                "2026-09-14"
+            )
+            await expect(groups.locator(".rate")).to_have_text("30")
+            await page.get_by_label("Acquired from (UTC)").fill("2026-09-17")
+            await expect(
+                page.get_by_role("heading", name="No matching runs")
+            ).to_be_visible()
+            await page.get_by_role("link", name="Clear filters", exact=True).click()
+            await page.get_by_role("button", name="Individual runs", exact=True).click()
+            await expect(page.locator("tbody tr")).to_have_count(25)
+            await page.get_by_role("button", name="Next", exact=True).click()
+            await expect(page.locator("tbody tr")).to_have_count(9)
+            await page.get_by_role("button", name="Grouped", exact=True).click()
+            await expect(groups).to_have_count(1)
+            await page.set_viewport_size({"width": 390, "height": 844})
+            await groups.locator(":scope > summary").click()
+            await page.locator(".campaign-group > summary").first.click()
+            assert await page.evaluate(
+                "document.documentElement.scrollWidth <= innerWidth"
+            )
+            # A large number of incompatible workloads still paginates by group.
+            fixtures[:] = [campaign("ddd", [30] * 26, "17")]
+            for index, run in enumerate(fixtures[0]["runs"]):
+                run["config"]["seed"] = index
+            await page.reload()
+            await expect(groups).to_have_count(25)
+            await page.get_by_role("button", name="Next", exact=True).click()
+            await expect(groups).to_have_count(1)
+            await page.get_by_label("Acquired through (UTC)").fill("2026-09-16")
+            await expect(
+                page.get_by_role("heading", name="No matching runs")
+            ).to_be_visible()
+            await page.get_by_role("link", name="Clear filters", exact=True).click()
+            await expect(groups).to_have_count(25)
             await browser.close()
 
     asyncio.run(exercise())

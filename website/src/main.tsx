@@ -2,6 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { exportSummary } from './export';
 import { MAX_SUBMISSION_BYTES, validateCatalog } from './validation';
+import { groupObservations, inDateRange } from './aggregation';
+import { GroupedResults } from './grouped-results';
+import { Badge, date, format } from './presentation';
 import {
   REPOSITORY,
   observations,
@@ -13,14 +16,6 @@ import {
 } from './model';
 import './style.css';
 
-const format = (n: number | null | undefined, digits = 1) =>
-  n == null ? '—' : n.toLocaleString(undefined, { maximumFractionDigits: digits });
-const date = (value: string) =>
-  new Date(value).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
 const distinct = (values: string[]) => [...new Set(values)].sort();
 function download(campaign: Submission) {
   const url = URL.createObjectURL(
@@ -38,9 +33,6 @@ function readLocation() {
     view: ['hosts', 'contribute'].includes(view) ? view : 'results',
     filters: new URLSearchParams(query),
   };
-}
-function Badge({ children, tone = 'muted' }: { children: React.ReactNode; tone?: string }) {
-  return <span className={`badge ${tone}`}>{children}</span>;
 }
 function App() {
   const [campaigns, setCampaigns] = useState<Submission[]>([]),
@@ -81,16 +73,29 @@ function App() {
     value ? params.set(key, value) : params.delete(key);
     location.hash = 'results' + (params.size ? '?' + params.toString() : '');
   }
-  const visible = all.filter(
-    ({ campaign: c, run: r }) =>
-      (!route.filters.get('host') || c.host.id === route.filters.get('host')) &&
-      (!route.filters.get('frontend') || r.frontend === route.filters.get('frontend')) &&
-      (!route.filters.get('backend') || r.backend === route.filters.get('backend')) &&
-      (!route.filters.get('mode') || r.mode === route.filters.get('mode')) &&
-      (!route.filters.get('workload') || workloadKey(r.config) === route.filters.get('workload')) &&
-      (!route.filters.get('platform') || c.host.os === route.filters.get('platform')) &&
-      (!route.filters.get('kind') || c.classification === route.filters.get('kind')),
+  const visible = useMemo(
+    () =>
+      all.filter(
+        ({ campaign: c, run: r }) =>
+          (!route.filters.get('host') || c.host.id === route.filters.get('host')) &&
+          (!route.filters.get('frontend') || r.frontend === route.filters.get('frontend')) &&
+          (!route.filters.get('backend') || r.backend === route.filters.get('backend')) &&
+          (!route.filters.get('mode') || r.mode === route.filters.get('mode')) &&
+          (!route.filters.get('workload') ||
+            workloadKey(r.config) === route.filters.get('workload')) &&
+          (!route.filters.get('platform') || c.host.os === route.filters.get('platform')) &&
+          (!route.filters.get('kind') || c.classification === route.filters.get('kind')) &&
+          inDateRange(
+            c.recorded_at,
+            route.filters.get('from') ?? '',
+            route.filters.get('to') ?? '',
+          ),
+      ),
+    [all, route.filters],
   );
+  const grouped = route.filters.get('layout') !== 'runs';
+  const groups = useMemo(() => groupObservations(visible), [visible]);
+  const itemCount = grouped ? groups.length : visible.length;
   const [page, setPage] = useState(0);
   useEffect(() => setPage(0), [route]);
   const pageSize = 25;
@@ -287,6 +292,24 @@ function App() {
                     onChange={(v) => filter('kind', v)}
                     options={distinct(campaigns.map((c) => c.classification)).map((x) => [x, x])}
                   />
+                  <label className="select-label">
+                    Acquired from (UTC)
+                    <input
+                      aria-label="Acquired from (UTC)"
+                      type="date"
+                      value={route.filters.get('from') ?? ''}
+                      onChange={(e) => filter('from', e.target.value)}
+                    />
+                  </label>
+                  <label className="select-label">
+                    Acquired through (UTC)
+                    <input
+                      aria-label="Acquired through (UTC)"
+                      type="date"
+                      value={route.filters.get('to') ?? ''}
+                      onChange={(e) => filter('to', e.target.value)}
+                    />
+                  </label>
                   <div className="filter-note">
                     <strong>Keep the context.</strong>
                     <p>
@@ -300,11 +323,27 @@ function App() {
                     <div>
                       <h2>Measurements</h2>
                       <p className="muted">
+                        {grouped ? `${groups.length} groups · ` : ''}
                         {visible.length} individual run{visible.length === 1 ? '' : 's'} · submitted
                         updates, not displayed FPS
                       </p>
                     </div>
                   </div>
+                  <div className="view-toggle" role="group" aria-label="Results view">
+                    <button aria-pressed={grouped} onClick={() => filter('layout', '')}>
+                      Grouped
+                    </button>
+                    <button aria-pressed={!grouped} onClick={() => filter('layout', 'runs')}>
+                      Individual runs
+                    </button>
+                  </div>
+                  {grouped && (
+                    <p className="aggregation-note">
+                      Median of campaign medians, with each campaign weighted equally. Middle 50%
+                      shows the spread of campaign medians. Expand a group to inspect campaigns and
+                      repetitions.
+                    </p>
+                  )}
                   <Select
                     label="Workload"
                     value={route.filters.get('workload') ?? ''}
@@ -323,121 +362,129 @@ function App() {
                   )}
                   {visible.length ? (
                     <>
-                      <div className="table-scroll">
-                        <table>
-                          <thead>
-                            <tr>
-                              <th>Frontend / host</th>
-                              <th>Workload</th>
-                              <th>Submitted / target</th>
-                              <th>Context</th>
-                              <th>
-                                <span className="sr-only">Details</span>
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {visible.slice(page * pageSize, (page + 1) * pageSize).map((o) => {
-                              const { campaign: c, run: r } = o;
-                              const valid = r.status === 'ok',
-                                ratio =
-                                  valid && r.metrics.submitted_hz !== null
-                                    ? r.metrics.submitted_hz / r.config.hz
-                                    : null;
-                              return (
-                                <tr key={c.id + '/' + r.id}>
-                                  <td>
-                                    <strong className="frontend">
-                                      <i
-                                        className={
-                                          'dot ' + (r.frontend === 'matplotlib' ? 'violet' : '')
+                      {grouped ? (
+                        <GroupedResults
+                          key={route.filters.toString()}
+                          groups={groups.slice(page * pageSize, (page + 1) * pageSize)}
+                          select={setSelected}
+                        />
+                      ) : (
+                        <div className="table-scroll">
+                          <table>
+                            <thead>
+                              <tr>
+                                <th>Frontend / host</th>
+                                <th>Workload</th>
+                                <th>Submitted / target</th>
+                                <th>Context</th>
+                                <th>
+                                  <span className="sr-only">Details</span>
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {visible.slice(page * pageSize, (page + 1) * pageSize).map((o) => {
+                                const { campaign: c, run: r } = o;
+                                const valid = r.status === 'ok',
+                                  ratio =
+                                    valid && r.metrics.submitted_hz !== null
+                                      ? r.metrics.submitted_hz / r.config.hz
+                                      : null;
+                                return (
+                                  <tr key={c.id + '/' + r.id}>
+                                    <td>
+                                      <strong className="frontend">
+                                        <i
+                                          className={
+                                            'dot ' + (r.frontend === 'matplotlib' ? 'violet' : '')
+                                          }
+                                        />
+                                        {r.frontend}
+                                      </strong>
+                                      <span className="cell-sub">{c.host.label}</span>
+                                    </td>
+                                    <td>
+                                      <span>
+                                        {r.config.view === 'image'
+                                          ? 'Image'
+                                          : r.config.view === 'waveform'
+                                            ? 'Waveform'
+                                            : 'Waveform + image'}
+                                      </span>
+                                      <span className="cell-sub">
+                                        {r.config.view !== 'image'
+                                          ? `${format(r.config.points, 0)} pts · ${r.config.waveform_mode}`
+                                          : ''}
+                                        {r.config.view === 'both' ? ' / ' : ''}
+                                        {r.config.view !== 'waveform'
+                                          ? `${r.config.width}×${r.config.height} ${r.config.image_mode}`
+                                          : ''}
+                                      </span>
+                                    </td>
+                                    <td>
+                                      <span className="rate">
+                                        {valid ? format(r.metrics.submitted_hz) : '—'}{' '}
+                                        <small>/ {r.config.hz} Hz</small>
+                                      </span>
+                                      <div
+                                        className="bar"
+                                        aria-label={
+                                          ratio === null
+                                            ? 'No valid rate'
+                                            : `${format(ratio * 100)} percent of target`
                                         }
-                                      />
-                                      {r.frontend}
-                                    </strong>
-                                    <span className="cell-sub">{c.host.label}</span>
-                                  </td>
-                                  <td>
-                                    <span>
-                                      {r.config.view === 'image'
-                                        ? 'Image'
-                                        : r.config.view === 'waveform'
-                                          ? 'Waveform'
-                                          : 'Waveform + image'}
-                                    </span>
-                                    <span className="cell-sub">
-                                      {r.config.view !== 'image'
-                                        ? `${format(r.config.points, 0)} pts · ${r.config.waveform_mode}`
-                                        : ''}
-                                      {r.config.view === 'both' ? ' / ' : ''}
-                                      {r.config.view !== 'waveform'
-                                        ? `${r.config.width}×${r.config.height} ${r.config.image_mode}`
-                                        : ''}
-                                    </span>
-                                  </td>
-                                  <td>
-                                    <span className="rate">
-                                      {valid ? format(r.metrics.submitted_hz) : '—'}{' '}
-                                      <small>/ {r.config.hz} Hz</small>
-                                    </span>
-                                    <div
-                                      className="bar"
-                                      aria-label={
-                                        ratio === null
-                                          ? 'No valid rate'
-                                          : `${format(ratio * 100)} percent of target`
-                                      }
-                                    >
-                                      <span
-                                        style={{
-                                          width: `${Math.min(100, Math.max(0, (ratio ?? 0) * 100))}%`,
-                                        }}
-                                      />
-                                    </div>
-                                  </td>
-                                  <td>
-                                    <div className="badges">
-                                      <Badge>
-                                        {r.backend} · {r.mode}
-                                      </Badge>
-                                      <Badge tone={valid ? 'muted' : 'danger'}>
-                                        {valid ? c.classification : r.status}
-                                      </Badge>
-                                      {sourceLimited(r) && (
-                                        <Badge tone="amber">Source limits</Badge>
-                                      )}
-                                    </div>
-                                    <span className="cell-sub">
-                                      {r.measurement_seconds}s · repetition {r.repetition} ·{' '}
-                                      {date(c.recorded_at)}
-                                    </span>
-                                  </td>
-                                  <td>
-                                    <button
-                                      className="icon-button"
-                                      aria-label={`Details for ${r.frontend} ${r.id} in ${c.id}`}
-                                      onClick={() => setSelected(o)}
-                                    >
-                                      ↗
-                                    </button>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
+                                      >
+                                        <span
+                                          style={{
+                                            width: `${Math.min(100, Math.max(0, (ratio ?? 0) * 100))}%`,
+                                          }}
+                                        />
+                                      </div>
+                                    </td>
+                                    <td>
+                                      <div className="badges">
+                                        <Badge>
+                                          {r.backend} · {r.mode}
+                                        </Badge>
+                                        <Badge tone={valid ? 'muted' : 'danger'}>
+                                          {valid ? c.classification : r.status}
+                                        </Badge>
+                                        {sourceLimited(r) && (
+                                          <Badge tone="amber">Source limits</Badge>
+                                        )}
+                                      </div>
+                                      <span className="cell-sub">
+                                        {r.measurement_seconds}s · repetition {r.repetition} ·{' '}
+                                        {date(c.recorded_at)}
+                                      </span>
+                                    </td>
+                                    <td>
+                                      <button
+                                        className="icon-button"
+                                        aria-label={`Details for ${r.frontend} ${r.id} in ${c.id}`}
+                                        onClick={() => setSelected(o)}
+                                      >
+                                        ↗
+                                      </button>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                       <div className="pagination">
                         <span>
-                          {page * pageSize + 1}–{Math.min((page + 1) * pageSize, visible.length)} of{' '}
-                          {visible.length}
+                          {page * pageSize + 1}–{Math.min((page + 1) * pageSize, itemCount)} of{' '}
+                          {itemCount} {grouped ? 'groups' : 'runs'}
                         </span>
                         <div>
                           <button disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
                             Previous
                           </button>
                           <button
-                            disabled={(page + 1) * pageSize >= visible.length}
+                            disabled={(page + 1) * pageSize >= itemCount}
                             onClick={() => setPage((p) => p + 1)}
                           >
                             Next

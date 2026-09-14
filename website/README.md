@@ -5,13 +5,51 @@ hosts and platforms. Its data lives in [`results/`](results/README.md): one
 reviewed, versioned JSON document per acquisition campaign. The repository-root
 `results/` remains ignored and holds private raw benchmark output.
 
-The site shows individual runs, host histories, exact workload filters, source
-backends, delivery modes, failures, and acquisition/build/display context. It does
-not calculate a global score or pool different configurations. Submitted updates/s
+The site defaults to grouped results, with expandable campaigns and individual
+runs, host histories, exact workload filters, source backends, delivery modes,
+failures, and acquisition/build/display context. Compatible campaigns on the same
+host receive equal weight through a median of campaign medians. It does not
+calculate a global score or pool different configurations. Submitted updates/s
 are not displayed FPS. The initial eight observations come from a real, short
 PyQtGraph/Matplotlib campaign and are labeled as smoke checks.
 
 UI previews: [desktop](docs/results-desktop.png) · [mobile](docs/results-mobile.png).
+
+## Repeated measurements
+
+**Grouped / Individual runs** changes the display without changing any submission
+or raw record. Date filters select inclusive acquisition dates in UTC, before
+aggregation. View mode and filters survive reloads and can be shared in the URL.
+
+A group requires an exact match on public host ID and hardware/OS snapshot,
+frontend, backend, delivery mode, every workload field (including seed and target
+rate), measurement/warmup duration, campaign classification, and the complete
+recorded context (including its fingerprint, source/build identity, versions,
+rendering and display fields). Friendly host labels, scenario names and dates do
+not define compatibility. Opaque context hashes are deliberately conservative:
+any fingerprint change splits a group. Missing source identity, renderer, timing
+boundary, versions or display/headless context leaves observations unmerged.
+
+For each group, successful repetitions with observed rates produce one median
+per campaign. The headline is the median of those campaign medians: a campaign
+with 100 repetitions has the same weight as one with three. **Middle 50%** is
+the 25th–75th percentile of campaign medians, using linear interpolation at
+`(n - 1) × q`. It is a descriptive spread, not a confidence interval. With fewer
+than two contributing campaigns, spread is shown as missing rather than zero.
+
+Failed runs remain in successful/attempted counts and in the expandable evidence,
+but never enter rate statistics. A campaign with no successful rates contributes
+no median and still appears in the total campaign count. Source-limit flags are
+retained; source-limited successful measurements remain included and visible.
+Within each campaign, expansion shows the repetition median, observed min/max,
+completion status, recorded/planned totals, notes and links to run details.
+
+Smoke and diagnostic campaigns remain separate and retain their classification;
+collecting many short runs does not promote them into sustained benchmarks.
+Groups are ordered by latest acquisition, not by performance. No timing
+percentiles are pooled across runs. The grouped counts cover recorded attempts;
+unrecorded planned cases are exposed at campaign level, not invented as failures
+in a particular group. This is a display aggregation, not a file merge.
 
 ## Develop and validate
 
