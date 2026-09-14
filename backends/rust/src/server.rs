@@ -995,6 +995,16 @@ mod tests {
             .into_data();
         let len = u32::from_le_bytes(first[..4].try_into().unwrap()) as usize;
         let header: Value = serde_json::from_slice(&first[4..4 + len]).unwrap();
+        // Wait for an actual replacement before testing latest-frame delivery.
+        // The producer can be descheduled beyond the no-ACK observation windows.
+        let initial_drops = running.state.stats.lock().unwrap().mailbox_drops;
+        tokio::time::timeout(Duration::from_secs(2), async {
+            while running.state.stats.lock().unwrap().mailbox_drops <= initial_drops {
+                tokio::time::sleep(Duration::from_millis(5)).await;
+            }
+        })
+        .await
+        .expect("producer did not replace an unacknowledged frame");
         assert!(
             tokio::time::timeout(Duration::from_millis(75), socket.next())
                 .await

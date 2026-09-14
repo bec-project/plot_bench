@@ -171,6 +171,39 @@ def test_setup_reports_missing_uv_override(tmp_path, setup_root):
     assert "https://docs.astral.sh/uv/getting-started/installation/" in result.stderr
 
 
+def test_plotly_setup_runs_npm_with_pinned_node_despite_absolute_shebang(
+    tmp_path, setup_root, cpp_toolchain
+):
+    log = tmp_path / "calls"
+    old_node = cpp_toolchain / "old-node"
+    old_node.write_text("#!/bin/sh\necho 'npm used the system Node' >&2\nexit 1\n")
+    old_node.chmod(0o755)
+    npm = cpp_toolchain / "npm"
+    npm.write_text(f"#!{old_node}\n" 'printf "npm %s\\n" "$*" >> "$PLOTBENCH_SETUP_LOG"\n')
+    npm.chmod(0o755)
+    node = setup_root / ".envs/node/node_modules/node/bin/node"
+    node.parent.mkdir(parents=True)
+    version = (setup_root / ".node-version").read_text().strip()
+    # This interpreter double ignores npm's shebang, just as explicit Node does.
+    node.write_text(
+        '#!/bin/sh\nif [ "$1" = "--version" ]; then\n'
+        f'  echo "v{version}"\n  exit 0\nfi\n'
+        'exec /bin/sh "$@"\n'
+    )
+    node.chmod(0o755)
+    result = subprocess.run(
+        ["bash", "scripts/setup", "plotly", "--browser", "system"],
+        cwd=setup_root,
+        env=setup_environment(cpp_toolchain, log),
+        text=True,
+        capture_output=True,
+    )
+    assert result.returncode == 0, result.stderr
+    calls = log.read_text().splitlines()
+    assert any(call.startswith("npm ci --prefix frontends/plotly ") for call in calls)
+    assert "npm run build --prefix frontends/plotly" in calls
+
+
 @pytest.mark.parametrize("existing_cache", [False, True])
 def test_cpp_setup_preserves_existing_cmake_generator(
     tmp_path, setup_root, cpp_toolchain, existing_cache
