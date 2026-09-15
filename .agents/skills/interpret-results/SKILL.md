@@ -36,7 +36,14 @@ Add `--probe` for a receiver-only probe campaign.
    they were.
 2. **Group only like with like.** Compare runs that share the same source
    backend, delivery mode, workload, build and display/runtime context. Different
-   sources or modes are separate result sets, never one ranking.
+   sources or modes are separate result sets, never one ranking. Across hosts,
+   only campaigns of the official baseline suite (`scenarios/baseline.json`) are
+   comparable, and only section by section: `waveform`, `multi-curve`,
+   `multi-plot`, `scalar-image`, `rgb-image`, `multi-image` and `large-image`,
+   all at 60 Hz from the Rust source in streaming mode with 3 × 30 s
+   repetitions. A campaign with other settings is a local experiment; do not line
+   it up against the site's boards, and never add or average numbers across
+   sections — the site's overall page adds placements, not measurements.
 3. **Name the metric correctly.** The headline is **submitted updates per second**
    — frames the adapter accepted into its update path — not displayed FPS. Adapter
    timing boundaries differ, and CPU/API return times are not GPU completion or

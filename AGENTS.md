@@ -47,7 +47,13 @@ backends requires an explicit `--backends python rust` selection.
 
 1. Translate the user's question into an explicit suite JSON. Reuse the examples
    and [suite reference](docs/suites.md); keep hardware-specific settings out of
-   shared examples. Use a new result directory for each attempt.
+   shared examples. Use a new result directory for each attempt. If the result is
+   meant for the community results site, do not write a suite: run the official
+   baseline unmodified with `./scripts/plotbench run --baseline`, narrowing it
+   only with `--frontends`. The site publishes complete campaigns of
+   `scenarios/baseline.json` and nothing else; timing, repetition, mode, backend,
+   limit and headless overrides are refused by `--baseline` and would make the
+   campaign unpublishable anyway.
 2. Run doctor for the selected components, then `run --suite FILE --dry-run`.
    Report the number of runs and nominal time, including the additional startup,
    preload and cooldown costs. Ask for missing workload or time-budget information

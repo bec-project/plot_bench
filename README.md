@@ -87,13 +87,30 @@ Short smoke runs verify operation; they do not establish stable performance rank
 
 ## Community results
 
-The [React results website](website/README.md) collects reviewed campaigns from
-different hosts and platforms. Explore individual measurements, filter by hardware,
-frontend and workload, and inspect the acquisition context before comparing runs.
-Use its **Contribute** page to prepare a public JSON export locally, then submit it
-through a pull request to [`website/results/`](website/results/README.md).
-Raw benchmark output remains in the ignored root `results/` directory.
-The site builds as static files for GitHub Pages; see its README for local preview
+The [results website](website/README.md) publishes one thing: complete campaigns of
+the official baseline suite, [`scenarios/baseline.json`](scenarios/baseline.json).
+The baseline has seven sections — waveform, multi-curve waveform, multi-plot
+waveform, scalar image, RGB image, multiple scalar images and a large scalar image
+— all at 60 Hz from the Rust source in streaming mode, measured as three 30-second
+repetitions after a 5-second warmup. The site shows every run per section, lets you
+filter by host and frontend, keeps one winner board per section and adds the
+section placements into an overall ranking. It never pools measurements across
+hosts or sections, and submitted updates per second are not displayed FPS.
+
+To contribute, run the baseline unmodified on a visible desktop (only `--frontends`
+may narrow it), then export the campaign with the site's **Contribute** page or
+the CLI exporter and open a pull request to
+[`website/results/`](website/results/README.md):
+
+```sh
+./scripts/plotbench run --baseline --frontends pyqtgraph --output results/baseline
+npm --prefix website run export -- --input ../results/baseline/summary.json
+```
+
+Campaigns of any other suite, shortened or partial baseline runs, smoke and
+diagnostic classifications and headless or X11 runs are refused at export and in
+CI. Raw benchmark output remains in the ignored root `results/` directory. The
+site builds as static files for GitHub Pages; see its README for local preview
 and deployment instructions.
 
 ## Documentation
@@ -120,12 +137,15 @@ is the tour; the guides below go deeper.
 ./scripts/plotbench matrix
 ```
 
-The local Preact browser editor opens with a gallery of bundled scenarios (each
+The local Preact browser editor opens with the official baseline pinned first in
+its own **Official baseline** block, a gallery of the other bundled scenarios (each
 with its scope) and a blank option to start from. Pick a starting point, shape the
 workloads — the form shows only the fields relevant to each plot — select
 frontends, sources, delivery modes and timings, inspect the expanded schedule, then
 **Save to scenarios_custom** (a git-ignored folder) or export the JSON. The editor
-never runs benchmarks; it hands you the commands to run next. Save a suite as
+never runs benchmarks; it hands you the commands to run next. An edited copy of
+the baseline saved to `scenarios_custom/` is a local experiment like any other:
+only the unmodified `scenarios/baseline.json` can be published. Save a suite as
 `my-suite` before using this example, then stop the editor with Ctrl+C:
 
 ```sh
@@ -188,10 +208,11 @@ operator actually looks at: `waveform_plots` waveform plots with `curves` curves
 each and `image_plots` detector images, up to 16 plots of each kind and 64 curves
 per plot. The source generates distinct data for every plot and curve, every
 frontend lays them out with the same grid rule, and one update per frame still
-covers all of them. The `multi-plot-smoke` scenario checks that path quickly,
-`beamline-dashboard` measures realistic operator windows (a monitor wall, a live
-detector view, a scan overview, a multi-detector wall and everything open at
-once), and `multi-plot-sweep` sweeps the plot and curve counts; the standard
+covers all of them. The official `baseline` suite carries a ten-curve and a
+two-plot section; the `multi-plot-smoke` scenario checks the multi-plot path
+quickly, `beamline-dashboard` measures realistic operator windows (a monitor wall,
+a live detector view, a scan overview, a multi-detector wall and everything open
+at once), and `multi-plot-sweep` sweeps the plot and curve counts; the standard
 `smoke` suite includes one multi-plot case. See the
 [suite reference](docs/suites.md).
 

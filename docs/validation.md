@@ -96,8 +96,11 @@ pages and offline reports have different roles; see the
 
 The community results site under `website/` is a React + Vite app with the same
 Node requirement as the other web UIs; CI builds its bundle, which is never
-committed. Install its locked tools into the repository cache, then run the unit
-tests, formatting, catalogue validation, type checking and production build:
+committed. It derives its seven sections from `scenarios/baseline.json` at build
+time, so run these checks after editing that file as well as after website
+changes (the results workflow triggers on both). Install its locked tools into
+the repository cache, then run the unit tests, formatting, catalogue validation,
+type checking and production build:
 
 ```sh
 npm ci --prefix website --cache "$PWD/.cache/npm" --no-audit --no-fund
@@ -107,9 +110,16 @@ npm --prefix website run validate
 npm --prefix website run build
 ```
 
-With `PLOTBENCH_TEST_BROWSER` selected as above, the opt-in browser check drives
-the built site through its filters, grouping, winners, run details, contribution
-preview and mobile layout:
+The unit tests cover the submission schema, the baseline gate (every published
+campaign must be a complete benchmark-classified campaign of the baseline suite:
+all seven sections, repetitions 1–3 at 5 s warmup and 30 s measurement, a
+recorded commit and a clean checkout), the per-section winner boards and the
+overall placement sum; `validate` applies the same gate to every file in
+`website/results/` and reports an empty collection as `0 valid campaign(s)`. With
+`PLOTBENCH_TEST_BROWSER` selected as above, the opt-in browser check drives the
+built site through its section rail, host and frontend filters, grouping, run
+details, the per-section winner boards, the overall page, the contribution
+preview (including its refusal of a non-baseline campaign) and the mobile layout:
 
 ```sh
 .envs/plotting-benchmark/bin/python -m pytest website/tests/browser_smoke.py
@@ -130,14 +140,16 @@ see the [website guide](../website/README.md).
 ```
 
 The documentation tests parse complete `./scripts/plotbench` examples against the
-current CLI, verify npm script names, check shell-block syntax and expand suite
-examples. They
-never install packages or execute campaigns. Local links and bundled scenario
-previews should also be checked after documentation changes. Replace explicitly
-marked clone URLs, browser/SDK paths and result-directory examples with values
-for your checkout. Successful parsing does not establish that every system package,
-graphics driver or toolchain is installed; use doctor and target-platform checks
-for that evidence.
+current CLI (including `run --baseline`), expand every documented
+`--suite scenarios/...` path through the real suite loader so a renamed or broken
+bundled scenario fails here, verify that every documented npm command names a
+real package script, check shell-block syntax and expand the JSON suite examples in
+`docs/suites.md`. They never install packages or execute campaigns. Local links
+and bundled scenario previews should also be checked after documentation changes.
+Replace explicitly marked clone URLs, browser/SDK paths and result-directory
+examples with values for your checkout. Successful parsing does not establish that
+every system package, graphics driver or toolchain is installed; use doctor and
+target-platform checks for that evidence.
 
 ## Desktop qualification
 

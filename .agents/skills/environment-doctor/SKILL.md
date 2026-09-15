@@ -14,9 +14,13 @@ Nothing touches the system Python. Run everything from the repository root.
 ## Steps
 
 1. **Work out what is needed.** From the suite or the request, list the frontends
-   and source backends involved; only those need installing. Per-component
-   requirements are in the README "Requirements" section and `docs/setup.md`
-   (platform packages differ between macOS, Ubuntu and RHEL).
+   and source backends involved; only those need installing. A publishable
+   baseline campaign (`./scripts/plotbench run --baseline`) always needs `rust`
+   plus every frontend you intend to publish — the site accepts any subset of
+   frontends, but each included frontend must complete all seven sections, so
+   install and verify each one before starting. Per-component requirements are
+   in the README "Requirements" section and `docs/setup.md` (platform packages
+   differ between macOS, Ubuntu and RHEL).
 
 2. **Check the current state.** For a quick overview, `./scripts/plotbench tui`
    shows an installed/missing table. The authoritative check imports the adapters
@@ -31,7 +35,8 @@ Nothing touches the system Python. Run everything from the repository root.
    ./scripts/setup rust pyqtgraph
    ```
    Components: `core`, `rust`, `pyqtgraph` (also covers `pyqtgraph-gl`),
-   `matplotlib`, `qtgraphs`, `qtgraphs-cpp`, `iced`, `plotly`, or `all`. Add
+   `matplotlib`, `qtgraphs`, `qtgraphs-cpp`, `iced`, `fyne`, `jfreechart`,
+   `plotly`, or `all`. Add
    `--dev` for tests and quality tools. Setup is idempotent and preserves the other
    installed components; rerun it after pulling changes to a compiled component.
 

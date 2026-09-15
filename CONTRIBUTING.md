@@ -21,8 +21,10 @@ Before submitting a change:
 - Update user-facing instructions and examples when commands or behavior change.
 - Include screenshots for UI changes, captured outside measurement windows.
 - Keep raw generated results, build outputs, IDE settings, and local paths out of Git.
-  For reviewed community measurements, use the explicit
-  [`website/results/` submission procedure](website/results/README.md).
+  Community measurements are complete campaigns of the official baseline suite
+  (`./scripts/plotbench run --baseline`), exported and submitted through the
+  explicit [`website/results/` submission procedure](website/results/README.md);
+  campaigns of other suites are not published.
 
 Python follows the root Ruff configuration and Black's 100-character line length.
 Rust uses `cargo fmt` and Clippy; TypeScript uses its strict compiler and test suite.
@@ -38,10 +40,13 @@ regenerated output. CI checks bundle reproducibility and browser interactions fo
 both pages. See its [README](core/webui/README.md).
 
 The separate [community results website](website/README.md) uses React and Vite.
-Run `npm --prefix website test` and `npm --prefix website run build` after changes.
-Its static output is generated in CI, not committed. Result submissions must pass
-`npm --prefix website run validate`; the PR review covers data provenance and
-public-field review in addition to the automated schema checks.
+Run `npm --prefix website test` and `npm --prefix website run build` after changes,
+and also after editing `scenarios/baseline.json`, because the site derives its
+seven sections from that file. Its static output is generated in CI, not
+committed. Result submissions must pass `npm --prefix website run validate`, which
+accepts only complete benchmark-classified campaigns of the baseline suite; the
+PR review covers data provenance and public-field review in addition to the
+automated schema and baseline checks.
 
 See [adding a frontend](docs/frontends.md) before introducing a renderer. Its
 limitations and custom rendering work must be explicit, and frontend code must

@@ -53,6 +53,7 @@ first. This skill lists every place a frontend is wired in, so nothing is missed
 | `README.md` frontends table and `frontends/<name>/README.md` | what it renders and its known limitations |
 | `THIRD-PARTY-LICENSES.md` | the new dependencies and their licenses |
 | `scenarios/` and CI | a small scenario that exercises it, and test coverage |
+| `scenarios/baseline.json` — `frontends` | decide baseline membership explicitly: only frontends listed there can appear in published campaigns, on the site's section boards and in its overall ranking; the core suite test checks that every listed ID exists in `FRONTENDS` (a subset is allowed), and `npm --prefix website test` / `run build` must pass afterwards |
 
 ## 3. Test and accept
 
@@ -69,7 +70,11 @@ first. This skill lists every place a frontend is wired in, so nothing is missed
   ./scripts/plotbench run --suite scenarios/multi-plot-smoke.json --frontends pyqtgraph --modes stream replay --dry-run
   ```
   Confirm complete, usable telemetry. Take screenshots only outside measured
-  windows.
+  windows. If the frontend joins the baseline, also run its seven sections once
+  for real (`./scripts/plotbench run --baseline --frontends pyqtgraph --output results/acceptance`)
+  and check that versions, display scale and plot areas are recorded: records
+  with incomplete context or an unrecorded scale are excluded from every winner
+  board, as Iced's are today because its adapter reports no version strings.
 - Run the `validate-change` skill for everything you touched, including the docs
   test — it checks the new ID against the CLI.
 - State exactly which OS and display combinations you tested; offscreen runs do

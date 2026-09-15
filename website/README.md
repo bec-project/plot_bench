@@ -1,36 +1,54 @@
 # Community results website
 
-A static React + TypeScript application for browsing Plotbench campaigns across
-hosts and platforms. Its data lives in [`results/`](results/README.md): one
-reviewed, versioned JSON document per acquisition campaign. The repository-root
-`results/` remains ignored and holds private raw benchmark output.
+A static React + TypeScript application that publishes campaigns of the official
+Plotbench baseline suite from different hosts. Its data lives in
+[`results/`](results/README.md): one reviewed, versioned JSON document per
+campaign. The repository-root `results/` remains ignored and holds private raw
+benchmark output.
 
-The site defaults to grouped results, with expandable campaigns and individual
-runs, host histories, exact workload filters, source backends, delivery modes,
-failures, and acquisition/build/display context. Compatible campaigns on the same
-host receive equal weight through a median of campaign medians. It does not
-calculate a global score or pool different configurations. Submitted updates/s
-are not displayed FPS. The initial collection holds three campaigns from the
-maintainers' machines: a repeated comparison of all eight frontends (three 10 s
-repetitions per case) and two short smoke checks. The browser tests use a private
-fixture, so an empty collection still builds and deploys.
+The site publishes one suite only, [`scenarios/baseline.json`](../scenarios/baseline.json):
+seven sections — waveform, multi-curve waveform, multi-plot waveform, scalar image,
+RGB image, multiple scalar images and a large scalar image — all at 60 Hz from the
+Rust source in streaming mode, measured as three 30-second repetitions after a
+5-second warmup. A campaign is accepted only when every frontend it contains has
+all seven sections with repetitions 1–3 at those durations; any subset of the
+nine frontends is fine, and failed runs are kept. The site derives the sections
+from the suite file at build time, so there is exactly one definition of them.
 
-UI previews: [desktop](docs/results-desktop.png) · [mobile](docs/results-mobile.png).
+Every page keeps unlike things apart: no measurement is pooled across hosts or
+sections, source revisions and display scales stay separate groups, and submitted
+updates per second are not displayed FPS. The collection starts empty; the browser
+tests use a private fixture, so an empty collection still builds and deploys.
 
-The **Winners** page shows the best observed frontend configurations across hosts.
-Preview: [desktop](docs/winners-desktop.png) · [mobile](docs/winners-mobile.png).
+Pages: **Results** (every run, per section, with host and frontend filters),
+**Winners** (one record board per section), **Overall** (the section placements
+added up), **Suite** (the seven sections and the run command), **Hosts** and
+**Contribute**.
+
+UI previews: [results, desktop](docs/results-desktop.png) ·
+[results, mobile](docs/results-mobile.png) ·
+[winners, desktop](docs/winners-desktop.png) ·
+[winners, mobile](docs/winners-mobile.png) ·
+[overall, desktop](docs/overall-desktop.png).
 
 ## Winners across hosts
 
-Each comparison case ranks configurations by throughput first, then memory and CPU
-when update rates are close, and keeps the best record per frontend across all
-submitted hosts. It uses campaign-weighted medians, not the fastest individual
-repetition. Cases require the same exact workload and seed, source
-backend, delivery mode, measurement/warmup durations, campaign classification and
-recorded source hash/commit/dirty state. Hardware, frontend versions and display
-settings may vary; their original groups remain separate and inspectable. This is
-a record table of the best observed configurations, not a controlled comparison
-establishing a host-independent library winner. It calculates no cross-host mean.
+The Winners page keeps one board per baseline section, in suite order. A board
+ranks configurations by throughput first, then memory and CPU when update rates
+are close, and keeps the best record per frontend across all submitted hosts. It
+uses campaign-weighted medians, not the fastest individual repetition.
+
+A board's identity is the section (its slug and exact workload, including seed
+and target rate), the source backend, the delivery mode, the measurement and
+warmup durations and the benchmark classification. Hardware, frontend versions,
+source revision and display settings may vary between the records on one board;
+their original groups remain separate and inspectable, and every record shows
+the source commit and the display scale it was measured at. A `scale=` filter
+narrows a board to one display scale, because image sections rasterise
+`width × height × scale²` device pixels. Groups whose display scale was not
+recorded cannot compete. This is a record table of the best observed
+configurations, not a controlled comparison establishing a host-independent
+library winner. It calculates no cross-host mean.
 
 The **Close update rates** selector defaults to **within 2%**, with 0%, 1% and 5%
 also available. The ranking builds bands from all eligible configurations before
@@ -62,22 +80,46 @@ actual update-rate range is shown rather than implying equal throughput. Competi
 ranks follow 1, 1, 3 after a first-place tie. Original measurements remain available
 in the evidence and downloads. This tolerance is a user-selectable ranking preference,
 not a statistical equivalence or significance test. Paced runs that reach their
-target cannot establish maximum rendering capacity. Cases with only one eligible
-frontend are explicitly marked as having one entrant.
+60 Hz target cannot establish maximum rendering capacity; on such a board the
+placings are decided by memory and CPU within the tolerance. Sections with only
+one eligible frontend are explicitly marked as having one entrant.
 
-**Benchmarks** is the default collection; **Smoke checks** and **Diagnostics** are
-separate selections and never compete against benchmark campaigns. Without any
-benchmark campaign, the winners view explains its empty state and links to the
-collections that do exist. Incomplete-context and no-valid-rate groups cannot
-win; their excluded count is shown, and the Results page retains their observations.
-Source-limited groups with valid observations remain eligible with visible flags
-and attempted/successful counts, including any failed repetitions.
+Only benchmark-classified campaigns are published, so no smoke or diagnostic
+campaign ever competes. Incomplete-context and no-valid-rate groups cannot win;
+their excluded count is shown, and the Results page retains their observations.
+The Iced adapter currently reports no library version strings, so its records
+are excluded from every board until its adapter reports them. Source-limited
+groups with valid observations remain eligible with visible flags and
+attempted/successful counts, including any failed repetitions.
 
-Workload, source, mode, collection, close-rate tolerance and inclusive UTC date filters persist in the
-URL. The page paginates comparison cases and ties, links back to each winning
-host, and expands into campaign and run evidence. All frontend records can be
-expanded to inspect the runners-up. Winners depend on the submitted coverage;
-more submissions or a changed date filter may change the record holders.
+Section, close-rate tolerance, display scale and inclusive UTC date filters
+persist in the URL. Each board links back to the winning host and expands into
+campaign and run evidence; all frontend records can be expanded to inspect the
+runners-up. Winners depend on the submitted coverage; more submissions or a
+changed date filter may change the record holders.
+
+## Overall placement
+
+The Overall page turns the seven section boards into one table. For each
+frontend, its **total** is the sum of the competition ranks it holds on the seven
+section boards, exactly as those boards display them under the selected close-rate
+tolerance, scale and date filters; the lowest total ranks first. Ties are broken
+by the number of **section wins** (rank 1 placings, joint wins included);
+frontends still tied share a competition rank (1, 1, 3). Only frontends with an
+eligible record in all seven sections are ranked. The others are listed as
+incomplete with the sections they are missing. They keep their places on the
+section boards, so a complete frontend ranked below them on a board carries that
+lower placement into its total.
+
+This adds placements, never measurements: no update rate, memory or CPU value
+is averaged or summed across sections or hosts. A placement on a paced section
+that every entrant sustains at 60 Hz is decided by memory, then CPU, within the
+tolerance, and counts the same as a placement on a section where throughput
+separates the entrants. The records behind one frontend's total may come from
+different hosts, source revisions and display scales; the frontend cell shows how
+many hosts and revisions are involved, and each section column links to the board
+where the record's host, commit, display scale and evidence are shown. It is a
+summary of best-observed records, not a controlled comparison.
 
 ## Repeated measurements
 
@@ -108,12 +150,16 @@ retained; source-limited successful measurements remain included and visible.
 Within each campaign, expansion shows the repetition median, observed min/max,
 completion status, recorded/planned totals, notes and links to run details.
 
-Smoke and diagnostic campaigns remain separate and retain their classification;
-collecting many short runs does not promote them into sustained benchmarks.
-Groups are ordered by latest acquisition, not by performance. No timing
-percentiles are pooled across runs. The grouped counts cover recorded attempts;
-unrecorded planned cases are exposed at campaign level, not invented as failures
-in a particular group. This is a display aggregation, not a file merge.
+Groups are ordered by section, then by latest acquisition, not by performance. No
+timing percentiles are pooled across runs. The grouped counts cover recorded
+attempts; unrecorded planned cases are exposed at campaign level, not invented as
+failures in a particular group. This is a display aggregation, not a file merge.
+
+The Results page filters are the section rail, the host and frontend selectors,
+the inclusive UTC date range and the grouped/individual layout. Together with the
+Winners and Overall controls, the URL carries `section`, `host`, `frontend`,
+`from`, `to`, `layout`, `close` and `scale`; unknown keys or slugs fall back to
+the unfiltered page, so old links keep working.
 
 ## Develop and validate
 
@@ -132,7 +178,9 @@ Open the `/plot_bench/` URL printed by Vite (port 5373). `dev` builds the catalo
 restart it after adding or editing result files. `build` regenerates the catalogue,
 checks TypeScript, and emits `website/dist/`. Generated bundles and
 `website/public/catalog.json` are ignored; CI rebuilds them from reviewed source.
-No Rust, Python or plotting frontend is required to develop this website.
+No Rust, Python or plotting frontend is required to develop this website. The
+site imports `scenarios/baseline.json` from the repository root, so run these
+checks after editing that file too; the results workflow triggers on it.
 
 The pages use the design tokens, type scale and control primitives of the matrix
 editor and source controls; the shared block at the top of
@@ -140,10 +188,11 @@ editor and source controls; the shared block at the top of
 [`core/webui/src/style.css`](../core/webui/src/style.css). Change a shared
 primitive in both files, and keep site-specific rules below that block.
 
-The automated tests cover schema validation, acquisition provenance, privacy
-allowlisting, failed observations, duplicate submissions, workload identity,
-classification and filesystem input handling. Browser smoke checks can also use
-the repository's existing Python browser extra; see `tests/browser_smoke.py`.
+The automated tests cover schema validation, the baseline gate, acquisition
+provenance, privacy allowlisting, failed observations, duplicate submissions,
+workload identity, the per-section boards, the overall placement sum and
+filesystem input handling. Browser checks can also use the repository's existing
+Python browser extra; see `tests/browser_smoke.py`.
 
 With an installed Chromium/Chrome executable, run:
 
@@ -158,27 +207,53 @@ artifact. These are UI functional checks, never rendering performance measuremen
 
 ## Contribute results
 
-The **Contribute** page reads a campaign's `summary.json` locally, produces an
+Only complete campaigns of the official baseline suite can be published. Run it
+unmodified on a visible desktop with a fixed refresh rate and display scale,
+narrowing it at most to the frontends you have installed:
+
+```sh
+./scripts/plotbench run --baseline --frontends pyqtgraph matplotlib --output results/baseline
+```
+
+The **Contribute** page reads that campaign's `summary.json` locally, produces an
 allowlisted public document, and displays its exact contents for review. It sends
-no file to a server. Choosing the file proposes the campaign ID, public host alias,
-host label and operating-condition notes from the summary's public fields only:
-CPU model, OS family, acquisition date, suite name, run timings and display context.
-Hostnames, machine identifiers, display names and paths are never used. Review and
-adjust the proposal (a button restores it), then download the document and open a
-GitHub pull request adding it to `website/results/`. Contributors need GitHub access
-only for that final step. CI validates the submission; maintainers review it before
-merge.
+no file to a server. Choosing the file proposes the campaign ID
+(`<cpu>-<os>-<yyyymmdd>-plotbench-baseline`; add a suffix for a second campaign
+on the same day), public host alias, host label and operating-condition notes
+from the summary's public fields only: CPU model, OS family, acquisition date,
+suite name, run timings and display context. Hostnames, machine identifiers,
+display names and paths are never used. The preview states the coverage
+(7 of 7 sections, the number of frontends, 3 repetitions each). Review and adjust
+the proposal (a button restores it), then download the document and open a GitHub
+pull request adding it to `website/results/`. Contributors need GitHub access
+only for that final step. CI validates the submission; maintainers review it
+before merge.
+
+The exporter first refuses a campaign whose summary is not structurally the
+official baseline (cooldown, repetition count, mode and backend lists, case list,
+completion status, sections, repetitions, timings, frontends or run counts) with a
+message starting "Only campaigns of the official baseline suite can be published".
+A campaign that is baseline-shaped but classified smoke or diagnostic, or whose
+runs lack a clean recorded commit, is refused by the same submission check that CI
+runs, so the exporter and CI both report it with a message starting "Not a
+baseline campaign". Rejected: any other suite, a baseline campaign run
+with `--limit`, `--repetitions`, timing, mode or backend overrides, an
+interrupted campaign, a smoke or diagnostic classification (headless, X11 or an
+unknown display context), and runs with an unknown commit or a dirty checkout.
+Cooldown, the campaign repetition count, the mode and backend lists and the case
+list are checked by the exporter only, because the published format does not
+carry them.
 
 For an equivalent command-line export (npm runs the script inside `website/`), only
 `--input` is required; omitted fields use the same proposals and the file is written
 to `results/<campaign-id>.json`:
 
 ```sh
-npm --prefix website run export -- --input ../results/my-comparison/summary.json
+npm --prefix website run export -- --input ../results/baseline/summary.json
 npm --prefix website run export -- \
-  --input ../results/my-comparison/summary.json \
-  --output results/workstation-a-20260914.json \
-  --id workstation-a-20260914 \
+  --input ../results/baseline/summary.json \
+  --output results/workstation-a-linux-20260915-plotbench-baseline.json \
+  --id workstation-a-linux-20260915-plotbench-baseline \
   --host-id workstation-a \
   --host-label 'My Linux workstation'
 npm --prefix website run validate
