@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { groupObservations, inDateRange, type ResultGroup } from './aggregation';
+import { GROUP_ORDERS, ORDER_NOTES, compareGroups, compareRuns, groupOrder } from './ordering';
 import { SECTIONS, sectionBySlug, sectionOf, type Section } from './baseline';
 import { GroupedResults } from './grouped-results';
 import { sourceLimited, type Observation, type Submission } from './model';
@@ -63,15 +64,15 @@ export function ResultsPage({
     [narrowed, section],
   );
   const grouped = filters.get('layout') !== 'runs';
+  const order = groupOrder(filters.get('sort'));
+  // Sections keep their suite order; inside a section the selected order applies,
+  // by default the highest median updates/s first.
   const allGroups = useMemo(
     () =>
       groupObservations(narrowed).sort(
-        (a, b) =>
-          sectionIndex(a) - sectionIndex(b) ||
-          Date.parse(b.last) - Date.parse(a.last) ||
-          a.key.localeCompare(b.key),
+        (a, b) => sectionIndex(a) - sectionIndex(b) || compareGroups(order)(a, b),
       ),
-    [narrowed],
+    [narrowed, order],
   );
   const counts = useMemo(() => {
     const m = new Map<string, number>();
@@ -89,19 +90,15 @@ export function ResultsPage({
       [...visible].sort(
         (a, b) =>
           (sectionOf(a.run.config)?.index ?? Infinity) -
-            (sectionOf(b.run.config)?.index ?? Infinity) ||
-          Date.parse(b.campaign.recorded_at) - Date.parse(a.campaign.recorded_at) ||
-          a.campaign.id.localeCompare(b.campaign.id) ||
-          a.run.frontend.localeCompare(b.run.frontend) ||
-          a.run.repetition - b.run.repetition,
+            (sectionOf(b.run.config)?.index ?? Infinity) || compareRuns(order)(a, b),
       ),
-    [visible],
+    [visible, order],
   );
   const itemCount = grouped ? groups.length : runs.length;
   const [page, setPage] = useState(0);
   useEffect(() => setPage(0), [filters]);
   const href = sectionHref('results')(filters);
-  const filtered = ['host', 'frontend', 'from', 'to'].some((k) => filters.get(k));
+  const filtered = ['host', 'frontend', 'from', 'to', 'sort'].some((k) => filters.get(k));
   const pageGroups = groups.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   // In the all-sections view the list is chunked by section with a divider per chunk.
   const chunks: { section: Section | null; groups: ResultGroup[] }[] = [];
@@ -120,7 +117,7 @@ export function ResultsPage({
         <Empty />
       ) : (
         <section className="panel results-panel" aria-label="Measurements">
-          <div className="toolbar" role="group" aria-label="Filters">
+          <div className="toolbar toolbar-5" role="group" aria-label="Filters">
             <Select
               label="Host"
               all="All hosts"
@@ -136,6 +133,13 @@ export function ResultsPage({
               options={distinct(all.map((o) => o.run.frontend)).map((x) => [x, x])}
             />
             <DateRange filters={filters} filter={filter} />
+            <Select
+              label="Order"
+              all={GROUP_ORDERS[0][1]}
+              value={filters.get('sort') ?? ''}
+              onChange={(v) => filter('sort', v)}
+              options={GROUP_ORDERS.filter(([key]) => key !== 'rate')}
+            />
             <div className="toolbar-end">
               {(filtered || section || !grouped) && <a href="#results">Reset</a>}
             </div>
@@ -173,8 +177,8 @@ export function ResultsPage({
               One group per frontend, host, source revision, display scale and identical recorded
               context (refresh rate, display protocol, renderer and library versions); any context
               change starts a new group. Median of campaign medians, with each campaign weighted
-              equally; middle 50% shows the spread of campaign medians. Expand a group to inspect
-              campaigns and repetitions.
+              equally; middle 50% shows the spread of campaign medians. Ordered by section, then{' '}
+              {ORDER_NOTES[order]}. Expand a group to inspect campaigns and repetitions.
             </p>
           )}
           {visible.length ? (
