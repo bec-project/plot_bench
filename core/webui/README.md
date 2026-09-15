@@ -17,6 +17,15 @@ the three counts and the view together; the matrix editor accepts the three
 fields as group axes and its schedule preview shows each run's layout in a
 `Plots` column (`2×3 wf · 3 img`).
 
+The preset gallery pins the official baseline first: `/api/presets` marks the
+bundled `scenarios/baseline.json` with `official: true` (derived from its location,
+so a copy saved to `scenarios_custom/` is never official) and lists it before the
+other bundled files. The editor renders that one preset in an `.official-box` above
+the saved-suite box with an `official` badge and the note that it is the only suite
+published on the community results site; the run command panel keeps pointing at
+`scenarios/baseline.json` only while the loaded suite is unedited. Editing the
+baseline in the editor is allowed, but the result is a custom, unpublishable suite.
+
 ## Source and generated files
 
 | File | Purpose |

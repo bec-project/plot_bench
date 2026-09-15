@@ -10,19 +10,18 @@ function PresetCard(props: { preset: Preset; active: string | null; onPick: (pre
   const { preset } = props;
   const custom = preset.source === 'custom';
   const fallback = custom ? 'Saved from the editor.' : 'No description.';
+  const flavour = custom ? ' preset-custom' : preset.official ? ' preset-official' : '';
   return (
     <button
       type="button"
-      class={
-        (custom ? 'preset preset-custom' : 'preset') +
-        (props.active === preset.path ? ' preset-on' : '')
-      }
+      class={'preset' + flavour + (props.active === preset.path ? ' preset-on' : '')}
       disabled={Boolean(preset.error)}
       onClick={() => props.onPick(preset)}
       title={preset.error ? preset.error : preset.path}
     >
       <span class="preset-name">
         {preset.name}
+        {preset.official ? <span class="badge badge-official">official</span> : null}
         {custom ? <span class="badge badge-custom">custom</span> : null}
         {preset.kind === 'probe' ? <span class="badge">probe</span> : null}
       </span>
@@ -41,9 +40,25 @@ export function PresetGallery(props: {
   onBlank: () => void;
 }) {
   const custom = props.presets.filter((preset) => preset.source === 'custom');
-  const bundled = props.presets.filter((preset) => preset.source !== 'custom');
+  const official = props.presets.find((preset) => preset.official && preset.source !== 'custom');
+  const bundled = props.presets.filter((preset) => preset.source !== 'custom' && !preset.official);
   return (
     <>
+      {official ? (
+        <div class="official-box">
+          <div class="official-head">
+            <span class="official-title">Official baseline</span>
+            <span class="badge badge-official">scenarios/{official.filename}</span>
+          </div>
+          <div class="preset-grid">
+            <PresetCard preset={official} active={props.active} onPick={props.onPick} />
+          </div>
+          <p class="official-note">
+            The only suite published on the community results site. Run it unmodified; only{' '}
+            <code>--frontends</code> may narrow it.
+          </p>
+        </div>
+      ) : null}
       {custom.length ? (
         <details class="custom-box" open>
           <summary>

@@ -12,7 +12,7 @@ from aiohttp import web
 
 from .backends import BACKENDS, DEFAULT_BACKEND
 from .config import Config
-from .suites import FRONTENDS, MODES, load_suite, prepare_suite
+from .suites import BASELINE_FILENAME, FRONTENDS, MODES, load_suite, prepare_suite
 
 ASSETS = Path(__file__).with_name("matrix_assets")
 ROOT = Path(__file__).resolve().parents[3]
@@ -35,7 +35,14 @@ def preset_kind(suite):
 def preset_entry(path, source):
     """Summarize one scenario file for the editor gallery; never raises."""
     directory = "scenarios_custom" if source == "custom" else "scenarios"
-    entry = dict(filename=path.name, path=f"{directory}/{path.name}", source=source)
+    # Official status derives from location alone: an edited copy saved to
+    # scenarios_custom is never the published baseline, whatever it is called.
+    entry = dict(
+        filename=path.name,
+        path=f"{directory}/{path.name}",
+        source=source,
+        official=source == "bundled" and path.name == BASELINE_FILENAME,
+    )
     try:
         suite = json.loads(path.read_text())
         kind = preset_kind(suite)
@@ -177,9 +184,8 @@ def create_app(suite):
         items = []
         for directory, source in ((SCENARIOS_DIR, "bundled"), (CUSTOM_DIR, "custom")):
             if directory.is_dir():
-                items.extend(
-                    preset_entry(path, source) for path in sorted(directory.glob("*.json"))
-                )
+                entries = [preset_entry(path, source) for path in sorted(directory.glob("*.json"))]
+                items.extend(sorted(entries, key=lambda entry: not entry["official"]))
         return web.json_response(dict(presets=items))
 
     async def save(request):

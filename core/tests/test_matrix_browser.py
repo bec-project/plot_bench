@@ -108,6 +108,23 @@ def test_matrix_build_preview_export_save_and_mobile_layout(tmp_path):
                 )
                 await expect(page.locator(".run-here")).not_to_contain_text("save it first")
 
+                # The official baseline sits in its own block above the saved suites,
+                # is offered exactly once, and loads with its bundled path in the
+                # run command (an edited copy would switch to scenarios_custom).
+                official = page.locator(".official-box")
+                await expect(official).to_have_count(1)
+                await expect(official).to_contain_text("Plotbench baseline")
+                await expect(official).to_contain_text("only --frontends may narrow it")
+                await expect(official.locator(".badge-official")).to_have_count(2)
+                assert await page.locator(".custom-box .badge-official").count() == 0
+                await expect(page.locator(".preset-official")).to_have_count(1)
+                await official.get_by_role("button", name="Plotbench baseline").click()
+                await expect(page.locator("#plan-summary")).to_contain_text("7 workloads")
+                await expect(page.locator(".run-here")).to_contain_text(
+                    "--suite scenarios/baseline.json"
+                )
+                await expect(page.locator(".run-here")).not_to_contain_text("save it first")
+
                 # Switching to probe disables the ignored frontend selection.
                 await page.locator("#kind").select_option("probe")
                 await expect(page.get_by_label("pyqtgraph", exact=True)).to_be_disabled()
