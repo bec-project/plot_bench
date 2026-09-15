@@ -264,32 +264,39 @@ function Board({ board, select }: { board: WinnerBoard; select: (o: Observation)
           )}
         </div>
         <BoardChart board={board} />
+        <div className="board-records">
+          <div className="winner-records">
+            {leaders.map((record) => (
+              <Record
+                key={record.frontend}
+                record={record}
+                select={select}
+                marked={scales.size > 1}
+              />
+            ))}
+          </div>
+          {board.records.length > leaders.length && (
+            <details
+              className="disclosure other-records"
+              open={expanded}
+              onToggle={(e) => setExpanded(e.currentTarget.open)}
+            >
+              <summary>All frontend records ({board.records.length})</summary>
+              {expanded &&
+                board.records
+                  .filter((record) => record.rank !== 1)
+                  .map((record) => (
+                    <Record
+                      key={record.frontend}
+                      record={record}
+                      select={select}
+                      marked={scales.size > 1}
+                    />
+                  ))}
+            </details>
+          )}
+        </div>
       </div>
-      <div className="winner-records">
-        {leaders.map((record) => (
-          <Record key={record.frontend} record={record} select={select} marked={scales.size > 1} />
-        ))}
-      </div>
-      {board.records.length > leaders.length && (
-        <details
-          className="disclosure other-records"
-          open={expanded}
-          onToggle={(e) => setExpanded(e.currentTarget.open)}
-        >
-          <summary>All frontend records ({board.records.length})</summary>
-          {expanded &&
-            board.records
-              .filter((record) => record.rank !== 1)
-              .map((record) => (
-                <Record
-                  key={record.frontend}
-                  record={record}
-                  select={select}
-                  marked={scales.size > 1}
-                />
-              ))}
-        </details>
-      )}
     </article>
   );
 }

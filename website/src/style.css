@@ -1094,16 +1094,28 @@ pre {
 .board-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  grid-template-areas:
+    'facts chart'
+    'records chart';
   gap: 20px 28px;
   align-items: start;
 }
 .board-facts {
+  grid-area: facts;
+  min-width: 0;
+}
+.board-records {
+  grid-area: records;
   min-width: 0;
 }
 .board-facts > .muted {
   font-size: 13px;
 }
 .board-chart {
+  grid-area: chart;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
   margin: 0;
   min-width: 0;
   padding: 12px 14px 10px;
@@ -1210,7 +1222,8 @@ pre {
   white-space: nowrap;
 }
 .board-chart figcaption {
-  margin-top: 8px;
+  margin-top: auto;
+  padding-top: 12px;
   font-size: 12px;
   color: var(--muted);
 }
@@ -1483,6 +1496,13 @@ footer {
   }
   .board-layout {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'facts'
+      'chart'
+      'records';
+  }
+  .board-chart {
+    align-self: start;
   }
   .toolbar-end {
     grid-column: 1 / -1;
