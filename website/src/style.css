@@ -1127,33 +1127,46 @@ pre {
 .toolbar-5 {
   grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
 }
-.chart-rows {
-  display: grid;
-  gap: 6px;
-}
-.chart-row {
-  display: grid;
-  grid-template-columns: minmax(96px, 28%) minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: center;
+/* The chart is a table so every row and the axis share the same three columns. */
+.chart-table {
+  width: 100%;
+  border-collapse: collapse;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
+.chart-table th,
+.chart-table td {
+  padding: 3px 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-weight: 400;
+  position: static;
+  vertical-align: middle;
+}
+.chart-table tbody tr:hover {
+  background: transparent;
+}
 .chart-label {
-  min-width: 0;
+  max-width: 11em;
+  padding-right: 10px !important;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-align: left;
 }
 .chart-row-winner .chart-label {
-  font-weight: 600;
+  font-weight: 600 !important;
+}
+.chart-track-cell {
+  width: 100%;
 }
 .chart-track {
+  display: block;
   position: relative;
   height: 18px;
   border-radius: 3px;
   background: var(--panel);
-  overflow: visible;
 }
 .chart-bar {
   position: absolute;
@@ -1201,14 +1214,14 @@ pre {
   border-left: 1.5px dashed #f5c76e;
 }
 .chart-value {
+  padding-left: 10px !important;
   white-space: nowrap;
-  text-align: right;
 }
-.chart-axis {
+.chart-axis-line {
+  display: block;
   position: relative;
-  height: 18px;
-  margin: 6px 0 0 calc(min(28%, max(96px, 28%)) + 10px);
-  margin-right: 0;
+  height: 16px;
+  margin-top: 2px;
   font-size: 11px;
   color: var(--muted);
 }
@@ -1218,7 +1231,8 @@ pre {
 }
 .chart-axis-target {
   position: absolute;
-  transform: translateX(-50%);
+  transform: translateX(-100%);
+  padding-right: 4px;
   white-space: nowrap;
 }
 .board-chart figcaption {
