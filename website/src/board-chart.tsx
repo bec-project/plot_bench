@@ -1,4 +1,4 @@
-import { boardChart } from './chart';
+import { boardChart, resourceChart, type ResourceChartData } from './chart';
 import { format, rateRange } from './presentation';
 import type { WinnerBoard } from './winners';
 
@@ -7,12 +7,19 @@ import type { WinnerBoard } from './winners';
 export function BoardChart({ board }: { board: WinnerBoard }) {
   const { target, max, bars } = boardChart(board);
   const pct = (value: number) => `${((value / max) * 100).toFixed(2)}%`;
-  const title = board.section
-    ? `Median submitted updates per second by frontend in the ${board.section.title} section`
-    : 'Median submitted updates per second by frontend';
+  const where = board.section ? ` in the ${board.section.title} section` : '';
+  // CPU is charted per logical core, so 100% marks one saturated core.
+  const memory = resourceChart(board, 'rss_peak_mib', (r) => r.memoryMib);
+  const cpu = resourceChart(board, 'cpu_mean_percent', (r) => r.cpuPercent, 100);
   return (
     <figure className="board-chart">
-      <table className="chart-table" aria-label={title}>
+      <table
+        className="chart-table"
+        aria-label={`Median submitted updates per second by frontend${where}`}
+      >
+        <caption className="chart-caption">
+          Submitted updates/s <span className="muted">· higher is better</span>
+        </caption>
         <thead className="sr-only">
           <tr>
             <th scope="col">Rank and frontend</th>
@@ -73,12 +80,135 @@ export function BoardChart({ board }: { board: WinnerBoard }) {
           </tr>
         </tfoot>
       </table>
+      <ResourceChart
+        title="Peak memory · RSS"
+        hint="lower is better"
+        chart={memory}
+        section={where}
+        unit=" MiB"
+        emptyLabel="No memory coverage in these records."
+      />
+      <ResourceChart
+        title="Mean CPU"
+        hint="lower is better"
+        chart={cpu}
+        section={where}
+        unit="%"
+        referenceLabel="1 core"
+        emptyLabel="No CPU coverage in these records."
+      />
       <figcaption>
-        Bars: median updates/s of each frontend's record, as ranked; a record that merges equally
-        ranked groups spans its lowest to highest group median. Whiskers: observed range of the
-        valid repetition rates behind the record. Dashed line: the paced target. Source-limited
-        counts repetitions where the source, not the frontend, bounded the rate. Not displayed FPS.
+        Bars: the ranked value of each frontend's record — median submitted updates/s, then median
+        peak resident memory and median mean CPU, in rank order. Whiskers: the observed range across
+        the record's valid repetitions. Throughput's dashed line is the paced target; CPU's is one
+        logical core (100%). Memory and CPU are the tie-breakers behind the ranking, weighted
+        equally per campaign; "incomplete" marks a record whose repetitions do not all report the
+        metric. Not displayed FPS.
       </figcaption>
     </figure>
+  );
+}
+
+// One resource metric as a bar-per-frontend table, in the same rank order and
+// visual encoding as the throughput chart. Rendered only when data exists.
+function ResourceChart({
+  title,
+  hint,
+  chart,
+  section,
+  unit,
+  referenceLabel,
+  emptyLabel,
+}: {
+  title: string;
+  hint: string;
+  chart: ResourceChartData;
+  section: string;
+  unit: string;
+  referenceLabel?: string;
+  emptyLabel: string;
+}) {
+  const pct = (value: number) => `${((value / chart.max) * 100).toFixed(2)}%`;
+  const valueText = (value: number) =>
+    unit === '%' ? `${format(value)}%` : `${format(value)}${unit}`;
+  return (
+    <table className="chart-table" aria-label={`Median ${title} by frontend${section}`}>
+      <caption className="chart-caption">
+        {title} <span className="muted">· {hint}</span>
+      </caption>
+      <thead className="sr-only">
+        <tr>
+          <th scope="col">Rank and frontend</th>
+          <th scope="col">Median value as a bar with the observed repetition range</th>
+          <th scope="col">Median value</th>
+        </tr>
+      </thead>
+      <tbody>
+        {!chart.hasData ? (
+          <tr className="chart-row">
+            <td colSpan={3} className="chart-empty muted">
+              {emptyLabel}
+            </td>
+          </tr>
+        ) : (
+          chart.bars.map((bar) => (
+            <tr
+              key={bar.frontend}
+              className={bar.winner ? 'chart-row chart-row-winner' : 'chart-row'}
+            >
+              <th scope="row" className="chart-label">
+                <span className="muted">#{bar.rank}</span> {bar.frontend}
+              </th>
+              <td className="chart-track-cell">
+                <span className="chart-track" aria-hidden="true">
+                  {bar.value !== null && (
+                    <span
+                      className="chart-bar chart-bar-resource"
+                      style={{ width: pct(bar.value) }}
+                    />
+                  )}
+                  {bar.low !== null && bar.high !== null && bar.high > bar.low && (
+                    <span
+                      className="chart-whisker"
+                      style={{ left: pct(bar.low), width: pct(bar.high - bar.low) }}
+                    />
+                  )}
+                  {chart.reference !== null && (
+                    <span className="chart-reference" style={{ left: pct(chart.reference) }} />
+                  )}
+                </span>
+              </td>
+              <td className="chart-value">
+                {bar.value === null ? (
+                  <span className="muted">incomplete</span>
+                ) : (
+                  valueText(bar.value)
+                )}
+              </td>
+            </tr>
+          ))
+        )}
+      </tbody>
+      {chart.hasData && (
+        <tfoot aria-hidden="true">
+          <tr className="chart-axis">
+            <td />
+            <td className="chart-track-cell">
+              <span className="chart-axis-line">
+                <span className="chart-axis-origin">0</span>
+                {chart.reference !== null && referenceLabel ? (
+                  <span className="chart-axis-target" style={{ left: pct(chart.reference) }}>
+                    {referenceLabel}
+                  </span>
+                ) : (
+                  <span className="chart-axis-max">{valueText(chart.max)}</span>
+                )}
+              </span>
+            </td>
+            <td />
+          </tr>
+        </tfoot>
+      )}
+    </table>
   );
 }

@@ -1213,9 +1213,48 @@ pre {
   bottom: -4px;
   border-left: 1.5px dashed #f5c76e;
 }
+/* One-core guide line on the CPU chart; distinct from the amber throughput target. */
+.chart-reference {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  border-left: 1.5px dashed var(--muted);
+}
+/* Memory and CPU bars share the throughput encoding but read as a cooler tone,
+   so the eye does not mistake a resource bar for a throughput bar. It inherits
+   the .chart-bar opacity rules, dimmed for non-winners and full for the winner. */
+.chart-bar-resource {
+  background: #6f9ff5;
+}
 .chart-value {
   padding-left: 10px !important;
   white-space: nowrap;
+}
+/* Each stacked chart names its metric; the axis row already labels the scale. */
+.chart-caption {
+  caption-side: top;
+  text-align: left;
+  padding: 0 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+.chart-caption .muted {
+  font-weight: 400;
+}
+.chart-empty {
+  padding: 6px 0 !important;
+  font-size: 12px;
+}
+.chart-axis-max {
+  position: absolute;
+  right: 0;
+}
+/* Stack throughput, memory and CPU with a light separator between them. */
+.board-chart > .chart-table + .chart-table {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-soft);
 }
 .chart-axis-line {
   display: block;
