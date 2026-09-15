@@ -1,0 +1,2841 @@
+{
+  "schema_version": 1,
+  "id": "test-host-20260915-plotbench-baseline",
+  "title": "Plotbench baseline",
+  "recorded_at": "2026-09-15T10:00:00+02:00",
+  "input_sha256": "092b6c5fe457a50538f12defa6a27bbe9b2a686550495cb71787f7fae241e669",
+  "host": {
+    "id": "test-host",
+    "label": "Test host",
+    "cpu": "Test CPU",
+    "gpu": "Test GPU",
+    "memory_gib": 16,
+    "os": "Test OS 1.0",
+    "architecture": "arm64"
+  },
+  "notes": "Synthetic baseline campaign for the website tests: two frontends, seven sections, three 30 s repetitions, one failed run and one source-limited run. Native display at 120 Hz and 2x scaling.",
+  "classification": "benchmark",
+  "completion_status": "completed",
+  "planned_runs": 42,
+  "runs": [
+    {
+      "id": "run-0001",
+      "scenario": "waveform",
+      "frontend": "pyqtgraph",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "e94156bf4f7b6bb5de4f96b9a7ad5237566e56090bf31c2a8ed2f3d581f41134",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "pyqtgraph PlotCurveItem/ImageItem on QGraphicsView (raster)",
+        "measurement_stage": "setData/setImage on the Qt thread including QImage conversion; compositor/presentation excluded",
+        "versions": {
+          "numpy": "2.5.3",
+          "pyqtgraph": "0.14.1",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            1949.5,
+            722.6
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60.0,
+        "update_p50_ms": 2.1,
+        "update_p95_ms": 3.4,
+        "cpu_mean_percent": 28.0,
+        "rss_peak_mib": 233.8,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0002",
+      "scenario": "waveform",
+      "frontend": "pyqtgraph",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "e94156bf4f7b6bb5de4f96b9a7ad5237566e56090bf31c2a8ed2f3d581f41134",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "pyqtgraph PlotCurveItem/ImageItem on QGraphicsView (raster)",
+        "measurement_stage": "setData/setImage on the Qt thread including QImage conversion; compositor/presentation excluded",
+        "versions": {
+          "numpy": "2.5.3",
+          "pyqtgraph": "0.14.1",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            1949.5,
+            722.6
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.9,
+        "update_p50_ms": 2.2,
+        "update_p95_ms": 3.5,
+        "cpu_mean_percent": 28.3,
+        "rss_peak_mib": 234.3,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0003",
+      "scenario": "waveform",
+      "frontend": "pyqtgraph",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "e94156bf4f7b6bb5de4f96b9a7ad5237566e56090bf31c2a8ed2f3d581f41134",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "pyqtgraph PlotCurveItem/ImageItem on QGraphicsView (raster)",
+        "measurement_stage": "setData/setImage on the Qt thread including QImage conversion; compositor/presentation excluded",
+        "versions": {
+          "numpy": "2.5.3",
+          "pyqtgraph": "0.14.1",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            1949.5,
+            722.6
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60.0,
+        "update_p50_ms": 2.3000000000000003,
+        "update_p95_ms": 3.6,
+        "cpu_mean_percent": 28.6,
+        "rss_peak_mib": 234.8,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0004",
+      "scenario": "multi-curve",
+      "frontend": "pyqtgraph",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 10,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "e94156bf4f7b6bb5de4f96b9a7ad5237566e56090bf31c2a8ed2f3d581f41134",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "pyqtgraph PlotCurveItem/ImageItem on QGraphicsView (raster)",
+        "measurement_stage": "setData/setImage on the Qt thread including QImage conversion; compositor/presentation excluded",
+        "versions": {
+          "numpy": "2.5.3",
+          "pyqtgraph": "0.14.1",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            1949.5,
+            722.6
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.8,
+        "update_p50_ms": 4.8,
+        "update_p95_ms": 6.9,
+        "cpu_mean_percent": 40.5,
+        "rss_peak_mib": 260.9,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0005",
+      "scenario": "multi-curve",
+      "frontend": "pyqtgraph",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 10,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "e94156bf4f7b6bb5de4f96b9a7ad5237566e56090bf31c2a8ed2f3d581f41134",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "pyqtgraph PlotCurveItem/ImageItem on QGraphicsView (raster)",
+        "measurement_stage": "setData/setImage on the Qt thread including QImage conversion; compositor/presentation excluded",
+        "versions": {
+          "numpy": "2.5.3",
+          "pyqtgraph": "0.14.1",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            1949.5,
+            722.6
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.9,
+        "update_p50_ms": 4.8999999999999995,
+        "update_p95_ms": 7.0,
+        "cpu_mean_percent": 40.8,
+        "rss_peak_mib": 261.4,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0006",
+      "scenario": "multi-curve",
+      "frontend": "pyqtgraph",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 10,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "e94156bf4f7b6bb5de4f96b9a7ad5237566e56090bf31c2a8ed2f3d581f41134",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "pyqtgraph PlotCurveItem/ImageItem on QGraphicsView (raster)",
+        "measurement_stage": "setData/setImage on the Qt thread including QImage conversion; compositor/presentation excluded",
+        "versions": {
+          "numpy": "2.5.3",
+          "pyqtgraph": "0.14.1",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            1949.5,
+            722.6
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.7,
+        "update_p50_ms": 5.0,
+        "update_p95_ms": 7.1000000000000005,
+        "cpu_mean_percent": 41.1,
+        "rss_peak_mib": 261.9,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0007",
+      "scenario": "multi-plot",
+      "frontend": "pyqtgraph",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 2,
+        "curves": 5,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "e94156bf4f7b6bb5de4f96b9a7ad5237566e56090bf31c2a8ed2f3d581f41134",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "pyqtgraph PlotCurveItem/ImageItem on QGraphicsView (raster)",
+        "measurement_stage": "setData/setImage on the Qt thread including QImage conversion; compositor/presentation excluded",
+        "versions": {
+          "numpy": "2.5.3",
+          "pyqtgraph": "0.14.1",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            974.75,
+            722.6
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.6,
+        "update_p50_ms": 5.6,
+        "update_p95_ms": 7.8,
+        "cpu_mean_percent": 46.2,
+        "rss_peak_mib": 271.4,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0008",
+      "scenario": "multi-plot",
+      "frontend": "pyqtgraph",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 2,
+        "curves": 5,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "e94156bf4f7b6bb5de4f96b9a7ad5237566e56090bf31c2a8ed2f3d581f41134",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "pyqtgraph PlotCurveItem/ImageItem on QGraphicsView (raster)",
+        "measurement_stage": "setData/setImage on the Qt thread including QImage conversion; compositor/presentation excluded",
+        "versions": {
+          "numpy": "2.5.3",
+          "pyqtgraph": "0.14.1",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            974.75,
+            722.6
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.7,
+        "update_p50_ms": 5.699999999999999,
+        "update_p95_ms": 7.8999999999999995,
+        "cpu_mean_percent": 46.5,
+        "rss_peak_mib": 271.9,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0009",
+      "scenario": "multi-plot",
+      "frontend": "pyqtgraph",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 2,
+        "curves": 5,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "e94156bf4f7b6bb5de4f96b9a7ad5237566e56090bf31c2a8ed2f3d581f41134",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "pyqtgraph PlotCurveItem/ImageItem on QGraphicsView (raster)",
+        "measurement_stage": "setData/setImage on the Qt thread including QImage conversion; compositor/presentation excluded",
+        "versions": {
+          "numpy": "2.5.3",
+          "pyqtgraph": "0.14.1",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            974.75,
+            722.6
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.5,
+        "update_p50_ms": 5.8,
+        "update_p95_ms": 8.0,
+        "cpu_mean_percent": 46.800000000000004,
+        "rss_peak_mib": 272.4,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0010",
+      "scenario": "scalar-image",
+      "frontend": "pyqtgraph",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "e94156bf4f7b6bb5de4f96b9a7ad5237566e56090bf31c2a8ed2f3d581f41134",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "pyqtgraph PlotCurveItem/ImageItem on QGraphicsView (raster)",
+        "measurement_stage": "setData/setImage on the Qt thread including QImage conversion; compositor/presentation excluded",
+        "versions": {
+          "numpy": "2.5.3",
+          "pyqtgraph": "0.14.1",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            721.6,
+            721.6
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.9,
+        "update_p50_ms": 4.0,
+        "update_p95_ms": 6.5,
+        "cpu_mean_percent": 40.5,
+        "rss_peak_mib": 275.5,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0011",
+      "scenario": "scalar-image",
+      "frontend": "pyqtgraph",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "e94156bf4f7b6bb5de4f96b9a7ad5237566e56090bf31c2a8ed2f3d581f41134",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "pyqtgraph PlotCurveItem/ImageItem on QGraphicsView (raster)",
+        "measurement_stage": "setData/setImage on the Qt thread including QImage conversion; compositor/presentation excluded",
+        "versions": {
+          "numpy": "2.5.3",
+          "pyqtgraph": "0.14.1",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            721.6,
+            721.6
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60.0,
+        "update_p50_ms": 4.1,
+        "update_p95_ms": 6.6,
+        "cpu_mean_percent": 40.8,
+        "rss_peak_mib": 276.0,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0012",
+      "scenario": "scalar-image",
+      "frontend": "pyqtgraph",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "e94156bf4f7b6bb5de4f96b9a7ad5237566e56090bf31c2a8ed2f3d581f41134",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "pyqtgraph PlotCurveItem/ImageItem on QGraphicsView (raster)",
+        "measurement_stage": "setData/setImage on the Qt thread including QImage conversion; compositor/presentation excluded",
+        "versions": {
+          "numpy": "2.5.3",
+          "pyqtgraph": "0.14.1",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            721.6,
+            721.6
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.8,
+        "update_p50_ms": 4.2,
+        "update_p95_ms": 6.7,
+        "cpu_mean_percent": 41.1,
+        "rss_peak_mib": 276.5,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0013",
+      "scenario": "rgb-image",
+      "frontend": "pyqtgraph",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "rgb",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "e94156bf4f7b6bb5de4f96b9a7ad5237566e56090bf31c2a8ed2f3d581f41134",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "pyqtgraph PlotCurveItem/ImageItem on QGraphicsView (raster)",
+        "measurement_stage": "setData/setImage on the Qt thread including QImage conversion; compositor/presentation excluded",
+        "versions": {
+          "numpy": "2.5.3",
+          "pyqtgraph": "0.14.1",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            721.6,
+            721.6
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60.0,
+        "update_p50_ms": 3.2,
+        "update_p95_ms": 5.1,
+        "cpu_mean_percent": 32.5,
+        "rss_peak_mib": 263.9,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0014",
+      "scenario": "rgb-image",
+      "frontend": "pyqtgraph",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "rgb",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "e94156bf4f7b6bb5de4f96b9a7ad5237566e56090bf31c2a8ed2f3d581f41134",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "pyqtgraph PlotCurveItem/ImageItem on QGraphicsView (raster)",
+        "measurement_stage": "setData/setImage on the Qt thread including QImage conversion; compositor/presentation excluded",
+        "versions": {
+          "numpy": "2.5.3",
+          "pyqtgraph": "0.14.1",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            721.6,
+            721.6
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.9,
+        "update_p50_ms": 3.3000000000000003,
+        "update_p95_ms": 5.199999999999999,
+        "cpu_mean_percent": 32.8,
+        "rss_peak_mib": 264.4,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0015",
+      "scenario": "rgb-image",
+      "frontend": "pyqtgraph",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "rgb",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "e94156bf4f7b6bb5de4f96b9a7ad5237566e56090bf31c2a8ed2f3d581f41134",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "pyqtgraph PlotCurveItem/ImageItem on QGraphicsView (raster)",
+        "measurement_stage": "setData/setImage on the Qt thread including QImage conversion; compositor/presentation excluded",
+        "versions": {
+          "numpy": "2.5.3",
+          "pyqtgraph": "0.14.1",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            721.6,
+            721.6
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60.0,
+        "update_p50_ms": 3.4000000000000004,
+        "update_p95_ms": 5.3,
+        "cpu_mean_percent": 33.1,
+        "rss_peak_mib": 264.9,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0016",
+      "scenario": "multi-image",
+      "frontend": "pyqtgraph",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 4
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "e94156bf4f7b6bb5de4f96b9a7ad5237566e56090bf31c2a8ed2f3d581f41134",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "pyqtgraph PlotCurveItem/ImageItem on QGraphicsView (raster)",
+        "measurement_stage": "setData/setImage on the Qt thread including QImage conversion; compositor/presentation excluded",
+        "versions": {
+          "numpy": "2.5.3",
+          "pyqtgraph": "0.14.1",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            360.8,
+            360.8
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.7,
+        "update_p50_ms": 9.8,
+        "update_p95_ms": 12.4,
+        "cpu_mean_percent": 61.0,
+        "rss_peak_mib": 318.2,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0017",
+      "scenario": "multi-image",
+      "frontend": "pyqtgraph",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 4
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "e94156bf4f7b6bb5de4f96b9a7ad5237566e56090bf31c2a8ed2f3d581f41134",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "pyqtgraph PlotCurveItem/ImageItem on QGraphicsView (raster)",
+        "measurement_stage": "setData/setImage on the Qt thread including QImage conversion; compositor/presentation excluded",
+        "versions": {
+          "numpy": "2.5.3",
+          "pyqtgraph": "0.14.1",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            360.8,
+            360.8
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.6,
+        "update_p50_ms": 9.9,
+        "update_p95_ms": 12.5,
+        "cpu_mean_percent": 61.3,
+        "rss_peak_mib": 318.7,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0018",
+      "scenario": "multi-image",
+      "frontend": "pyqtgraph",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 4
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "e94156bf4f7b6bb5de4f96b9a7ad5237566e56090bf31c2a8ed2f3d581f41134",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "pyqtgraph PlotCurveItem/ImageItem on QGraphicsView (raster)",
+        "measurement_stage": "setData/setImage on the Qt thread including QImage conversion; compositor/presentation excluded",
+        "versions": {
+          "numpy": "2.5.3",
+          "pyqtgraph": "0.14.1",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            360.8,
+            360.8
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.8,
+        "update_p50_ms": 10.0,
+        "update_p95_ms": 12.6,
+        "cpu_mean_percent": 61.6,
+        "rss_peak_mib": 319.2,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0019",
+      "scenario": "large-image",
+      "frontend": "pyqtgraph",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 2048,
+        "height": 2048,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "e94156bf4f7b6bb5de4f96b9a7ad5237566e56090bf31c2a8ed2f3d581f41134",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "pyqtgraph PlotCurveItem/ImageItem on QGraphicsView (raster)",
+        "measurement_stage": "setData/setImage on the Qt thread including QImage conversion; compositor/presentation excluded",
+        "versions": {
+          "numpy": "2.5.3",
+          "pyqtgraph": "0.14.1",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            721.6,
+            721.6
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.5,
+        "update_p50_ms": 12.0,
+        "update_p95_ms": 15.2,
+        "cpu_mean_percent": 131.1,
+        "rss_peak_mib": 450.1,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0020",
+      "scenario": "large-image",
+      "frontend": "pyqtgraph",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 2048,
+        "height": 2048,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "e94156bf4f7b6bb5de4f96b9a7ad5237566e56090bf31c2a8ed2f3d581f41134",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "pyqtgraph PlotCurveItem/ImageItem on QGraphicsView (raster)",
+        "measurement_stage": "setData/setImage on the Qt thread including QImage conversion; compositor/presentation excluded",
+        "versions": {
+          "numpy": "2.5.3",
+          "pyqtgraph": "0.14.1",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            721.6,
+            721.6
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.4,
+        "update_p50_ms": 12.1,
+        "update_p95_ms": 15.299999999999999,
+        "cpu_mean_percent": 131.4,
+        "rss_peak_mib": 450.6,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0021",
+      "scenario": "large-image",
+      "frontend": "pyqtgraph",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 2048,
+        "height": 2048,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "e94156bf4f7b6bb5de4f96b9a7ad5237566e56090bf31c2a8ed2f3d581f41134",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "pyqtgraph PlotCurveItem/ImageItem on QGraphicsView (raster)",
+        "measurement_stage": "setData/setImage on the Qt thread including QImage conversion; compositor/presentation excluded",
+        "versions": {
+          "numpy": "2.5.3",
+          "pyqtgraph": "0.14.1",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            721.6,
+            721.6
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.6,
+        "update_p50_ms": 12.2,
+        "update_p95_ms": 15.399999999999999,
+        "cpu_mean_percent": 131.7,
+        "rss_peak_mib": 451.1,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0022",
+      "scenario": "waveform",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "07f36b8220ce3478054f524bfe3d3a8dd120834bd463de73d6dc17914bd74eed",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            1949.5,
+            722.6
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60.0,
+        "update_p50_ms": 9.1,
+        "update_p95_ms": 12.3,
+        "cpu_mean_percent": 43.4,
+        "rss_peak_mib": 314.0,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0023",
+      "scenario": "waveform",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "07f36b8220ce3478054f524bfe3d3a8dd120834bd463de73d6dc17914bd74eed",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            1949.5,
+            722.6
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.9,
+        "update_p50_ms": 9.2,
+        "update_p95_ms": 12.4,
+        "cpu_mean_percent": 43.699999999999996,
+        "rss_peak_mib": 314.5,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0024",
+      "scenario": "waveform",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "07f36b8220ce3478054f524bfe3d3a8dd120834bd463de73d6dc17914bd74eed",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            1949.5,
+            722.6
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60.0,
+        "update_p50_ms": 9.299999999999999,
+        "update_p95_ms": 12.5,
+        "cpu_mean_percent": 44.0,
+        "rss_peak_mib": 315.0,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0025",
+      "scenario": "multi-curve",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 10,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "07f36b8220ce3478054f524bfe3d3a8dd120834bd463de73d6dc17914bd74eed",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            1949.5,
+            722.6
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 55.2,
+        "update_p50_ms": 16.4,
+        "update_p95_ms": 19.8,
+        "cpu_mean_percent": 88.7,
+        "rss_peak_mib": 352.6,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0026",
+      "scenario": "multi-curve",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 10,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "07f36b8220ce3478054f524bfe3d3a8dd120834bd463de73d6dc17914bd74eed",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            1949.5,
+            722.6
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 54.8,
+        "update_p50_ms": 16.5,
+        "update_p95_ms": 19.900000000000002,
+        "cpu_mean_percent": 89.0,
+        "rss_peak_mib": 353.1,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0027",
+      "scenario": "multi-curve",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 10,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "07f36b8220ce3478054f524bfe3d3a8dd120834bd463de73d6dc17914bd74eed",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            1949.5,
+            722.6
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 55.5,
+        "update_p50_ms": 16.599999999999998,
+        "update_p95_ms": 20.0,
+        "cpu_mean_percent": 89.3,
+        "rss_peak_mib": 353.6,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0028",
+      "scenario": "multi-plot",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 2,
+        "curves": 5,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "07f36b8220ce3478054f524bfe3d3a8dd120834bd463de73d6dc17914bd74eed",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            974.75,
+            722.6
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 38.7,
+        "update_p50_ms": 24.6,
+        "update_p95_ms": 28.9,
+        "cpu_mean_percent": 101.2,
+        "rss_peak_mib": 371.9,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0029",
+      "scenario": "multi-plot",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 2,
+        "curves": 5,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "07f36b8220ce3478054f524bfe3d3a8dd120834bd463de73d6dc17914bd74eed",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            974.75,
+            722.6
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 38.2,
+        "update_p50_ms": 24.700000000000003,
+        "update_p95_ms": 29.0,
+        "cpu_mean_percent": 101.5,
+        "rss_peak_mib": 372.4,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0030",
+      "scenario": "multi-plot",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 2,
+        "curves": 5,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "07f36b8220ce3478054f524bfe3d3a8dd120834bd463de73d6dc17914bd74eed",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            974.75,
+            722.6
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 39.1,
+        "update_p50_ms": 24.8,
+        "update_p95_ms": 29.099999999999998,
+        "cpu_mean_percent": 101.8,
+        "rss_peak_mib": 372.9,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0031",
+      "scenario": "scalar-image",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "07f36b8220ce3478054f524bfe3d3a8dd120834bd463de73d6dc17914bd74eed",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            721.6,
+            721.6
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 28.3,
+        "update_p50_ms": 33.9,
+        "update_p95_ms": 37.2,
+        "cpu_mean_percent": 107.8,
+        "rss_peak_mib": 464.9,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0032",
+      "scenario": "scalar-image",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "07f36b8220ce3478054f524bfe3d3a8dd120834bd463de73d6dc17914bd74eed",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            721.6,
+            721.6
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 28.1,
+        "update_p50_ms": 34.0,
+        "update_p95_ms": 37.300000000000004,
+        "cpu_mean_percent": 108.1,
+        "rss_peak_mib": 465.4,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0033",
+      "scenario": "scalar-image",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "07f36b8220ce3478054f524bfe3d3a8dd120834bd463de73d6dc17914bd74eed",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            721.6,
+            721.6
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 28.6,
+        "update_p50_ms": 34.1,
+        "update_p95_ms": 37.400000000000006,
+        "cpu_mean_percent": 108.39999999999999,
+        "rss_peak_mib": 465.9,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0034",
+      "scenario": "rgb-image",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "rgb",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "07f36b8220ce3478054f524bfe3d3a8dd120834bd463de73d6dc17914bd74eed",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            721.6,
+            721.6
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 25.8,
+        "update_p50_ms": 37.4,
+        "update_p95_ms": 41.0,
+        "cpu_mean_percent": 107.1,
+        "rss_peak_mib": 486.3,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0035",
+      "scenario": "rgb-image",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "rgb",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "07f36b8220ce3478054f524bfe3d3a8dd120834bd463de73d6dc17914bd74eed",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            721.6,
+            721.6
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 25.5,
+        "update_p50_ms": 37.5,
+        "update_p95_ms": 41.1,
+        "cpu_mean_percent": 107.39999999999999,
+        "rss_peak_mib": 486.8,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0036",
+      "scenario": "rgb-image",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "rgb",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "07f36b8220ce3478054f524bfe3d3a8dd120834bd463de73d6dc17914bd74eed",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            721.6,
+            721.6
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 26.0,
+        "update_p50_ms": 37.6,
+        "update_p95_ms": 41.2,
+        "cpu_mean_percent": 107.69999999999999,
+        "rss_peak_mib": 487.3,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0037",
+      "scenario": "multi-image",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 4
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "07f36b8220ce3478054f524bfe3d3a8dd120834bd463de73d6dc17914bd74eed",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            360.8,
+            360.8
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 19.8,
+        "update_p50_ms": 48.9,
+        "update_p95_ms": 53.1,
+        "cpu_mean_percent": 118.4,
+        "rss_peak_mib": 612.7,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0038",
+      "scenario": "multi-image",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 4
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "07f36b8220ce3478054f524bfe3d3a8dd120834bd463de73d6dc17914bd74eed",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            360.8,
+            360.8
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 19.6,
+        "update_p50_ms": 49.0,
+        "update_p95_ms": 53.2,
+        "cpu_mean_percent": 118.7,
+        "rss_peak_mib": 613.2,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0039",
+      "scenario": "multi-image",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "failed",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 4
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 0,
+      "context": {
+        "fingerprint": "07f36b8220ce3478054f524bfe3d3a8dd120834bd463de73d6dc17914bd74eed",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            360.8,
+            360.8
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": null,
+        "update_p50_ms": null,
+        "update_p95_ms": null,
+        "cpu_mean_percent": null,
+        "rss_peak_mib": null,
+        "gap_percent": null,
+        "source_hz": null,
+        "source_deadline_misses": null,
+        "source_mailbox_drops": null
+      }
+    },
+    {
+      "id": "run-0040",
+      "scenario": "large-image",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 2048,
+        "height": 2048,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "07f36b8220ce3478054f524bfe3d3a8dd120834bd463de73d6dc17914bd74eed",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            721.6,
+            721.6
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 5.6,
+        "update_p50_ms": 172.0,
+        "update_p95_ms": 181.3,
+        "cpu_mean_percent": 157.5,
+        "rss_peak_mib": 823.8,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0041",
+      "scenario": "large-image",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 2048,
+        "height": 2048,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "07f36b8220ce3478054f524bfe3d3a8dd120834bd463de73d6dc17914bd74eed",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            721.6,
+            721.6
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 5.5,
+        "update_p50_ms": 172.1,
+        "update_p95_ms": 181.4,
+        "cpu_mean_percent": 157.8,
+        "rss_peak_mib": 824.3,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 3,
+        "source_mailbox_drops": 120
+      }
+    },
+    {
+      "id": "run-0042",
+      "scenario": "large-image",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 2048,
+        "height": 2048,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "07f36b8220ce3478054f524bfe3d3a8dd120834bd463de73d6dc17914bd74eed",
+        "source_hash": "2dc815a9cf7b6bf38c7bc32d97feec1ebfbba6745fba363ff4058e4db6c5a22b",
+        "commit": "d7195664b6dbf691573403d42eb640e5e1a28aa2",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 2,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            721.6,
+            721.6
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 120,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 5.7,
+        "update_p50_ms": 172.2,
+        "update_p95_ms": 181.5,
+        "cpu_mean_percent": 158.1,
+        "rss_peak_mib": 824.8,
+        "gap_percent": 0,
+        "source_hz": 60.0,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    }
+  ],
+  "links": {
+    "report": null,
+    "extended_report": null,
+    "raw_data": null
+  }
+}

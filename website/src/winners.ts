@@ -1,5 +1,6 @@
 import { groupObservations, summarizeRates, type ResultGroup } from './aggregation';
 import { workloadKey, type Observation } from './model';
+import { BASELINE_VERSION, sectionOf, type Section } from './baseline';
 
 export interface FrontendRecord {
   frontend: string;
@@ -20,15 +21,21 @@ export interface WinnerGroup extends ResultGroup {
 }
 export interface WinnerBoard {
   key: string;
+  /** The baseline section this board ranks, or null for a workload outside the suite. */
+  section: Section | null;
   representative: Observation;
   records: FrontendRecord[];
   evaluatedGroups: number;
   hosts: number;
+  /** Distinct source commits behind the board's groups; revisions share a board but never merge. */
+  revisions: number;
   closeRatePercent: number;
 }
 export interface WinnerCollection {
   boards: WinnerBoard[];
   excludedGroups: number;
+  /** Excluded groups per section slug (or workload key outside the suite). */
+  excludedBySection: Record<string, number>;
 }
 
 // Display precision for rates and tie-breaking precision for resource summaries.
@@ -73,17 +80,17 @@ function compareResources(a: ResourceUsage, b: ResourceUsage): number {
   return compareAvailable(rounded(a.cpuPercent), rounded(b.cpuPercent));
 }
 
+// One board per baseline section. Source revisions and display contexts stay separate
+// groups through compatibilityKey and are shown on every record; they do not fork boards.
 export function winnerKey({ campaign: c, run: r }: Observation): string {
   return JSON.stringify([
-    workloadKey(r.config),
+    BASELINE_VERSION,
+    sectionOf(r.config)?.slug ?? workloadKey(r.config),
     r.backend,
     r.mode,
     r.measurement_seconds,
     r.warmup_seconds,
     c.classification,
-    r.context.source_hash,
-    r.context.commit,
-    r.context.dirty,
   ]);
 }
 
@@ -95,9 +102,18 @@ export function collectWinners(
     throw new Error('Unsupported close-rate threshold');
   const cases = new Map<string, WinnerGroup[]>();
   let excludedGroups = 0;
+  const excludedBySection: Record<string, number> = {};
   for (const group of groupObservations(observations)) {
-    if (group.incompleteContext || group.rates.median === null) {
+    // Unknown display scale leaves the rasterised area of image sections unknowable.
+    if (
+      group.incompleteContext ||
+      group.rates.median === null ||
+      group.representative.run.context.pixel_ratio === null
+    ) {
       excludedGroups++;
+      const config = group.representative.run.config;
+      const slug = sectionOf(config)?.slug ?? workloadKey(config);
+      excludedBySection[slug] = (excludedBySection[slug] ?? 0) + 1;
       continue;
     }
     const key = winnerKey(group.representative),
@@ -168,12 +184,22 @@ export function collectWinners(
     });
     boards.push({
       key,
+      section: sectionOf(groups[0].representative.run.config),
       representative: groups[0].representative,
       records,
       evaluatedGroups: groups.length,
       hosts: new Set(groups.map((g) => g.representative.campaign.host.id)).size,
+      revisions: new Set(groups.map((g) => g.representative.run.context.commit)).size,
       closeRatePercent: tolerance,
     });
   }
-  return { boards: boards.sort((a, b) => a.key.localeCompare(b.key)), excludedGroups };
+  return {
+    boards: boards.sort(
+      (a, b) =>
+        (a.section?.index ?? Infinity) - (b.section?.index ?? Infinity) ||
+        a.key.localeCompare(b.key),
+    ),
+    excludedGroups,
+    excludedBySection,
+  };
 }
