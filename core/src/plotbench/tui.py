@@ -37,7 +37,7 @@ from textual.widgets.option_list import Option
 
 from .backends import BACKENDS
 from .runtime import component_installed, setup_component
-from .suites import FRONTENDS
+from .suites import BASELINE_SUITE, FRONTENDS
 
 ROOT = Path(__file__).resolve().parents[3]
 SCRIPTS = ROOT / "scripts" / "setup"
@@ -259,7 +259,12 @@ class PlotbenchTUI(App):
         for directory, tag in ((SCENARIOS, "scenarios"), (CUSTOM, "scenarios_custom")):
             if directory.is_dir():
                 for path in sorted(directory.glob("*.json")):
-                    suites.append((f"{tag}/{path.name}", f"{tag}/{path.name}"))
+                    value = f"{tag}/{path.name}"
+                    if value == BASELINE_SUITE:
+                        # The official suite is pinned first so it is the obvious choice.
+                        suites.insert(0, (f"{value}  (official baseline)", value))
+                    else:
+                        suites.append((value, value))
         if not suites:
             self.notify("No suites found in scenarios/ or scenarios_custom/.")
             return

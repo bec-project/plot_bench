@@ -11,7 +11,16 @@ import pytest
 
 from plotbench import cli, probe, runner
 from plotbench.config import Config
-from plotbench.suites import expand_cases, plan_from_args, prepare_suite
+from plotbench.suites import (
+    BASELINE_SUITE,
+    CONFIG_FIELDS,
+    FRONTENDS,
+    expand_cases,
+    plan_from_args,
+    prepare_suite,
+)
+
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def minimal_suite():
@@ -487,6 +496,138 @@ def test_multi_plot_sweep_scenario_matches_its_specification():
     assert "waveform-plots-8-4" in names and "image-plots-4-512" in names
     assert all(Config(**case["config"]).append_count > 0 for case in cases)
     assert len(prepare_suite(suite).jobs) == 20 * 6 * 3
+
+
+BASELINE_COMMON = {
+    "hz": 60,
+    "points": 10000,
+    "append_count": 1000,
+    "waveform_mode": "replace",
+    "curves": 1,
+    "waveform_plots": 1,
+    "width": 512,
+    "height": 512,
+    "image_mode": "scalar",
+    "image_plots": 1,
+    "seed": 42,
+}
+
+
+def test_baseline_scenario_matches_its_specification():
+    suite = _shipped("baseline")
+    assert suite["name"] == "Plotbench baseline"
+    assert suite["backends"] == ["rust"] and suite["modes"] == ["stream"]
+    # Membership is explicit: every listed frontend exists in the catalog, a subset is allowed.
+    assert suite["frontends"] and set(suite["frontends"]) <= set(FRONTENDS)
+    assert len(set(suite["frontends"])) == len(suite["frontends"])
+    assert "case_groups" not in suite
+    assert (
+        suite["warmup_seconds"],
+        suite["measurement_seconds"],
+        suite["cooldown_seconds"],
+        suite["repetitions"],
+        suite["order_seed"],
+    ) == (5, 30, 2, 3, 42)
+    expected = {
+        "waveform": dict(BASELINE_COMMON, view="waveform"),
+        "multi-curve": dict(BASELINE_COMMON, view="waveform", curves=10),
+        "multi-plot": dict(BASELINE_COMMON, view="waveform", curves=5, waveform_plots=2),
+        "scalar-image": dict(BASELINE_COMMON, view="image"),
+        "rgb-image": dict(BASELINE_COMMON, view="image", image_mode="rgb"),
+        "multi-image": dict(BASELINE_COMMON, view="image", image_plots=4),
+        "large-image": dict(BASELINE_COMMON, view="image", width=2048, height=2048),
+    }
+    configs = {case["name"]: case["config"] for case in suite["cases"]}
+    assert list(configs) == list(expected)
+    for name, config in configs.items():
+        # Every published field is explicit so no consumer re-implements Config defaults.
+        assert set(config) == CONFIG_FIELDS - {"generation"}, name
+        assert config == expected[name], name
+    assert len({Config(**config) for config in configs.values()}) == 7
+    plan = prepare_suite(suite)
+    assert plan.backends == ["rust"] and plan.modes == ["stream"]
+    assert plan.frontends == suite["frontends"]
+    assert plan.kind == "run" and len(plan.jobs) == 7 * len(suite["frontends"]) * 3
+
+
+def _baseline_args(**overrides):
+    args = SimpleNamespace(suite=ROOT / BASELINE_SUITE, baseline=True)
+    for name, value in overrides.items():
+        setattr(args, name, value)
+    return args
+
+
+def test_baseline_flag_refuses_a_copy_of_the_suite_at_another_path(tmp_path):
+    copy = tmp_path / "scenarios" / "baseline.json"
+    copy.parent.mkdir()
+    copy.write_text((ROOT / "scenarios" / "smoke.json").read_text())
+    with pytest.raises(ValueError, match="remove --suite"):
+        plan_from_args(_baseline_args(suite=copy))
+
+
+def test_baseline_flag_allows_narrowing_by_frontend_only():
+    plan = plan_from_args(_baseline_args())
+    assert len(plan.jobs) == 189
+    plan = plan_from_args(_baseline_args(frontends=["pyqtgraph"]))
+    assert plan.frontends == ["pyqtgraph"] and len(plan.jobs) == 21
+    plan = plan_from_args(
+        _baseline_args(output=Path("results/x"), display_context="fixed 120 Hz, 2x")
+    )
+    assert len(plan.jobs) == 189 and plan.suite["display_context"] == "fixed 120 Hz, 2x"
+
+
+@pytest.mark.parametrize(
+    "argument,value",
+    [
+        ("duration", 3),
+        ("warmup", 0),
+        ("cooldown", 0),
+        ("repetitions", 1),
+        ("limit", 2),
+        ("modes", ["replay"]),
+        ("backends", ["python"]),
+        ("headless", True),
+    ],
+)
+def test_baseline_flag_refuses_overrides_that_change_the_suite(argument, value):
+    with pytest.raises(ValueError, match=f"unmodified; remove --{argument}"):
+        plan_from_args(_baseline_args(**{argument: value}))
+
+
+def test_baseline_flag_refuses_a_different_suite_file():
+    args = _baseline_args(suite=ROOT / "scenarios" / "smoke.json")
+    with pytest.raises(ValueError, match="remove --suite"):
+        plan_from_args(args)
+
+
+def test_baseline_cli_selects_the_official_suite_at_parse_time(monkeypatch, capsys):
+    monkeypatch.chdir(ROOT)
+    monkeypatch.setattr("sys.argv", ["plotbench", "run", "--baseline", "--dry-run", "--json"])
+    cli.main()
+    plan = json.loads(capsys.readouterr().out)
+    assert plan["suite"]["name"] == "Plotbench baseline"
+    assert plan["run_count"] == 189
+    assert (plan["warmup_seconds"], plan["measurement_seconds"], plan["cooldown_seconds"]) == (
+        5,
+        30,
+        2,
+    )
+
+    monkeypatch.setattr(
+        "sys.argv",
+        ["plotbench", "run", "--baseline", "--frontends", "pyqtgraph", "--dry-run", "--json"],
+    )
+    cli.main()
+    plan = json.loads(capsys.readouterr().out)
+    assert plan["selected_frontends"] == ["pyqtgraph"] and plan["run_count"] == 21
+
+    monkeypatch.setattr(
+        "sys.argv", ["plotbench", "run", "--baseline", "--duration", "3", "--dry-run"]
+    )
+    with pytest.raises(SystemExit) as exited:
+        cli.main()
+    assert exited.value.code == 1
+    assert "remove --duration" in capsys.readouterr().err
 
 
 def test_serve_derives_plot_and_curve_options_from_config(monkeypatch, tmp_path):

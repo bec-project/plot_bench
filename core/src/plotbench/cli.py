@@ -8,7 +8,22 @@ from pathlib import Path
 
 from .backends import BACKENDS, DEFAULT_BACKEND
 from .config import Config
-from .suites import FRONTENDS
+from .suites import BASELINE_SUITE, FRONTENDS
+
+
+class BaselineAction(argparse.Action):
+    """`run --baseline`: select the official suite at parse time.
+
+    Setting `suite` here (instead of resolving a flag later in `main`) keeps every
+    documented `run --baseline` example expanding the real baseline file.
+    """
+
+    def __init__(self, option_strings, dest, **kwargs):
+        super().__init__(option_strings, dest, nargs=0, default=False, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, True)
+        namespace.suite = Path(BASELINE_SUITE)
 
 
 def add_suite_options(parser):
@@ -45,7 +60,15 @@ def main():
         if name != "generation":
             serve.add_argument("--" + name.replace("_", "-"), type=type(default), default=None)
     run = sub.add_parser("run", help="run a suite sequentially and generate a report")
-    run.add_argument("--suite", type=Path, default=Path("scenarios/smoke.json"))
+    # argparse enforces the exclusion in both argument orders; the guard in
+    # suites.check_baseline_overrides covers programmatic callers.
+    suite_group = run.add_mutually_exclusive_group()
+    suite_group.add_argument("--suite", type=Path, default=Path("scenarios/smoke.json"))
+    suite_group.add_argument(
+        "--baseline",
+        action=BaselineAction,
+        help="run the official baseline suite unmodified; only --frontends may narrow it",
+    )
     run.add_argument("--frontends", nargs="+", choices=FRONTENDS)
     run.add_argument("--modes", nargs="+", choices=("stream", "replay"))
     run.add_argument("--backends", nargs="+", choices=BACKENDS)

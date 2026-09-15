@@ -6,8 +6,9 @@ import math
 import random
 from copy import deepcopy
 from dataclasses import dataclass
+from pathlib import Path
 
-from .backends import BACKENDS, DEFAULT_BACKEND
+from .backends import BACKENDS, DEFAULT_BACKEND, ROOT
 from .config import Config
 
 FRONTENDS = (
@@ -22,6 +23,21 @@ FRONTENDS = (
     "plotly",
 )
 MODES = ("stream", "replay")
+# The official comparison suite: the only suite the community results site publishes.
+# Identity is structural (the site re-checks every run), so the CLI refuses overrides
+# that would change what `--baseline` measures.
+BASELINE_SUITE = "scenarios/baseline.json"
+BASELINE_FILENAME = "baseline.json"
+BASELINE_LOCKED_ARGUMENTS = (
+    "duration",
+    "warmup",
+    "cooldown",
+    "repetitions",
+    "limit",
+    "modes",
+    "backends",
+    "headless",
+)
 CONFIG_FIELDS = set(Config().to_dict())
 SUITE_FIELDS = {
     "name",
@@ -297,7 +313,23 @@ def load_suite(path):
         raise ValueError(f"{path}: invalid suite JSON: {exc}") from None
 
 
+def check_baseline_overrides(args):
+    """Refuse CLI overrides that would turn a `--baseline` run into an unpublishable one."""
+    if not getattr(args, "baseline", False):
+        return
+    if Path(args.suite).resolve() != (ROOT / BASELINE_SUITE).resolve():
+        raise ValueError("--baseline runs the official suite unmodified; remove --suite")
+    for name in BASELINE_LOCKED_ARGUMENTS:
+        value = getattr(args, name, None)
+        if value is not None and value is not False:
+            raise ValueError(
+                f"--baseline runs the official suite unmodified; remove --{name} "
+                "(only --frontends may narrow it)"
+            )
+
+
 def plan_from_args(args, *, kind="run"):
+    check_baseline_overrides(args)
     overrides = {
         name: getattr(args, name, None)
         for name in ("frontends", "modes", "backends", "repetitions", "display_context")
