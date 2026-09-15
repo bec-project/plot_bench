@@ -14,7 +14,7 @@ export function BoardChart({ board }: { board: WinnerBoard }) {
   return (
     <figure className="board-chart">
       <table
-        className="chart-table"
+        className="chart-table chart-throughput"
         aria-label={`Median submitted updates per second by frontend${where}`}
       >
         <caption className="chart-caption">
@@ -132,7 +132,10 @@ function ResourceChart({
   const valueText = (value: number) =>
     unit === '%' ? `${format(value)}%` : `${format(value)}${unit}`;
   return (
-    <table className="chart-table" aria-label={`Median ${title} by frontend${section}`}>
+    <table
+      className="chart-table chart-resource"
+      aria-label={`Median ${title} by frontend${section}`}
+    >
       <caption className="chart-caption">
         {title} <span className="muted">· {hint}</span>
       </caption>

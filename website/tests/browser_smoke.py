@@ -208,7 +208,9 @@ def test_results_filters_details_submission_and_mobile():
                 nav.get_by_role("link", name="Winners", exact=True)
             ).to_have_attribute("aria-current", "page")
             await expect(page.locator(".winner-board")).to_have_count(7)
-            await expect(page.locator(".board-chart .chart-table")).to_have_count(7)
+            # Each board charts throughput plus peak memory and mean CPU: 3 tables.
+            await expect(page.locator(".board-chart .chart-throughput")).to_have_count(7)
+            await expect(page.locator(".board-chart .chart-resource")).to_have_count(14)
             await page.goto(url + "#results")
             await expect(rail.get_by_role("link")).to_have_count(8)
             await expect(
@@ -521,12 +523,14 @@ def test_grouped_campaign_weights_drilldown_dates_pagination_winners_and_overall
             await expect(board.locator(".frontend-record")).to_have_count(1)
             await board.locator(".other-records > summary").click()
             await expect(board.locator(".frontend-record")).to_have_count(9)
-            await expect(board.locator(".board-chart .chart-row")).to_have_count(9)
-            await expect(board.locator(".board-chart .chart-row-winner")).to_have_count(
-                1
-            )
+            # One row per frontend in the throughput chart; memory and CPU repeat it.
+            await expect(board.locator(".chart-throughput .chart-row")).to_have_count(9)
+            await expect(board.locator(".chart-resource")).to_have_count(2)
+            await expect(
+                board.locator(".chart-throughput .chart-row-winner")
+            ).to_have_count(1)
             widths = await board.locator(
-                ".board-chart .chart-row .chart-track > .chart-bar"
+                ".chart-throughput .chart-row .chart-track > .chart-bar"
             ).evaluate_all("els => els.map(e => e.getBoundingClientRect().width)")
             assert widths[0] > widths[-1] > 0, widths
             await page.get_by_label("Acquired through (UTC)").fill("2026-09-16")
