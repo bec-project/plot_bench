@@ -65,6 +65,15 @@ custom waveform/image/axis rendering in both the UI and README.
    GPU/presentation timings from unlike API boundaries.
 5. Add a small scenario example, README entry and CI coverage. Keep expensive or
    optional SDK frontends out of the single-component quick start.
+6. Decide whether the frontend joins the official baseline suite. Membership is
+   explicit: add its ID to the `frontends` list of `scenarios/baseline.json` (the
+   core suite test checks that every listed frontend exists in the shared catalog;
+   a subset is allowed) and run the
+   website checks, because the community results site publishes baseline
+   campaigns only. A frontend outside that list can be measured locally but never
+   appears on the site's section boards or overall ranking. Its adapter must
+   report non-empty library versions in its metadata: records with incomplete
+   context are excluded from the winner boards.
 
 Go adapters use an independent `go.mod` / `go.sum`; keep module/build caches local,
 use read-only dependency resolution for builds, and register `.go`, `.mod` and
@@ -76,8 +85,20 @@ Test malformed frames, array layout, append/replay behavior, bounded delivery,
 conversion correctness and clean completion, including the multi-plot slicing and
 the grid layout. Exercise both backends with visible short stream/replay runs
 (`scenarios/smoke.json` and `scenarios/multi-plot-smoke.json`) and verify
-complete, usable telemetry. Test view changes outside recorded runs. Use
-screenshots only outside measurement windows.
+complete, usable telemetry. Before proposing the frontend for the baseline, run
+the seven sections once in their published form on a visible desktop
+(substitute your frontend's ID for `pyqtgraph`) and confirm every section
+completes with recorded versions, display scale and plot areas:
+
+```sh
+./scripts/plotbench run --suite scenarios/baseline.json --frontends pyqtgraph --warmup 1 --duration 3 --repetitions 1 --output results/acceptance-quick
+./scripts/plotbench run --baseline --frontends pyqtgraph --output results/acceptance
+```
+
+The first, shortened pass is a quick functional check of the same seven sections
+and is not publishable; the second is a real baseline campaign.
+Test view changes outside recorded runs. Use screenshots only outside
+measurement windows.
 
 Confirm repeated runs have stable runtime identity, source limitations stay
 visible, and failures remain in the report. State which OS/display combinations

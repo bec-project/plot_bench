@@ -78,6 +78,16 @@ Before sharing results, review operator notes, command paths, log contents and
 display metadata for information you do not intend to publish. Generated results
 are ignored by Git and are not included in the source repository.
 
+The only route onto the [community results site](../website/README.md) is a
+complete campaign of the official baseline suite: run
+`./scripts/plotbench run --baseline` (narrowed at most with `--frontends`), export
+its `summary.json` with the site's **Contribute** page or
+`npm --prefix website run export`, and open a pull request adding the JSON to
+`website/results/`. The exporter refuses campaigns of any other suite, shortened
+or partial baseline campaigns and smoke or diagnostic classifications before it
+writes a file; see the [submission requirements](../website/results/README.md).
+Reports of other campaigns are shared as files, not published on the site.
+
 For JFreeChart, `conversion_ms` includes float32-to-double waveform copies and
 scalar/RGB-to-ARGB image conversion. `draw_ms` includes axis/dataset updates and
 synchronous JFreeChart drawing to reusable Java2D rasters; it is inside `update_ms`.

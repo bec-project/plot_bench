@@ -163,17 +163,69 @@ Machine-specific browser paths belong in `--browser-executable`, not a shared
 scenario. `--json` is used with `--dry-run` and emits the resolved plan without
 starting services, building artifacts or creating result directories.
 
-Examples: `smoke.json` (short combined views, including one two-plot, two-curve,
-two-image case), `isolated-smoke.json` (separate plots), `stress-smoke.json` (large
-functional checks), `multi-plot-smoke.json` (short multi-plot and multi-curve
-checks), `standard.json` (large sweep), `streaming-comparison.json` (focused
-streaming comparison), `beamline-dashboard.json` (realistic operator windows with
-several plots and curves each), `multi-plot-sweep.json` (curve, waveform-plot and
+## The official baseline suite
+
+`scenarios/baseline.json` ("Plotbench baseline") is the one suite the
+[community results site](../website/README.md) publishes. It is an ordinary suite
+file — explicit cases, every workload field written out — and its seven cases are
+the site's seven sections. The case name is the section's slug, its URL key and
+the `scenario` of every published run, so the names are never renamed:
+
+| Section | Slug | View | Plots | Curves | Input |
+|---|---|---|---|---|---|
+| Waveform | `waveform` | waveform | 1 | 1 | 10,000 points |
+| Multi-curve waveform | `multi-curve` | waveform | 1 | 10 | 10,000 points per curve |
+| Multi-plot waveform | `multi-plot` | waveform | 2 | 5 | 10,000 points per curve |
+| Scalar image | `scalar-image` | image | 1 | — | 512 × 512 scalar |
+| RGB image | `rgb-image` | image | 1 | — | 512 × 512 RGB |
+| Multiple scalar images | `multi-image` | image | 4 | — | 512 × 512 scalar each |
+| Large scalar image | `large-image` | image | 1 | — | 2048 × 2048 scalar |
+
+Fixed conditions for every section: 60 Hz target rate, the Rust source, streaming
+delivery, waveform `replace` mode, `append_count` 1000, seed 42, 5 s warmup, 30 s
+measurement, 3 repetitions, 2 s cooldown and `order_seed` 42. The suite lists all
+nine frontends explicitly. Windows keep the frontends' default 1100 × 820 logical
+size — that is not a suite field, so the plot areas recorded in each run's
+metadata are the evidence of what was actually rendered.
+
+Run it with `--baseline`, which selects the file and refuses the overrides that
+would change what is measured (`--duration`, `--warmup`, `--cooldown`,
+`--repetitions`, `--limit`, `--modes`, `--backends` and `--headless`). Besides
+the preview flags `--dry-run` and `--json`, only `--frontends`, `--output`,
+`--display-context` and `--browser-executable` may be combined with it (a
+different `--suite` is refused too), so a campaign can cover any subset of the
+frontends:
+
+```sh
+./scripts/plotbench run --baseline --dry-run
+./scripts/plotbench run --baseline --frontends pyqtgraph matplotlib --output results/baseline \
+  --display-context "internal display, 120 Hz fixed, 2x scale, window centered"
+```
+
+The full suite expands to 189 runs (7 sections × 9 frontends × 3 repetitions);
+`--dry-run` prints the schedule and nominal time for the frontends you chose.
+Opening the same file with `--suite scenarios/baseline.json` keeps every override
+available for local experiments, but such campaigns, like edited copies saved from
+the matrix editor into `scenarios_custom/`, cannot be published: the site checks
+the campaign's structure, not its file name. A frontend that crashes before
+reporting its metadata should be re-run alone as its own baseline campaign
+rather than patched into the first one.
+
+## Examples
+
+`baseline.json` (the official seven-section comparison above), `smoke.json` (short
+combined views, including one two-plot, two-curve, two-image case),
+`isolated-smoke.json` (separate plots), `stress-smoke.json` (large functional
+checks), `multi-plot-smoke.json` (short multi-plot and multi-curve checks),
+`standard.json` (large sweep), `streaming-comparison.json` (focused streaming
+comparison), `beamline-dashboard.json` (realistic operator windows with several
+plots and curves each), `multi-plot-sweep.json` (curve, waveform-plot and
 image-plot count sweep), and `backend-probe.json` (receiver-only Rust source probe;
 select both backends explicitly for a source comparison). Always preview large
 suites; for example:
 
 ```sh
+./scripts/plotbench run --suite scenarios/baseline.json --dry-run
 ./scripts/plotbench run --suite scenarios/multi-plot-smoke.json --dry-run
 ./scripts/plotbench run --suite scenarios/beamline-dashboard.json --dry-run
 ./scripts/plotbench run --suite scenarios/multi-plot-sweep.json --dry-run

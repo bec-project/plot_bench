@@ -99,6 +99,8 @@ Toolkit-specific axis layout and font rasterization can differ. Actual plot area
 remain recorded in metadata; similar appearance does not imply identical raster
 workload or change the documented measurement boundaries.
 
-For presentation screenshots, use the smoke suite's replacement/scalar workload:
-30 Hz, 10,000 waveform points, a 512 × 512 scalar image, and the combined view.
-Capture only for visual QA, outside performance measurements.
+For presentation screenshots, use the official baseline's `waveform` section
+(60 Hz, one curve of 10,000 points in replace mode) for waveform captures and its
+`scalar-image` section (60 Hz, a 512 × 512 scalar image) for image captures; the
+source controls can switch a running demo between the two workloads. Capture only
+for visual QA, outside performance measurements.

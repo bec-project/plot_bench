@@ -20,6 +20,7 @@ The complete lists and platform notes are in `docs/validation.md` and
 | `frontends/qtgraphs-cpp/` | `ctest` in its build directory |
 | `core/webui/` | typecheck and rebuild; the committed bundles must come out unchanged |
 | `website/` | unit tests, Prettier check, catalogue validation and the build; the browser smoke when a Chromium is selected |
+| `scenarios/baseline.json` (the official suite; the results site derives its sections from it) | core tests (its specification test) AND `npm --prefix website test`, `npm --prefix website run validate`, `npm --prefix website run build`, plus the docs-example test |
 | `scenarios/`, `docs/`, `README.md`, `AGENTS.md`, `.agents/skills/` | the docs-example test — it parses every documented command against the CLI |
 | any `pyproject.toml`, `Cargo.toml` or `package.json` dependency change | re-lock with the tool, then the affected component's checks |
 

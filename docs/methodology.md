@@ -41,9 +41,11 @@ one update per frame, not sixteen. Every frontend arranges the plots with the sa
 grid rule and equal cell sizes ([presentation](presentation.md)), and metadata
 records `plot_counts`, `curves` and the physical data area of the first plot of
 each kind, so compare plot-count workloads only against the same counts and
-window size: more plots in the same window means smaller plots. The bundled
-`multi-plot-smoke`, `beamline-dashboard` and `multi-plot-sweep` scenarios cover
-these workloads; the standard `smoke` suite includes one such case.
+window size: more plots in the same window means smaller plots. The official
+`baseline` suite covers them with a ten-curve section and a two-plot,
+five-curve section; the bundled `multi-plot-smoke`, `beamline-dashboard` and
+`multi-plot-sweep` scenarios explore them further, and the standard `smoke` suite
+includes one such case.
 
 Streaming uses uncompressed WebSockets, one frame in flight and one latest pending
 frame per receiver. Decoded-frame acknowledgements bound buffering. Slow renderers
@@ -72,10 +74,25 @@ CPU uses 100% for one logical core; summed RSS may count shared pages more than 
 ## Running controlled measurements
 
 Use short smoke suites first. For repeatable comparisons, start with three
-30-second measured repetitions and a warmup, on an otherwise idle machine. Fix
-power policy, screen refresh/scaling, window placement and logical size. Record
-operator context with `--display-context`; toolkit-reported refresh is nominal.
-Wayland may not expose absolute window positions or physical display timing.
+30-second measured repetitions and a warmup, on an otherwise idle machine. The
+official baseline suite (`./scripts/plotbench run --baseline`, see
+[suites](suites.md#the-official-baseline-suite)) is exactly that recipe applied to
+seven fixed sections at 60 Hz from the Rust source, and it is the only campaign
+shape the community results site publishes. Fix power policy, screen
+refresh/scaling, window placement and logical size for the whole campaign: an
+adaptive refresh rate that changes between repetitions splits their recorded
+context and disqualifies the campaign from publication. Record operator context
+with `--display-context`; toolkit-reported refresh is nominal. Wayland may not
+expose absolute window positions or physical display timing.
+
+The site's per-section winner boards and its overall page do not add statistical
+power to this recipe. A section board ranks the best observed record of each
+frontend across hosts; the overall page adds the seven section placements of a
+frontend into one total, and ranks frontends by that total. It pools no
+measurement: no rate, memory or CPU value is averaged across sections or hosts,
+and a frontend without an eligible record in every section is listed as
+incomplete rather than ranked. Both pages are best-observed record views, not
+controlled comparisons.
 
 The runner launches one frontend at a time and records readiness, duration,
 completion, failures, hardware and source/build identity. Do not run other demos,
