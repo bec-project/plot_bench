@@ -4,6 +4,10 @@ An independent Java 17+ adapter using **JFreeChart 1.5.6**, the version used by
 PShell. This measures the Plotbench adapter, not PShell application performance.
 Visible runs currently support macOS; native Wayland Swing remains unvalidated.
 
+The adapter consumes protocol v2, including multiple waveform plots, curves per
+plot and scalar/RGB image plots. Plots use the shared grid and curve colours;
+timings cover conversion and rasterization of every plot in the frame.
+
 ```sh
 ./scripts/setup rust jfreechart --dev
 ./scripts/plotbench doctor --frontends jfreechart
@@ -75,6 +79,8 @@ overflow invalidate results; all raw diagnostics remain in the campaign.
 .envs/plotting-benchmark/bin/python -m plotbench.provenance jfreechart
 ```
 
+JUnit also decodes packets produced by the shared Python encoder across 24
+single/multiple-plot workloads and checks every rendered curve and converted image.
 JUnit covers binary layouts, malformed packets, append windows, replay bounds and
 pacing, fragmented ACK behavior, mailbox skips, conversion/raster correctness,
 bounded HTTP bodies and final telemetry. Tests use headless Java2D and a local HTTP

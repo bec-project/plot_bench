@@ -289,6 +289,28 @@ Windows and X11 are outside this integration's supported host contract.
 
 ## JFreeChart integration validation
 
+### Protocol v2 launch regression
+
+The Java branch initially retained a protocol-v1 decoder and self-generated v1
+test packets. Against the current v2 sources, a TUI demo exited with
+`java.lang.IllegalArgumentException: invalid version` even though setup and doctor
+passed. The historical checks below did not catch this incompatibility.
+
+The corrected adapter validates v2 shapes and renders all configured plots and
+curves. Ten JUnit tests now include 24 workloads encoded by the shared Python
+source, checking every waveform value and converted image pixel, plot counts,
+curve colours, configuration changes and rejection of mismatched dimensions.
+Core checks passed 681 tests with five optional checks skipped.
+
+On macOS arm64 / OpenJDK 25.0.1, component setup and doctor passed, and the TUI
+picker launched and stopped the Rust-backed Java demo. Visible application checks
+passed with both Python and Rust in stream and replay, exercising both → waveform
+→ image → both with two waveform plots, three curves per plot and three RGB image
+plots. Application snapshots confirmed the grid. These checks establish function,
+not steady-state performance or additional platform qualification.
+
+### Historical integration checks
+
 JFreeChart 1.5.6 was checked on macOS arm64 with Homebrew OpenJDK 25.0.1,
 Java 17 bytecode and a visible 60 Hz desktop at 1× scaling. All **16 combinations**
 in `scenarios/jfreechart-smoke.json` completed with usable telemetry: Python and

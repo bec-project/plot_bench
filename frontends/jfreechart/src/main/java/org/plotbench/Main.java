@@ -241,13 +241,8 @@ public final class Main {
     Source.Taken taken = source.take();
     if (taken == null) return;
     Protocol.Config c = taken.frame().config();
-    if (!view.equals(c.view())) {
-      view = c.view();
-      plotRow.removeAll();
-      if (!view.equals("image")) plotRow.add(plots.waveform);
-      if (!view.equals("waveform")) plotRow.add(plots.image);
-      window.validate();
-    }
+    view = c.view();
+    if (plots.configure(c, plotRow)) window.validate();
     double[] timing = plots.update(taken.frame(), source.palette);
     if (started == 0) {
       started = System.nanoTime();
@@ -285,14 +280,20 @@ public final class Main {
     workload.setText(
         String.format(
             Locale.ROOT,
-            "%.0f Hz · %,d points · %s (%d) · %d × %d %s",
+            "%.0f Hz · %,d points · %s (%d) · %d %s × %d %s · %d × %d %s · %d %s",
             c.hz(),
             c.points(),
             c.waveformMode(),
             c.appendCount(),
+            c.waveformPlots(),
+            c.waveformPlots() == 1 ? "plot" : "plots",
+            c.curves(),
+            c.curves() == 1 ? "curve" : "curves",
             c.width(),
             c.height(),
-            c.imageMode()));
+            c.imageMode(),
+            c.imagePlots(),
+            c.imagePlots() == 1 ? "plot" : "plots"));
     String[] values = {
       String.format(Locale.ROOT, "Submitted: %.1f updates/s", hz),
       String.format(Locale.ROOT, "Update time: %.2f ms", metrics.lastUpdate),
@@ -322,8 +323,8 @@ public final class Main {
     var device = gc.getDevice();
     var dm = device.getDisplayMode();
     Map<String, Object> areas = new HashMap<>();
-    if (!view.equals("image")) areas.put("waveform", plots.waveform.viewport());
-    if (!view.equals("waveform")) areas.put("image", plots.image.viewport());
+    if (!view.equals("image")) areas.put("waveform", plots.waveforms.get(0).viewport());
+    if (!view.equals("waveform")) areas.put("image", plots.images.get(0).viewport());
     metrics.set(
         Map.of(
             "pixel_ratio",
@@ -333,6 +334,10 @@ public final class Main {
                 window.getContentPane().getWidth(), window.getContentPane().getHeight()),
             "plot_viewports",
             areas,
+            "plot_counts",
+            Map.of("waveform", plots.waveforms.size(), "image", plots.images.size()),
+            "curves",
+            plots.config.curves(),
             "display",
             Map.of(
                 "name",

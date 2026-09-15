@@ -7,6 +7,7 @@ import java.io.*;
 import java.net.*;
 import java.net.http.WebSocket;
 import java.nio.*;
+import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -14,6 +15,63 @@ import javax.swing.SwingUtilities;
 import org.junit.jupiter.api.Test;
 
 class AdapterTest {
+  @Test
+  void authoritativeSourcePacketsRenderEveryPlotAndCurve() throws Exception {
+    Path directory = Path.of(System.getProperty("plotbench.protocolFixtures"));
+    int[] palette = Protocol.palette(Files.readAllBytes(directory.resolve("palette.json")));
+    try (var files = Files.list(directory)) {
+      var packets = files.filter(p -> p.toString().endsWith(".bin")).sorted().toList();
+      assertEquals(24, packets.size());
+      Plots plots = new Plots();
+      var grid = new javax.swing.JPanel();
+      for (Path path : packets) {
+        var frame = Protocol.decode(Files.readAllBytes(path));
+        var expected = Protocol.JSON.readTree(
+            Files.readAllBytes(path.resolveSibling(path.getFileName().toString().replace(".bin", ".json"))));
+        SwingUtilities.invokeAndWait(() -> {
+          var c = frame.config();
+          assertTrue(plots.configure(c, grid));
+          int nw = c.view().equals("image") ? 0 : c.waveformPlots();
+          int ni = c.view().equals("waveform") ? 0 : c.imagePlots();
+          assertEquals(nw, plots.waveforms.size());
+          assertEquals(ni, plots.images.size());
+          assertEquals(nw + ni, grid.getComponentCount());
+          int columns = (int) Math.ceil(Math.sqrt(nw + ni));
+          grid.setSize(columns * 400, ((nw + ni + columns - 1) / columns) * 300);
+          grid.doLayout();
+          plots.update(frame, palette);
+          assertFalse(plots.configure(c, grid));
+          for (int p = 0; p < nw; p++) {
+            var wave = plots.waves.get(p);
+            assertEquals(c.curves(), wave.getSeriesCount());
+            var surface = plots.waveforms.get(p);
+            assertTrue(surface.viewport().get(0) > 0);
+            for (int curve = 0; curve < c.curves(); curve++) {
+              assertEquals(c.points(), wave.getItemCount(curve));
+              assertEquals(new java.awt.Color(Plots.CURVE_COLORS[curve % 8]),
+                  surface.chart.getXYPlot().getRenderer().getSeriesPaint(curve));
+              for (int point = 0; point < c.points(); point++)
+                assertEquals(expected.path("waveform").get(p).get(curve).get(point).doubleValue(),
+                    wave.getYValue(curve, point));
+            }
+          }
+          for (int p = 0; p < ni; p++) {
+            assertTrue(plots.images.get(p).viewport().get(0) > 0);
+            for (int y = 0; y < c.height(); y++)
+              for (int x = 0; x < c.width(); x++) {
+                var pixel = expected.path("image").get(p).get(y).get(x);
+                int color = c.imageMode().equals("rgb")
+                    ? 0xff000000 | pixel.get(0).intValue() << 16 | pixel.get(1).intValue() << 8
+                        | pixel.get(2).intValue()
+                    : palette[(int) (pixel.doubleValue() * 255)];
+                assertEquals(color, plots.pixels.get(p).image.getRGB(x, y));
+              }
+          }
+        });
+      }
+    }
+  }
+
   static byte[] packet(long seq, String view, String mode) throws Exception {
     Map<String, Object> config =
         new HashMap<>(
@@ -38,6 +96,9 @@ class AdapterTest {
                 42,
                 "generation",
                 0));
+    config.put("curves", 1);
+    config.put("waveform_plots", 1);
+    config.put("image_plots", 1);
     List<Map<String, Object>> arrays = new ArrayList<>();
     ByteBuffer payload = ByteBuffer.allocate(32).order(ByteOrder.LITTLE_ENDIAN);
     if (!view.equals("image")) {
@@ -48,7 +109,7 @@ class AdapterTest {
               "dtype",
               "float32",
               "shape",
-              List.of(3),
+              List.of(1, 1, 3),
               "offset",
               0,
               "nbytes",
@@ -64,7 +125,7 @@ class AdapterTest {
               "dtype",
               rgb ? "uint8" : "float32",
               "shape",
-              rgb ? List.of(1, 2, 3) : List.of(1, 2),
+              rgb ? List.of(1, 1, 2, 3) : List.of(1, 1, 2),
               "offset",
               payload.position(),
               "nbytes",
@@ -76,7 +137,7 @@ class AdapterTest {
         Protocol.JSON.writeValueAsBytes(
             Map.of(
                 "version",
-                1,
+                2,
                 "seq",
                 seq,
                 "generation",
@@ -144,7 +205,10 @@ class AdapterTest {
         List.of(
             header.replace("\"nbytes\":12", "\"nbytes\":11"),
             header.replace("\"offset\":12", "\"offset\":13"),
-            header.replace("\"version\":1", "\"version\":2"))) {
+            header.replace("\"curves\":1", "\"curves\":2"),
+            header.replace("\"waveform_plots\":1", "\"waveform_plots\":2"),
+            header.replace("\"image_plots\":1", "\"image_plots\":2"),
+            header.replace("\"version\":2", "\"version\":1"))) {
       assertNotEquals(header, modified);
       byte[] broken = valid.clone();
       System.arraycopy(
@@ -177,24 +241,28 @@ class AdapterTest {
     SwingUtilities.invokeAndWait(
         () -> {
           Plots plots = new Plots();
-          plots.waveform.setSize(500, 400);
-          plots.image.setSize(500, 400);
+          plots.configure(scalar.config(), new javax.swing.JPanel());
+          var waveform = plots.waveforms.get(0);
+          var image = plots.images.get(0);
+          var pixels = plots.pixels.get(0);
+          waveform.setSize(500, 400);
+          image.setSize(500, 400);
           double[] times = plots.update(scalar, palette);
-          assertArrayEquals(new double[] {-1, 0.25, 1}, plots.wave.values);
-          assertEquals(0xff123456, plots.pixels.image.getRGB(0, 0));
-          assertEquals(0xffabcdef, plots.pixels.image.getRGB(1, 0));
+          assertArrayEquals(new double[] {-1, 0.25, 1}, plots.waves.get(0).values[0]);
+          assertEquals(0xff123456, pixels.image.getRGB(0, 0));
+          assertEquals(0xffabcdef, pixels.image.getRGB(1, 0));
           assertTrue(times[2] > 0);
-          assertTrue(plots.waveform.viewport().get(0) > 100);
-          var reused = plots.pixels.image;
+          assertTrue(waveform.viewport().get(0) > 100);
+          var reused = pixels.image;
           plots.update(rgb, palette);
-          assertSame(reused, plots.pixels.image);
-          assertEquals(0xffff0001, plots.pixels.image.getRGB(0, 0));
-          assertEquals(0xff00ff02, plots.pixels.image.getRGB(1, 0));
+          assertSame(reused, pixels.image);
+          assertEquals(0xffff0001, pixels.image.getRGB(0, 0));
+          assertEquals(0xff00ff02, pixels.image.getRGB(1, 0));
           // Rendered pixels exist before Swing ever paints a window.
-          var area = plots.image.info.getPlotInfo().getDataArea();
+          var area = image.info.getPlotInfo().getDataArea();
           assertEquals(
               0xffff0001,
-              plots.image.buffer.getRGB(
+              image.buffer.getRGB(
                   (int) (area.getX() + area.getWidth() / 4), (int) area.getCenterY()));
         });
   }
