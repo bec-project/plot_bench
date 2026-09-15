@@ -1,0 +1,21 @@
+{
+  "name": "Plotbench baseline",
+  "description": "The official comparison suite and the only suite published on the community results site. Run it unmodified (only --frontends may narrow the selection): 60 Hz, Rust source, streaming delivery, seed 42, 5 s warmup, 30 s measurement, 3 repetitions, 2 s cooldown. Seven sections: waveform, multi-curve, multi-plot, scalar-image, rgb-image, multi-image, large-image.",
+  "warmup_seconds": 5,
+  "measurement_seconds": 30,
+  "cooldown_seconds": 2,
+  "repetitions": 3,
+  "order_seed": 42,
+  "backends": ["rust"],
+  "modes": ["stream"],
+  "frontends": ["pyqtgraph", "pyqtgraph-gl", "matplotlib", "qtgraphs", "qtgraphs-cpp", "iced", "fyne", "jfreechart", "plotly"],
+  "cases": [
+    {"name": "waveform", "config": {"view": "waveform", "hz": 60, "points": 10000, "append_count": 1000, "waveform_mode": "replace", "curves": 1, "waveform_plots": 1, "width": 512, "height": 512, "image_mode": "scalar", "image_plots": 1, "seed": 42}},
+    {"name": "multi-curve", "config": {"view": "waveform", "hz": 60, "points": 10000, "append_count": 1000, "waveform_mode": "replace", "curves": 10, "waveform_plots": 1, "width": 512, "height": 512, "image_mode": "scalar", "image_plots": 1, "seed": 42}},
+    {"name": "multi-plot", "config": {"view": "waveform", "hz": 60, "points": 10000, "append_count": 1000, "waveform_mode": "replace", "curves": 5, "waveform_plots": 2, "width": 512, "height": 512, "image_mode": "scalar", "image_plots": 1, "seed": 42}},
+    {"name": "scalar-image", "config": {"view": "image", "hz": 60, "points": 10000, "append_count": 1000, "waveform_mode": "replace", "curves": 1, "waveform_plots": 1, "width": 512, "height": 512, "image_mode": "scalar", "image_plots": 1, "seed": 42}},
+    {"name": "rgb-image", "config": {"view": "image", "hz": 60, "points": 10000, "append_count": 1000, "waveform_mode": "replace", "curves": 1, "waveform_plots": 1, "width": 512, "height": 512, "image_mode": "rgb", "image_plots": 1, "seed": 42}},
+    {"name": "multi-image", "config": {"view": "image", "hz": 60, "points": 10000, "append_count": 1000, "waveform_mode": "replace", "curves": 1, "waveform_plots": 1, "width": 512, "height": 512, "image_mode": "scalar", "image_plots": 4, "seed": 42}},
+    {"name": "large-image", "config": {"view": "image", "hz": 60, "points": 10000, "append_count": 1000, "waveform_mode": "replace", "curves": 1, "waveform_plots": 1, "width": 2048, "height": 2048, "image_mode": "scalar", "image_plots": 1, "seed": 42}}
+  ]
+}
