@@ -24,7 +24,9 @@ export async function loadCatalog(directory: string) {
       // Submissions written before plot counts entered the format lack these keys.
       const hint = PLOT_COUNTS.some((key) => lines[0].includes(`'${key}'`))
         ? ' This file predates the plot-count fields; export it again from the original summary.json with the current website or CLI exporter.'
-        : '';
+        : /^(Not a baseline campaign|Only campaigns of the official baseline suite)/.test(lines[0])
+          ? ' Only complete runs of scenarios/baseline.json are published; see website/results/README.md.'
+          : '';
       throw new Error(`${name}: ${summary}.${hint}`);
     }
     if (basename(name, '.json') !== submission.id)

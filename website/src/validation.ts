@@ -2,6 +2,7 @@ import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
 import schema from '../submission.schema.json';
 import { classify, type Submission } from './model';
+import { baselineProblems, BASELINE_SUITE_PATH } from './baseline';
 
 const ajv = new Ajv({ allErrors: true, strict: true });
 addFormats(ajv);
@@ -21,6 +22,30 @@ export function parseSubmission(data: unknown): Submission {
   if (data.runs.length > data.planned_runs) throw new Error('Recorded runs exceed planned runs');
   if (data.classification !== classify(data.runs))
     throw new Error('Classification disagrees with run durations, repetitions or display context');
+  // The results site publishes one suite only. Identity is structural: no marker in the
+  // file can claim it, the runs themselves must be a complete baseline campaign.
+  if (data.classification !== 'benchmark')
+    throw new Error(
+      `Not a baseline campaign: classification is ${data.classification}; the results site publishes only complete benchmark-classified runs of ${BASELINE_SUITE_PATH} on a visible desktop`,
+    );
+  for (const r of data.runs)
+    if (r.context.commit === null || r.context.dirty !== false)
+      throw new Error(
+        `Not a baseline campaign: ${r.id}: official campaigns need a recorded commit from a clean checkout`,
+      );
+  const problems = baselineProblems({
+    planned_runs: data.planned_runs,
+    completion_status: data.completion_status,
+    runs: data.runs.map((r) => ({
+      ...r,
+      commit: r.context.commit,
+      source_hash: r.context.source_hash,
+    })),
+  });
+  if (problems.length)
+    throw new Error(
+      `Not a baseline campaign: ${problems[0]}${problems.length > 1 ? ` (+${problems.length - 1} more)` : ''}`,
+    );
   for (const link of Object.values(data.links))
     if (link) {
       const url = new URL(link);

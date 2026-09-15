@@ -1,5 +1,6 @@
 import { classify, type Run, type Submission, type Workload } from './model';
 import { parseSubmission } from './validation';
+import { BASELINE, SECTIONS, baselineProblems, type BaselineRun } from './baseline';
 
 type RecordValue = Record<string, any>;
 function record(value: unknown): RecordValue {
@@ -46,6 +47,108 @@ function displayProtocol(metadata: RecordValue, provenance: RecordValue): string
       ? 'x11'
       : reported;
 }
+// summary.json rows carry the workload plus a `generation` counter; only the published
+// fields are exported, and summaries written before plot counts existed mean one plot.
+function publishedConfig(value: unknown): Workload {
+  const config = record(value);
+  const c: RecordValue = {};
+  for (const key of [
+    'hz',
+    'points',
+    'append_count',
+    'width',
+    'height',
+    'waveform_mode',
+    'image_mode',
+    'view',
+    'seed',
+  ])
+    c[key] = config[key];
+  for (const key of ['waveform_plots', 'curves', 'image_plots']) c[key] = numeric(config[key]) ?? 1;
+  return c as Workload;
+}
+const sameList = (value: unknown, expected: readonly string[]) =>
+  Array.isArray(value) &&
+  value.length === expected.length &&
+  value.every((v, i) => v === expected[i]);
+const shown = (value: unknown) => (Array.isArray(value) ? `[${value.join(', ')}]` : 'not recorded');
+// Campaign-level facts that only the raw summary can prove (cooldown, the suite's repetition
+// count, its mode/backend lists and its case list), then the structural run rule shared
+// with the submission gate. Returns the refusal message, or null for a baseline campaign.
+function baselineRefusal(summary: RecordValue, campaign: RecordValue): string | null {
+  const slugs = SECTIONS.map((s) => s.slug);
+  const problem = (() => {
+    if (numeric(campaign.cooldown_seconds) !== BASELINE.cooldownSeconds)
+      return `cooldown ${numeric(campaign.cooldown_seconds) ?? 'not recorded'} s; the baseline cools down ${BASELINE.cooldownSeconds} s between runs`;
+    if (numeric(campaign.repetitions) !== BASELINE.repetitions)
+      return `repetitions ${numeric(campaign.repetitions) ?? 'not recorded'}; the baseline repeats every case ${BASELINE.repetitions} times`;
+    if (!sameList(campaign.modes, [BASELINE.mode]))
+      return `modes ${shown(campaign.modes)}; the baseline uses [${BASELINE.mode}]`;
+    if (!sameList(campaign.backends, [BASELINE.backend]))
+      return `backends ${shown(campaign.backends)}; the baseline uses [${BASELINE.backend}]`;
+    const names = Array.isArray(campaign.cases)
+      ? campaign.cases
+          .map((c: unknown) => record(c).name)
+          .filter((n): n is string => typeof n === 'string')
+      : [];
+    const missing = slugs.filter((s) => !names.includes(s)),
+      extra = names.filter((n) => !slugs.includes(n));
+    if (missing.length || extra.length || names.length !== slugs.length)
+      return (
+        `case list [${names.join(', ')}] is not the ${slugs.length} baseline sections` +
+        (missing.length ? `; missing ${missing.join(', ')}` : '') +
+        (extra.length ? `; unexpected ${extra.join(', ')}` : '')
+      );
+    const manifestGit = record(record(campaign.provenance).git);
+    const rows = (Array.isArray(summary.runs) ? summary.runs : []).map((input) => record(input));
+    // Every row must carry the manifest's own revision: rows patched in from another
+    // acquisition are refused here, before the structural rule counts them.
+    for (const r of rows) {
+      const p = record(r.provenance),
+        git = record(p.git);
+      const rowCommit = string(git.commit),
+        rowSource = string(p.source_sha256);
+      if (rowCommit && string(manifestGit.commit) && rowCommit !== manifestGit.commit)
+        return `${String(r.run_id ?? '')}: recorded at commit ${rowCommit.slice(0, 7)} while the campaign manifest records ${String(manifestGit.commit).slice(0, 7)}; export each acquisition separately`;
+      if (
+        rowSource &&
+        string(record(campaign.provenance).source_sha256) &&
+        rowSource !== record(campaign.provenance).source_sha256
+      )
+        return `${String(r.run_id ?? '')}: source hash differs from the campaign manifest; export each acquisition separately`;
+    }
+    const runs: BaselineRun[] = rows.map((r) => {
+      return {
+        id: String(r.run_id ?? ''),
+        status: String(r.status ?? ''),
+        commit: string(record(record(r.provenance).git).commit),
+        source_hash: string(record(r.provenance).source_sha256),
+        scenario: String(r.scenario ?? ''),
+        frontend: String(r.frontend ?? ''),
+        backend: String(r.backend ?? ''),
+        mode: String(r.mode ?? ''),
+        repetition: numeric(r.repetition) ?? 0,
+        measurement_seconds: numeric(r.measurement_seconds) ?? 0,
+        warmup_seconds: numeric(r.warmup_seconds) ?? 0,
+        config: publishedConfig(r.config),
+      };
+    });
+    return (
+      baselineProblems({
+        planned_runs: numeric(campaign.runs_planned) ?? 0,
+        completion_status:
+          typeof campaign.completion_status === 'string'
+            ? campaign.completion_status
+            : 'not recorded',
+        runs,
+      })[0] ?? null
+    );
+  })();
+  return (
+    problem &&
+    `Only campaigns of the official baseline suite can be published. Run ./scripts/plotbench run --baseline without timing, repetition, mode, backend or limit overrides. Problem: ${problem}`
+  );
+}
 export interface ExportOptions {
   id: string;
   hostId: string;
@@ -68,28 +171,15 @@ export async function exportSummary(raw: unknown, options: ExportOptions): Promi
     throw new Error(
       'Export the original campaign summaries separately; merged extensions and diagnostic bundles can contain other hosts.',
     );
+  const refusal = baselineRefusal(summary, campaign);
+  if (refusal) throw new Error(refusal);
   const provenance = record(campaign.provenance);
   const runs: Run[] = await Promise.all(
     summary.runs.map(async (input: unknown) => {
       const r = record(input),
         m = record(r.metadata),
-        p = record(r.provenance),
-        config = record(r.config);
-      const c: RecordValue = {};
-      for (const key of [
-        'hz',
-        'points',
-        'append_count',
-        'width',
-        'height',
-        'waveform_mode',
-        'image_mode',
-        'view',
-        'seed',
-      ])
-        c[key] = config[key];
-      for (const key of ['waveform_plots', 'curves', 'image_plots'])
-        c[key] = numeric(config[key]) ?? 1;
+        p = record(r.provenance);
+      const c = publishedConfig(r.config);
       const metrics: RecordValue = {};
       for (const key of [
         'submitted_hz',
@@ -135,7 +225,7 @@ export async function exportSummary(raw: unknown, options: ExportOptions): Promi
         mode: r.mode,
         repetition: r.repetition,
         status: r.status,
-        config: c as Workload,
+        config: c,
         measurement_seconds: r.measurement_seconds,
         warmup_seconds: r.warmup_seconds,
         samples: r.samples ?? 0,
@@ -256,9 +346,11 @@ export function suggestSubmission(raw: unknown): SubmissionDefaults {
   const hostLabel = [cpu ?? 'Unknown CPU', family].filter(Boolean).join(' · ');
   const date = (string(campaign.started_at) ?? '').slice(0, 10).replace(/-/g, '');
   const stem = [hostId, /^\d{8}$/.test(date) ? date : ''].filter(Boolean).join('-');
-  const id = clip([stem, slug(string(campaign.suite_name) ?? '')].filter(Boolean).join('-'), 80);
+  // Only baseline campaigns are published, so the identifier names the suite, not the
+  // summary's editable suite_name; a second same-day campaign needs a manual suffix.
+  const id = clip([stem, slug(BASELINE.name)].filter(Boolean).join('-'), 80);
 
-  const sentences: string[] = [];
+  const sentences: string[] = [`Official ${BASELINE.name} suite, ${SECTIONS.length} sections.`];
   const repetitions = Math.max(
     numeric(campaign.repetitions) ?? 0,
     ...runs.map((r) => numeric(r.repetition) ?? 0),

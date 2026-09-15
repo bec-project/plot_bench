@@ -16,7 +16,8 @@ const { values } = parseArgs({
 if (values.help || !values.input) {
   console.log(
     'npm --prefix website run export -- --input ../results/CAMPAIGN/summary.json [--output results/CAMPAIGN-ID.json] [--id CAMPAIGN-ID] [--host-id PUBLIC-HOST-ID] [--host-label "Public hardware label"] [--notes "Operating conditions"]\n' +
-      'Omitted fields are proposed from the summary (CPU model, OS, acquisition date, suite name, timings and display context); review the written file before submitting.',
+      'Only complete campaigns of the official baseline suite export (./scripts/plotbench run --baseline, unmodified apart from --frontends); any other campaign is refused.\n' +
+      'Omitted fields are proposed from the summary (CPU model, OS, acquisition date, timings and display context); review the written file before submitting.',
   );
   if (!values.help) process.exitCode = 1;
 } else {

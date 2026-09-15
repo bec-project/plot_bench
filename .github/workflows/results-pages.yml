@@ -4,12 +4,14 @@ on:
   pull_request:
     paths:
       - 'website/**'
+      - 'scenarios/baseline.json'
       - '.github/workflows/results-pages.yml'
       - '.node-version'
   push:
     branches: [main]
     paths:
       - 'website/**'
+      - 'scenarios/baseline.json'
       - '.github/workflows/results-pages.yml'
       - '.node-version'
   workflow_dispatch:

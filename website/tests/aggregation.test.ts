@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import seed from './fixtures/quick-smoke.json';
+import seed from './fixtures/baseline-campaign.json';
 import { parseSubmission } from '../src/validation';
 import { observations, type Submission, type Observation } from '../src/model';
 import {
@@ -88,7 +88,7 @@ test('every compatibility dimension separates groups, including explicit context
     (o) => (o.campaign.host.memory_gib = 64),
     (o) => (o.campaign.host.os = 'Other OS'),
     (o) => (o.campaign.host.architecture = 'x64'),
-    (o) => (o.campaign.classification = 'benchmark'),
+    (o) => (o.campaign.classification = 'smoke'),
     (o) => (o.campaign.classification = 'diagnostic'),
     (o) => (o.run.frontend = 'other'),
     (o) => (o.run.backend = 'python'),

@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import seed from './fixtures/quick-smoke.json';
+import seed from './fixtures/baseline-campaign.json';
 import { parseSubmission } from '../src/validation';
+import { groupObservations } from '../src/aggregation';
+import { BASELINE, SECTIONS } from '../src/baseline';
 import { observations, type Submission } from '../src/model';
 import { collectWinners, winnerKey, closeRatePercent } from '../src/winners';
 
@@ -239,6 +241,7 @@ test('close-rate thresholds are explicit and invalid URL choices use the default
 
 test('case identity separates sources, timings, workloads and collection types', () => {
   const base = observations([campaign('a', 'alpha', 'host-a', [10])])[0];
+  assert.equal(base.run.scenario, 'waveform');
   const mutations = [
     (o: typeof base) => (o.run.backend = 'python' as const),
     (o: typeof base) => (o.run.mode = base.run.mode === 'stream' ? 'replay' : 'stream'),
@@ -250,10 +253,7 @@ test('case identity separates sources, timings, workloads and collection types',
     (o: typeof base) => o.run.config.image_plots++,
     (o: typeof base) => o.run.measurement_seconds++,
     (o: typeof base) => o.run.warmup_seconds++,
-    (o: typeof base) => (o.run.context.source_hash = 'f'.repeat(64)),
-    (o: typeof base) => (o.run.context.commit = 'e'.repeat(40)),
-    (o: typeof base) => (o.run.context.dirty = true),
-    (o: typeof base) => (o.campaign.classification = 'benchmark' as const),
+    (o: typeof base) => (o.campaign.classification = 'smoke' as const),
     (o: typeof base) => (o.campaign.classification = 'diagnostic' as const),
   ];
   for (const mutate of mutations) {
@@ -263,6 +263,112 @@ test('case identity separates sources, timings, workloads and collection types',
     assert.notEqual(winnerKey(base), winnerKey(other));
     assert.equal(collectWinners([base, other]).boards.length, 2);
   }
+});
+
+test('source revisions and dirty trees share a board but never merge into one group', () => {
+  const a = campaign('a', 'alpha', 'host-a', [60, 60, 60]),
+    b = campaign('b', 'alpha', 'host-a', [60, 60, 60]);
+  for (const r of b.runs) {
+    r.context.commit = 'e'.repeat(40);
+    r.context.source_hash = 'f'.repeat(64);
+  }
+  assert.equal(winnerKey(observations([a])[0]), winnerKey(observations([b])[0]));
+  assert.equal(groupObservations(observations([a, b])).length, 2);
+  const { boards } = collectWinners(observations([a, b]));
+  assert.equal(boards.length, 1);
+  assert.equal(boards[0].evaluatedGroups, 2);
+  assert.equal(boards[0].revisions, 2);
+  assert.equal(boards[0].records.length, 1);
+  assert.equal(boards[0].records[0].groups.length, 2);
+  const dirty = campaign('dirty', 'alpha', 'host-a', [60, 60, 60]);
+  for (const r of dirty.runs) r.context.dirty = true;
+  const withDirty = collectWinners(observations([a, b, dirty]));
+  assert.equal(withDirty.boards.length, 1);
+  assert.equal(withDirty.boards[0].evaluatedGroups, 3);
+  assert.equal(withDirty.boards[0].revisions, 2);
+});
+
+// One run per section (and per repetition) so a campaign can populate every board.
+function sectioned(id: string, frontend: string, host: string, rate: number): Submission {
+  const c = campaign(id, frontend, host, []);
+  c.runs = SECTIONS.flatMap((section) =>
+    Array.from({ length: BASELINE.repetitions }, (_, i) => {
+      const r = structuredClone(parseSubmission(seed).runs[0]);
+      r.id = `${section.slug}-${i + 1}`;
+      r.scenario = section.slug;
+      r.frontend = frontend;
+      r.repetition = i + 1;
+      r.config = structuredClone(section.config);
+      r.metrics.submitted_hz = rate;
+      return r;
+    }),
+  );
+  c.planned_runs = c.runs.length;
+  return c;
+}
+
+test('boards follow the suite order and carry their section', () => {
+  const { boards } = collectWinners(
+    observations([sectioned('a', 'alpha', 'host-a', 60), sectioned('b', 'beta', 'host-b', 50)]),
+  );
+  assert.equal(boards.length, SECTIONS.length);
+  boards.forEach((board, i) => {
+    assert.equal(board.section?.slug, SECTIONS[i].slug);
+    assert.equal(board.section?.index, i + 1);
+    assert.deepEqual(
+      board.records.map((r) => [r.frontend, r.rank]),
+      [
+        ['alpha', 1],
+        ['beta', 2],
+      ],
+    );
+  });
+  const reversed = collectWinners(
+    observations([sectioned('b', 'beta', 'host-b', 50), sectioned('a', 'alpha', 'host-a', 60)]),
+  );
+  assert.deepEqual(
+    reversed.boards.map((b) => b.section?.slug),
+    SECTIONS.map((s) => s.slug),
+  );
+});
+
+test('an unknown display scale is excluded; different scales compete as separate groups', () => {
+  const unknown = campaign('unknown-scale', 'alpha', 'host-a', [60]);
+  unknown.runs[0].context.pixel_ratio = null;
+  const known = campaign('known', 'beta', 'host-b', [50]);
+  const excluded = collectWinners(observations([unknown, known]));
+  assert.equal(excluded.excludedGroups, 1);
+  assert.deepEqual(
+    excluded.boards[0].records.map((r) => r.frontend),
+    ['beta'],
+  );
+  const one = campaign('1x', 'alpha', 'host-a', [60, 60, 60]),
+    two = campaign('2x', 'alpha', 'host-a', [60, 60, 60]);
+  for (const r of one.runs) r.context.pixel_ratio = 1;
+  for (const r of two.runs) r.context.pixel_ratio = 2;
+  const scales = collectWinners(observations([one, two]));
+  assert.equal(scales.excludedGroups, 0);
+  assert.equal(scales.boards.length, 1);
+  assert.equal(scales.boards[0].evaluatedGroups, 2);
+  assert.equal(scales.boards[0].records.length, 1);
+  assert.deepEqual(
+    scales.boards[0].records[0].groups.map((g) => g.representative.run.context.pixel_ratio).sort(),
+    [1, 2],
+  );
+});
+
+test('a workload outside the suite forms a fallback board without a section, sorted last', () => {
+  const custom = campaign('custom', 'alpha', 'host-a', [60, 60, 60]);
+  for (const r of custom.runs) r.config.points = 20000;
+  const { boards } = collectWinners(observations([custom, sectioned('a', 'alpha', 'host-a', 60)]));
+  assert.equal(boards.length, SECTIONS.length + 1);
+  assert.equal(boards[SECTIONS.length].section, null);
+  assert.match(boards[SECTIONS.length].key, /20000/);
+  assert.equal(boards[SECTIONS.length].records[0].frontend, 'alpha');
+  assert.deepEqual(
+    boards.slice(0, SECTIONS.length).map((b) => b.section?.slug),
+    SECTIONS.map((s) => s.slug),
+  );
 });
 
 test('hardware and rendering contexts remain separate observations within one record case', () => {
@@ -292,5 +398,16 @@ test('failed-only and incomplete groups are excluded; valid zero and source flag
   assert.equal(g.attempted, 2);
   assert.equal(g.successful, 1);
   assert.equal(g.limited, 1);
-  assert.deepEqual(collectWinners([]), { boards: [], excludedGroups: 0 });
+  assert.deepEqual(collectWinners([]), { boards: [], excludedGroups: 0, excludedBySection: {} });
+});
+
+test('exclusions are counted per section as well as in total', () => {
+  const unknownScale = campaign('scale', 'alpha', 'host-a', [60, 60, 60]);
+  for (const r of unknownScale.runs) r.context.pixel_ratio = null;
+  const { boards, excludedGroups, excludedBySection } = collectWinners(
+    observations([unknownScale, campaign('fine', 'beta', 'host-b', [50, 50, 50])]),
+  );
+  assert.equal(boards.length, 1);
+  assert.equal(excludedGroups, 1);
+  assert.deepEqual(excludedBySection, { waveform: 1 });
 });
