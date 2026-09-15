@@ -1,39 +1,54 @@
 import { useState } from 'react';
 import { type ResultGroup, type CampaignGroup } from './aggregation';
+import { sectionOf, type Section } from './baseline';
 import { type Observation, sourceLimited, workloadLabel } from './model';
 import { Pill, date, format } from './presentation';
+import { contextLine } from './section-rail';
 
 export function GroupedResults({
   groups,
   select,
+  section,
 }: {
   groups: ResultGroup[];
   select: (o: Observation) => void;
+  /** When set, every group names this section; otherwise a group outside the suite names its workload. */
+  section?: Section | null;
 }) {
   return (
     <div className="group-list" aria-label="Grouped results">
       {groups.map((group) => (
-        <Group key={group.key} group={group} select={select} />
+        <Group key={group.key} group={group} select={select} section={section} />
       ))}
     </div>
   );
 }
 
-function Group({ group: g, select }: { group: ResultGroup; select: (o: Observation) => void }) {
+function Group({
+  group: g,
+  select,
+  section,
+}: {
+  group: ResultGroup;
+  select: (o: Observation) => void;
+  section?: Section | null;
+}) {
   const [open, setOpen] = useState(false);
   const { campaign: c, run: r } = g.representative;
+  // A group is one frontend on one host at one revision, display scale and recorded
+  // context; the section (or, outside the suite, the workload) says what it measured.
+  const named = section ?? sectionOf(r.config);
   return (
     <details className="result-group" open={open} onToggle={(e) => setOpen(e.currentTarget.open)}>
       <summary>
         <div className="group-identity">
           <strong>{r.frontend}</strong>
           <span>{c.host.label}</span>
-          <small>{workloadLabel(r.config)}</small>
+          <small>
+            {contextLine(r.context)}
+            {section ? ` · ${section.title}` : named ? '' : ` · ${workloadLabel(r.config)}`}
+          </small>
           <div className="pills">
-            <Pill>
-              {r.backend} · {r.mode}
-            </Pill>
-            <Pill>{c.classification}</Pill>
             {g.limited > 0 && <Pill tone="amber">{g.limited} source-limited</Pill>}
             {g.successful < g.attempted && (
               <Pill tone="danger">{g.attempted - g.successful} without valid rate</Pill>
