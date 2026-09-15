@@ -4,6 +4,9 @@ import java.awt.*;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.*;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.List;
 import javax.swing.*;
 import org.jfree.chart.*;
 import org.jfree.chart.annotations.AbstractXYAnnotation;
@@ -19,18 +22,18 @@ final class Plots {
       MUTED = new Color(0x8fa7b6);
 
   static final class Wave extends AbstractXYDataset {
-    double[] values = new double[0];
+    double[][] values = new double[0][];
 
     public int getSeriesCount() {
-      return 1;
+      return values.length;
     }
 
     public Comparable<String> getSeriesKey(int series) {
-      return "Waveform";
+      return "Curve " + (series + 1);
     }
 
     public int getItemCount(int series) {
-      return values.length;
+      return values[series].length;
     }
 
     public Number getX(int series, int item) {
@@ -38,7 +41,7 @@ final class Plots {
     }
 
     public Number getY(int series, int item) {
-      return values[item];
+      return values[series][item];
     }
 
     public double getXValue(int series, int item) {
@@ -46,12 +49,14 @@ final class Plots {
     }
 
     public double getYValue(int series, int item) {
-      return values[item];
+      return values[series][item];
     }
 
-    void update(ByteBuffer data) {
-      if (values.length != data.remaining() / 4) values = new double[data.remaining() / 4];
-      for (int i = 0; i < values.length; i++) values[i] = data.getFloat(i * 4);
+    void update(ByteBuffer data, int curves, int points) {
+      if (values.length != curves || values[0].length != points)
+        values = new double[curves][points];
+      for (int c = 0; c < curves; c++)
+        for (int i = 0; i < points; i++) values[c][i] = data.getFloat((c * points + i) * 4);
     }
   }
 
@@ -159,39 +164,83 @@ final class Plots {
     }
   }
 
-  final Wave wave = new Wave();
-  final Pixels pixels = new Pixels();
-  final XYPlot waveformPlot =
-      new XYPlot(
-          wave,
-          new NumberAxis("Sample"),
-          new NumberAxis("Amplitude"),
-          new XYLineAndShapeRenderer(true, false));
-  final XYPlot imagePlot = new XYPlot(null, new NumberAxis("Column"), new NumberAxis("Row"), null);
-  final Surface waveform = new Surface("Waveform", waveformPlot),
-      image = new Surface("Image · Java2D annotation", imagePlot);
+  static final int[] CURVE_COLORS = {
+    0x64dccc, 0xf5c76e, 0x7aa6ff, 0xff9d7a, 0xc39bff, 0x9be564, 0xff7ab8, 0x6ee7ff
+  };
 
-  Plots() {
-    waveformPlot.getRenderer().setSeriesPaint(0, new Color(0x64dccc));
-    ((XYLineAndShapeRenderer) waveformPlot.getRenderer()).setDrawSeriesLineAsPath(true);
-    waveformPlot.getRangeAxis().setRange(-1.5, 1.5);
-    imagePlot.getRangeAxis().setInverted(true);
-    imagePlot.addAnnotation(pixels);
+  final List<Wave> waves = new ArrayList<>();
+  final List<Pixels> pixels = new ArrayList<>();
+  final List<Surface> waveforms = new ArrayList<>(), images = new ArrayList<>();
+  Protocol.Config config;
+
+  boolean configure(Protocol.Config c, JPanel grid) {
+    if (config != null
+        && config.generation() == c.generation()
+        && config.view().equals(c.view())
+        && config.waveformPlots() == c.waveformPlots()
+        && config.imagePlots() == c.imagePlots()
+        && config.curves() == c.curves()) return false;
+    config = c;
+    waves.clear();
+    pixels.clear();
+    waveforms.clear();
+    images.clear();
+    grid.removeAll();
+    int nw = c.view().equals("image") ? 0 : c.waveformPlots();
+    int ni = c.view().equals("waveform") ? 0 : c.imagePlots();
+    int columns = (int) Math.ceil(Math.sqrt(nw + ni));
+    grid.setLayout(new GridLayout(0, columns, 16, 16));
+    for (int p = 0; p < nw; p++) {
+      Wave wave = new Wave();
+      var renderer = new XYLineAndShapeRenderer(true, false);
+      renderer.setDrawSeriesLineAsPath(true);
+      renderer.setAutoPopulateSeriesStroke(false);
+      for (int curve = 0; curve < c.curves(); curve++)
+        renderer.setSeriesPaint(curve, new Color(CURVE_COLORS[curve % CURVE_COLORS.length]));
+      var plot = new XYPlot(wave, new NumberAxis("Sample"), new NumberAxis("Amplitude"), renderer);
+      plot.getRangeAxis().setRange(-1.5, 1.5);
+      Surface surface = new Surface(nw == 1 ? "Waveform" : "Waveform " + (p + 1), plot);
+      waves.add(wave);
+      waveforms.add(surface);
+      grid.add(surface);
+    }
+    for (int p = 0; p < ni; p++) {
+      Pixels image = new Pixels();
+      var plot = new XYPlot(null, new NumberAxis("Column"), new NumberAxis("Row"), null);
+      plot.getRangeAxis().setInverted(true);
+      plot.addAnnotation(image);
+      Surface surface = new Surface(ni == 1 ? "Image" : "Image " + (p + 1), plot);
+      pixels.add(image);
+      images.add(surface);
+      grid.add(surface);
+    }
+    grid.revalidate();
+    return true;
+  }
+
+  static ByteBuffer plotSlice(ByteBuffer data, int plot, int bytes) {
+    return data.slice(plot * bytes, bytes).order(ByteOrder.LITTLE_ENDIAN);
   }
 
   double[] update(Protocol.Frame f, int[] palette) {
     long start = System.nanoTime();
-    if (f.arrays().containsKey("waveform")) wave.update(f.arrays().get("waveform"));
-    if (f.arrays().containsKey("image"))
-      pixels.update(f.arrays().get("image"), f.config(), palette);
+    var c = f.config();
+    for (int p = 0; p < waves.size(); p++)
+      waves.get(p).update(
+          plotSlice(f.arrays().get("waveform"), p, c.curves() * c.points() * 4),
+          c.curves(),
+          c.points());
+    int imageBytes = c.width() * c.height() * (c.imageMode().equals("rgb") ? 3 : 4);
+    for (int p = 0; p < pixels.size(); p++)
+      pixels.get(p).update(plotSlice(f.arrays().get("image"), p, imageBytes), c, palette);
     long converted = System.nanoTime();
-    if (f.arrays().containsKey("waveform")) {
-      waveformPlot.getDomainAxis().setRange(0, Math.max(1, f.config().points() - 1));
+    for (Surface waveform : waveforms) {
+      waveform.chart.getXYPlot().getDomainAxis().setRange(0, Math.max(1, c.points() - 1));
       waveform.render();
     }
-    if (f.arrays().containsKey("image")) {
-      imagePlot.getDomainAxis().setRange(0, f.config().width());
-      imagePlot.getRangeAxis().setRange(0, f.config().height());
+    for (Surface image : images) {
+      image.chart.getXYPlot().getDomainAxis().setRange(0, c.width());
+      image.chart.getXYPlot().getRangeAxis().setRange(0, c.height());
       image.render();
     }
     long finished = System.nanoTime();

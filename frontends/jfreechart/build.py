@@ -13,6 +13,48 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 
 
+def protocol_test_data(directory):
+    """Exercise Java against the authoritative encoder, not a second wire format."""
+    from itertools import product
+
+    from plotbench.config import Config
+    from plotbench.generator import generate_arrays, make_packet
+    from plotbench.palette import COLORMAP
+
+    directory.mkdir()
+    (directory / "palette.json").write_text(json.dumps(COLORMAP.tolist()))
+    for index, (view, mode, waveform_mode, multiple) in enumerate(
+        product(
+            ("both", "waveform", "image"),
+            ("scalar", "rgb"),
+            ("append", "replace"),
+            (False, True),
+        )
+    ):
+        config = Config(
+            points=7,
+            append_count=2,
+            width=3,
+            height=2,
+            curves=3 if multiple else 1,
+            waveform_plots=2 if multiple else 1,
+            image_plots=3 if multiple else 1,
+            view=view,
+            image_mode=mode,
+            waveform_mode=waveform_mode,
+            generation=index,
+        )
+        (directory / f"{index}.bin").write_bytes(make_packet(config, 17))
+        (directory / f"{index}.json").write_text(
+            json.dumps(
+                {
+                    name: array.tolist()
+                    for name, array in generate_arrays(config, 17).items()
+                }
+            )
+        )
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--test", action="store_true")
@@ -104,6 +146,8 @@ def main():
         check=True,
     )
     if args.test:
+        fixtures = build / "protocol-fixtures"
+        protocol_test_data(fixtures)
         tests = build / "test-classes"
         tests.mkdir()
         test_cp = os.pathsep.join([str(classes), classpath, str(test_jar)])
@@ -126,6 +170,7 @@ def main():
             [
                 java,
                 "-Djava.awt.headless=true",
+                f"-Dplotbench.protocolFixtures={fixtures}",
                 "-jar",
                 str(test_jar),
                 "execute",

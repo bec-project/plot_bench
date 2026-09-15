@@ -28,8 +28,12 @@ public final class VisibleCheck {
                   if (!app.view.equals(views[step[0]])
                       || app.source.pending
                       || app.metrics.count == 0) return;
-                  int expected = app.view.equals("both") ? 2 : 1;
-                  if (app.plotRow.getComponentCount() != expected)
+                  var config = app.source.current;
+                  int nw = app.view.equals("image") ? 0 : config.waveformPlots();
+                  int ni = app.view.equals("waveform") ? 0 : config.imagePlots();
+                  if (app.plots.waveforms.size() != nw
+                      || app.plots.images.size() != ni
+                      || app.plotRow.getComponentCount() != nw + ni)
                     throw new IllegalStateException("Wrong plot visibility");
                   System.out.println(
                       "Confirmed "

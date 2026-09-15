@@ -19,8 +19,11 @@ final class Protocol {
       double hz,
       int points,
       int appendCount,
+      int curves,
+      int waveformPlots,
       int width,
       int height,
+      int imagePlots,
       String waveformMode,
       String imageMode,
       String view,
@@ -81,7 +84,10 @@ final class Protocol {
       throw bad("invalid JSON header");
     }
     if (h == null || !h.isObject()) throw bad("invalid header");
-    integer(h, "version", 1, 1);
+    if (!h.path("version").isIntegralNumber()
+        || !h.path("version").canConvertToInt()
+        || h.path("version").intValue() != 2)
+      throw bad("unsupported protocol version: " + h.path("version") + "; expected 2");
     long seq = integer(h, "seq", 0, Long.MAX_VALUE);
     long generation = integer(h, "generation", 0, Long.MAX_VALUE);
     double emitted = number(h, "emitted_at_ms");
@@ -94,8 +100,11 @@ final class Protocol {
             hz,
             points,
             (int) integer(c, "append_count", 1, points),
+            (int) integer(c, "curves", 1, 64),
+            (int) integer(c, "waveform_plots", 1, 16),
             (int) integer(c, "width", 1, 8192),
             (int) integer(c, "height", 1, 8192),
+            (int) integer(c, "image_plots", 1, 16),
             choice(c, "waveform_mode", "append", "replace"),
             choice(c, "image_mode", "scalar", "rgb"),
             choice(c, "view", "both", "image", "waveform"),
@@ -115,13 +124,13 @@ final class Protocol {
       int item = 4;
       if (name.equals("waveform")) {
         if (config.view.equals("image")) throw bad("unexpected waveform");
-        shape = new int[] {points};
+        shape = new int[] {config.waveformPlots, config.curves, points};
       } else {
         if (config.view.equals("waveform")) throw bad("unexpected image");
         shape =
             config.imageMode.equals("rgb")
-                ? new int[] {config.height, config.width, 3}
-                : new int[] {config.height, config.width};
+                ? new int[] {config.imagePlots, config.height, config.width, 3}
+                : new int[] {config.imagePlots, config.height, config.width};
         if (config.imageMode.equals("rgb")) item = 1;
       }
       choice(a, "dtype", item == 1 ? "uint8" : "float32");
