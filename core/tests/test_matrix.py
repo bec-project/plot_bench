@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+from pathlib import Path
 
 import pytest
 from aiohttp.test_utils import TestClient, TestServer
@@ -9,6 +10,8 @@ from aiohttp.test_utils import TestClient, TestServer
 from plotbench import matrix
 from plotbench.matrix import create_app
 from plotbench.suites import FRONTENDS, prepare_suite
+
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def suite():
@@ -151,6 +154,21 @@ def test_preview_handles_overflow_and_unused_probe_selections():
 def test_presets_gallery_summarizes_scenarios_and_tolerates_broken_files(tmp_path, monkeypatch):
     scenarios = tmp_path / "scenarios"
     scenarios.mkdir()
+    # "aaa-first.json" sorts before "baseline.json", so the official suite can only come
+    # first if the gallery pins it; a custom copy must not become official.
+    (scenarios / "baseline.json").write_text((ROOT / "scenarios" / "baseline.json").read_text())
+    (scenarios / "aaa-first.json").write_text(
+        json.dumps(
+            dict(
+                name="First",
+                frontends=["pyqtgraph"],
+                modes=["stream"],
+                backends=["python"],
+                repetitions=1,
+                cases=[dict(name="w", config={"view": "waveform"})],
+            )
+        )
+    )
     (scenarios / "demo.json").write_text(
         json.dumps(
             dict(
@@ -189,13 +207,29 @@ def test_presets_gallery_summarizes_scenarios_and_tolerates_broken_files(tmp_pat
             )
         )
     )
+    (custom / "baseline.json").write_text((scenarios / "baseline.json").read_text())
     monkeypatch.setattr(matrix, "SCENARIOS_DIR", scenarios)
     monkeypatch.setattr(matrix, "CUSTOM_DIR", custom)
 
     async def exercise():
         async with TestClient(TestServer(create_app(suite()))) as client:
             data = await (await client.get("/api/presets")).json()
-            by_name = {preset["filename"]: preset for preset in data["presets"]}
+            presets = data["presets"]
+            assert (presets[0]["filename"], presets[0]["source"]) == ("baseline.json", "bundled")
+            assert presets[0]["official"] is True
+            assert presets[1]["filename"] == "aaa-first.json"
+            assert presets[0]["name"] == "Plotbench baseline"
+            assert presets[0]["run_count"] == 7 * len(FRONTENDS) * 3
+            assert [preset["official"] for preset in presets[1:]] == [False] * (len(presets) - 1)
+            assert [preset["path"] for preset in presets if preset["source"] == "custom"] == [
+                "scenarios_custom/baseline.json",
+                "scenarios_custom/mine.json",
+            ]
+            by_name = {
+                preset["path"].replace("scenarios/", ""): preset
+                for preset in presets
+                if preset["source"] == "bundled"
+            }
             assert by_name["demo.json"]["kind"] == "run"
             assert by_name["demo.json"]["source"] == "bundled"
             assert by_name["demo.json"]["path"] == "scenarios/demo.json"
@@ -205,8 +239,11 @@ def test_presets_gallery_summarizes_scenarios_and_tolerates_broken_files(tmp_pat
             assert by_name["probe.json"]["kind"] == "probe"
             assert "error" in by_name["broken.json"]
             assert by_name["broken.json"]["run_count"] == 0
-            assert by_name["mine.json"]["source"] == "custom"
-            assert by_name["mine.json"]["path"] == "scenarios_custom/mine.json"
+            assert by_name["broken.json"]["official"] is False
+            by_path = {preset["path"]: preset for preset in presets}
+            assert by_path["scenarios_custom/mine.json"]["source"] == "custom"
+            assert by_path["scenarios_custom/baseline.json"]["official"] is False
+            assert by_path["scenarios_custom/baseline.json"]["name"] == "Plotbench baseline"
 
     asyncio.run(exercise())
 

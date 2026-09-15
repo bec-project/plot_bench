@@ -906,17 +906,19 @@ function PresetCard(props) {
   const { preset } = props;
   const custom = preset.source === "custom";
   const fallback = custom ? "Saved from the editor." : "No description.";
+  const flavour = custom ? " preset-custom" : preset.official ? " preset-official" : "";
   return /* @__PURE__ */ u$1(
     "button",
     {
       type: "button",
-      class: (custom ? "preset preset-custom" : "preset") + (props.active === preset.path ? " preset-on" : ""),
+      class: "preset" + flavour + (props.active === preset.path ? " preset-on" : ""),
       disabled: Boolean(preset.error),
       onClick: () => props.onPick(preset),
       title: preset.error ? preset.error : preset.path,
       children: [
         /* @__PURE__ */ u$1("span", { class: "preset-name", children: [
           preset.name,
+          preset.official ? /* @__PURE__ */ u$1("span", { class: "badge badge-official", children: "official" }) : null,
           custom ? /* @__PURE__ */ u$1("span", { class: "badge badge-custom", children: "custom" }) : null,
           preset.kind === "probe" ? /* @__PURE__ */ u$1("span", { class: "badge", children: "probe" }) : null
         ] }),
@@ -928,8 +930,25 @@ function PresetCard(props) {
 }
 function PresetGallery(props) {
   const custom = props.presets.filter((preset) => preset.source === "custom");
-  const bundled = props.presets.filter((preset) => preset.source !== "custom");
+  const official = props.presets.find((preset) => preset.official && preset.source !== "custom");
+  const bundled = props.presets.filter((preset) => preset.source !== "custom" && !preset.official);
   return /* @__PURE__ */ u$1(S, { children: [
+    official ? /* @__PURE__ */ u$1("div", { class: "official-box", children: [
+      /* @__PURE__ */ u$1("div", { class: "official-head", children: [
+        /* @__PURE__ */ u$1("span", { class: "official-title", children: "Official baseline" }),
+        /* @__PURE__ */ u$1("span", { class: "badge badge-official", children: [
+          "scenarios/",
+          official.filename
+        ] })
+      ] }),
+      /* @__PURE__ */ u$1("div", { class: "preset-grid", children: /* @__PURE__ */ u$1(PresetCard, { preset: official, active: props.active, onPick: props.onPick }) }),
+      /* @__PURE__ */ u$1("p", { class: "official-note", children: [
+        "The only suite published on the community results site. Run it unmodified; only",
+        " ",
+        /* @__PURE__ */ u$1("code", { children: "--frontends" }),
+        " may narrow it."
+      ] })
+    ] }) : null,
     custom.length ? /* @__PURE__ */ u$1("details", { class: "custom-box", open: true, children: [
       /* @__PURE__ */ u$1("summary", { children: [
         /* @__PURE__ */ u$1("span", { class: "custom-summary", children: "Your saved suites" }),

@@ -78,6 +78,9 @@ export interface Preset {
   filename: string;
   path: string;
   source: 'bundled' | 'custom';
+  // True only for the bundled scenarios/baseline.json: the one suite the community
+  // results site publishes. Copies saved to scenarios_custom are never official.
+  official: boolean;
   name: string;
   description: string;
   kind: Kind;
