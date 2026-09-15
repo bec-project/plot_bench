@@ -379,6 +379,7 @@ impl App {
         let metadata = json!({
             "renderer":"Iced wgpu (actual adapter recorded after window creation)",
             "iced_version":"0.14.0", "app_version":env!("CARGO_PKG_VERSION"),
+            "versions":versions(),
             "build_profile":if cfg!(debug_assertions) { "debug" } else { "release" },
             "os":std::env::consts::OS,"architecture":std::env::consts::ARCH,
             "display_protocol":if cfg!(target_os = "linux") { "wayland" } else { "native" },
@@ -1478,6 +1479,17 @@ fn source_button(_theme: &Theme, status: button::Status) -> button::Style {
     }
 }
 
+/// Library and toolchain identity, mirroring the `versions` object the other
+/// frontends emit. Reported so the results site does not treat an iced run as
+/// having incomplete provenance and drop it from the winner boards.
+fn versions() -> serde_json::Value {
+    json!({
+        "app": env!("CARGO_PKG_VERSION"),
+        "iced": "0.14.0",
+        "build_type": if cfg!(debug_assertions) { "debug" } else { "release" },
+        "compiler": env!("PLOTBENCH_BUILD_COMPILER"),
+    })
+}
 fn renderer_environment() -> serde_json::Value {
     [
         "ICED_PRESENT_MODE",
@@ -1537,6 +1549,23 @@ mod selection_tests {
             "scalar",
         ))
         .unwrap()
+    }
+
+    #[test]
+    fn versions_report_a_non_empty_library_and_toolchain_identity() {
+        // The results site excludes a run whose context.versions is empty from every
+        // winner board, so this object must be present and populated for iced to rank.
+        let versions = super::versions();
+        let map = versions.as_object().expect("versions is a JSON object");
+        assert!(!map.is_empty(), "versions must not be empty");
+        for key in ["app", "iced", "build_type", "compiler"] {
+            let value = map.get(key).and_then(|v| v.as_str()).unwrap_or("");
+            assert!(
+                !value.is_empty(),
+                "versions.{key} must be a non-empty string"
+            );
+        }
+        assert_eq!(map["iced"], serde_json::json!("0.14.0"));
     }
 
     #[test]
