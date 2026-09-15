@@ -43,3 +43,8 @@ export function Field({
     </div>
   );
 }
+
+/** "59.8–60" for a range, or the single value when both ends agree. */
+export function rateRange(minimum: number, maximum: number): string {
+  return minimum === maximum ? format(maximum) : `${format(minimum)}–${format(maximum)}`;
+}
