@@ -7,9 +7,93 @@ import {
   type FrontendRecord,
 } from './winners';
 import { inDateRange } from './aggregation';
+import { sectionBySlug, sectionOf, type Section } from './baseline';
 import { GroupedResults } from './grouped-results';
 import { Field, Pill, format } from './presentation';
-import { workloadKey, workloadLabel, type Observation } from './model';
+import { workloadLabel, type Observation } from './model';
+import {
+  DateRange,
+  SectionHead,
+  SectionRail,
+  Select,
+  contextLine,
+  refreshLabel,
+  scaleLabel,
+  shortCommit,
+} from './section-rail';
+import { sectionHref } from './results-page';
+
+/** Distinct display scales in the collection, as select options ("1x", "2x"). */
+export function scaleOptions(observations: readonly Observation[]): [string, string][] {
+  return [
+    ...new Set(
+      observations.flatMap((o) =>
+        o.run.context.pixel_ratio === null ? [] : [o.run.context.pixel_ratio],
+      ),
+    ),
+  ]
+    .sort((a, b) => a - b)
+    .map((ratio) => [String(ratio), scaleLabel(ratio)]);
+}
+/** Benchmark observations within the page's date range and display scale. */
+export function eligibleObservations(
+  observations: readonly Observation[],
+  filters: URLSearchParams,
+): Observation[] {
+  const scale = filters.get('scale');
+  return observations.filter(
+    ({ campaign: c, run: r }) =>
+      c.classification === 'benchmark' &&
+      (!scale || String(r.context.pixel_ratio) === scale) &&
+      inDateRange(c.recorded_at, filters.get('from') ?? '', filters.get('to') ?? ''),
+  );
+}
+
+export function RankingControls({
+  observations,
+  filters,
+  filter,
+  reset,
+}: {
+  observations: readonly Observation[];
+  filters: URLSearchParams;
+  filter: (key: string, value: string) => void;
+  reset: string;
+}) {
+  const tolerance = closeRatePercent(filters.get('close'));
+  return (
+    <div className="toolbar" role="group" aria-label="Ranking controls">
+      <Field label="Close update rates">
+        <select
+          aria-label="Close update rates"
+          value={tolerance}
+          onChange={(e) => filter('close', e.target.value)}
+        >
+          {CLOSE_RATE_PERCENTAGES.map((percent) => (
+            <option key={percent} value={percent}>
+              {percent === 0
+                ? 'Exact rates'
+                : `Within ${percent}%${percent === 2 ? ' (default)' : ''}`}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Select
+        label="Display scale"
+        all="All scales"
+        value={filters.get('scale') ?? ''}
+        onChange={(v) => filter('scale', v)}
+        options={scaleOptions(observations)}
+      />
+      <DateRange filters={filters} filter={filter} />
+      <div className="toolbar-end">
+        {['close', 'scale', 'from', 'to', 'section'].some((k) => filters.get(k)) && (
+          <a href={reset}>Reset</a>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function WinnersPage({
   observations,
@@ -22,214 +106,78 @@ export function WinnersPage({
   filter: (key: string, value: string) => void;
   select: (o: Observation) => void;
 }) {
-  const kind = ['benchmark', 'smoke', 'diagnostic'].includes(filters.get('kind') ?? '')
-    ? filters.get('kind')!
-    : 'benchmark';
-  const visible = useMemo(
-    () =>
-      observations.filter(
-        ({ campaign: c, run: r }) =>
-          c.classification === kind &&
-          (!filters.get('backend') || r.backend === filters.get('backend')) &&
-          (!filters.get('mode') || r.mode === filters.get('mode')) &&
-          (!filters.get('workload') || workloadKey(r.config) === filters.get('workload')) &&
-          inDateRange(c.recorded_at, filters.get('from') ?? '', filters.get('to') ?? ''),
-      ),
-    [observations, filters, kind],
-  );
+  const section = sectionBySlug(filters.get('section'));
   const tolerance = closeRatePercent(filters.get('close'));
+  const visible = useMemo(
+    () => eligibleObservations(observations, filters),
+    [observations, filters],
+  );
   const collection = useMemo(() => collectWinners(visible, tolerance), [visible, tolerance]);
-  const [page, setPage] = useState(0),
-    pageSize = 12;
-  const allKinds = [...new Set(observations.map((o) => o.campaign.classification))];
-  const workloads = [
-    ...new Map(
-      observations.map((o) => [workloadKey(o.run.config), workloadLabel(o.run.config)]),
-    ).entries(),
-  ];
+  const counts = new Map<string, number>();
+  for (const board of collection.boards)
+    if (board.section)
+      counts.set(board.section.slug, (counts.get(board.section.slug) ?? 0) + board.records.length);
+  const boards = section
+    ? collection.boards.filter((b) => b.section?.slug === section.slug)
+    : collection.boards;
+  const href = sectionHref('winners')(filters);
   return (
     <section className="winners-page" aria-label="Winners across hosts">
+      <SectionRail counts={counts} current={section} href={href} unit="record" />
+      {section && <SectionHead section={section} />}
+      <RankingControls
+        observations={observations}
+        filters={filters}
+        filter={filter}
+        reset="#winners"
+      />
       <div className="notice">
         <p>
-          <strong>Best observed configurations across all hosts.</strong> Ranking starts with
+          <strong>Best observed records per section, across all hosts.</strong> Ranking starts with
           campaign-weighted median submitted updates/s, then prefers lower memory and CPU for close
-          rates. Hardware, frontend versions and display settings may differ; this is not a
-          hardware-independent library ranking or displayed FPS. Rates are paced by the target;
-          reaching it does not establish maximum rendering capacity.
+          rates. Hardware, frontend versions, source revisions and display settings may differ
+          between records; this is not a hardware-independent library ranking, not a controlled
+          comparison and not displayed FPS. Rates are paced by the 60 Hz target; reaching it does
+          not establish maximum rendering capacity.
         </p>
       </div>
-      <section className="panel" aria-label="Winner filters">
-        <div className="panel-head">
-          <h2>Compare</h2>
-          <a href="#winners">Reset</a>
-        </div>
-        <div className="field-grid">
-          <Field label="Close update rates">
-            <select
-              aria-label="Close update rates"
-              value={tolerance}
-              onChange={(e) => filter('close', e.target.value)}
-            >
-              {CLOSE_RATE_PERCENTAGES.map((percent) => (
-                <option key={percent} value={percent}>
-                  {percent === 0
-                    ? 'Exact rates'
-                    : `Within ${percent}%${percent === 2 ? ' (default)' : ''}`}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Collection">
-            <select
-              aria-label="Winner collection"
-              value={kind}
-              onChange={(e) => filter('kind', e.target.value)}
-            >
-              <option value="benchmark">Benchmarks</option>
-              <option value="smoke">Smoke checks</option>
-              <option value="diagnostic">Diagnostics</option>
-            </select>
-          </Field>
-          <Field label="Source backend">
-            <select
-              aria-label="Winner source backend"
-              value={filters.get('backend') ?? ''}
-              onChange={(e) => filter('backend', e.target.value)}
-            >
-              <option value="">All backends</option>
-              {[...new Set(observations.map((o) => o.run.backend))].sort().map((x) => (
-                <option key={x}>{x}</option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Delivery">
-            <select
-              aria-label="Winner delivery"
-              value={filters.get('mode') ?? ''}
-              onChange={(e) => filter('mode', e.target.value)}
-            >
-              <option value="">All modes</option>
-              <option value="stream">stream</option>
-              <option value="replay">replay</option>
-            </select>
-          </Field>
-          <Field label="Workload">
-            <select
-              aria-label="Winner workload"
-              value={filters.get('workload') ?? ''}
-              onChange={(e) => filter('workload', e.target.value)}
-            >
-              <option value="">All workloads</option>
-              {workloads.map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Acquired from (UTC)">
-            <input
-              aria-label="Winner acquired from (UTC)"
-              type="date"
-              value={filters.get('from') ?? ''}
-              onChange={(e) => filter('from', e.target.value)}
-            />
-          </Field>
-          <Field label="Acquired through (UTC)">
-            <input
-              aria-label="Winner acquired through (UTC)"
-              type="date"
-              value={filters.get('to') ?? ''}
-              onChange={(e) => filter('to', e.target.value)}
-            />
-          </Field>
-        </div>
-      </section>
-      {kind !== 'benchmark' && (
-        <div className="notice">
-          <p>
-            <strong>{kind === 'smoke' ? 'Smoke records only.' : 'Diagnostic records only.'}</strong>{' '}
-            These observations do not establish sustained performance or supported-platform
-            rankings.
-          </p>
-        </div>
-      )}
-      <div className="panel-head">
-        <div>
-          <h2>
-            {kind === 'benchmark'
-              ? 'Overall winners'
-              : kind === 'smoke'
-                ? 'Best observed smoke results'
-                : 'Best observed diagnostic results'}
-          </h2>
-          <p className="muted small">
-            {collection.boards.length} comparison cases · {collection.excludedGroups} groups
-            excluded for missing rates or incomplete context
-          </p>
-        </div>
-      </div>
       <p className="muted small aggregation-note">
-        One best record per frontend and case, drawn from any host. Source revision, workload,
-        backend, delivery mode and durations stay separate. Rates within {tolerance}% of the fastest
-        remaining configuration form a band. Within each band: lower median peak RSS first, then
-        lower median mean CPU, compared at 0.1 MiB / 0.1 percentage-point precision. Missing
-        resource coverage ranks after recorded values; CPU cannot break a tie when memory is
-        missing. This is a ranking preference, not a statistical significance test.
+        One best record per frontend and section, drawn from any host. Within {tolerance}% of the
+        fastest remaining configuration rates form a band; within a band lower median peak RSS ranks
+        first, then lower median mean CPU, compared at 0.1 MiB / 0.1 percentage-point precision.
+        Missing resource coverage ranks after recorded values; CPU cannot break a tie when memory is
+        missing. Records at different source revisions or display scales stay separate groups and
+        compete in the same section.{' '}
+        {section ? (collection.excludedBySection[section.slug] ?? 0) : collection.excludedGroups}{' '}
+        groups are excluded {section ? 'from this section' : 'across all sections'} for missing
+        rates, unknown display scale or incomplete context. This is a ranking preference, not a
+        statistical significance test.
       </p>
-      {collection.boards.length ? (
-        <>
-          <div className="winner-boards">
-            {collection.boards.slice(page * pageSize, (page + 1) * pageSize).map((board) => (
-              <Board key={board.key} board={board} select={select} />
-            ))}
-          </div>
-          <div className="pagination">
-            <span>
-              {page * pageSize + 1}–{Math.min((page + 1) * pageSize, collection.boards.length)} of{' '}
-              {collection.boards.length} cases
-            </span>
-            <div>
-              <button
-                className="btn-soft"
-                disabled={page === 0}
-                onClick={() => setPage((n) => n - 1)}
-              >
-                Previous cases
-              </button>
-              <button
-                className="btn-soft"
-                disabled={(page + 1) * pageSize >= collection.boards.length}
-                onClick={() => setPage((n) => n + 1)}
-              >
-                Next cases
-              </button>
-            </div>
-          </div>
-        </>
+      {boards.length ? (
+        <div className="winner-boards">
+          {boards.map((board) => (
+            <Board key={board.key} board={board} select={select} />
+          ))}
+        </div>
       ) : (
         <div className="empty">
-          <h2>No eligible {kind === 'benchmark' ? 'benchmark' : kind} results</h2>
+          <h2>No eligible benchmark results</h2>
           <p>
-            {kind === 'benchmark'
-              ? 'Add repeated benchmark campaigns to populate the winners page, or inspect another collection.'
-              : 'Try clearing the filters or inspect the recorded runs.'}
+            {section
+              ? `No published campaign has a complete-context record for ${section.title} in this date range and display scale.`
+              : 'Published baseline campaigns with complete context populate the winners page.'}
           </p>
           <div className="actions">
-            {allKinds
-              .filter((k) => k !== kind)
-              .map((k) => (
-                <a className="btn-soft" key={k} href={'#winners?kind=' + k}>
-                  View{' '}
-                  {k === 'smoke'
-                    ? 'smoke checks'
-                    : k === 'benchmark'
-                      ? 'benchmarks'
-                      : 'diagnostics'}
-                </a>
-              ))}
+            {section && (
+              <a className="btn-soft" href="#winners">
+                All sections
+              </a>
+            )}
             <a className="btn-soft" href="#results">
               Explore all recorded runs
+            </a>
+            <a className="btn-soft" href="#suite">
+              Read the baseline suite
             </a>
           </div>
         </div>
@@ -238,8 +186,12 @@ export function WinnersPage({
   );
 }
 
+function boardTitle(board: WinnerBoard, section: Section | null): string {
+  return section ? section.title : workloadLabel(board.representative.run.config);
+}
 function Board({ board, select }: { board: WinnerBoard; select: (o: Observation) => void }) {
   const r = board.representative.run,
+    section = board.section,
     leaders = board.records.filter((record) => record.rank === 1);
   const [expanded, setExpanded] = useState(false);
   const label =
@@ -248,8 +200,22 @@ function Board({ board, select }: { board: WinnerBoard; select: (o: Observation)
       : leaders.length > 1
         ? 'Joint winners'
         : 'Winner';
+  const scales = new Set(
+    board.records.flatMap((record) =>
+      record.groups.map((g) => g.representative.run.context.pixel_ratio),
+    ),
+  );
+  const image = r.config.view !== 'waveform';
   return (
-    <article className="winner-board">
+    <article className="winner-board" id={section ? 'winners-' + section.slug : undefined}>
+      <header className="winner-section">
+        {section && <span className="rail-index">{section.index}</span>}
+        <strong>{boardTitle(board, section)}</strong>
+        <span className="muted">
+          spans {board.revisions} source revision{board.revisions === 1 ? '' : 's'} · {board.hosts}{' '}
+          host{board.hosts === 1 ? '' : 's'}
+        </span>
+      </header>
       <div className="winner-heading">
         <div>
           <p className="eyebrow">{label}</p>
@@ -264,6 +230,7 @@ function Board({ board, select }: { board: WinnerBoard; select: (o: Observation)
             <Pill>
               {r.warmup_seconds}s warmup + {r.measurement_seconds}s measurement
             </Pill>
+            {scales.size > 1 && <Pill tone="amber">Records at different display scales</Pill>}
           </div>
         </div>
         <div className="winner-score">
@@ -278,18 +245,22 @@ function Board({ board, select }: { board: WinnerBoard; select: (o: Observation)
         </div>
       </div>
       <p className="muted winner-context">
-        {board.records.length} frontends · {board.hosts} hosts · {board.evaluatedGroups} eligible
-        groups. Source <code>{r.context.source_hash?.slice(0, 12)}</code> · commit{' '}
-        <code>{r.context.commit?.slice(0, 12) ?? 'not recorded'}</code>
-        {r.context.dirty && ' · modified checkout'}
+        {board.records.length} frontend{board.records.length === 1 ? '' : 's'} · {board.hosts} host
+        {board.hosts === 1 ? '' : 's'} · {board.evaluatedGroups} eligible group
+        {board.evaluatedGroups === 1 ? '' : 's'}. Priority: throughput bands (
+        {board.closeRatePercent}%) → peak RSS → mean CPU. Resource values use equal campaign
+        weights; CPU 100% means one logical CPU.
       </p>
-      <p className="muted">
-        Priority: throughput bands ({board.closeRatePercent}%) → peak RSS → mean CPU. Resource
-        values use equal campaign weights; CPU 100% means one logical CPU.
-      </p>
+      {image && (
+        <p className="muted">
+          Image sections rasterise {r.config.width} × {r.config.height} × scale² device pixels per
+          plot, so a record at 2x scaling pushes four times the pixels of one at 1x. Records at
+          different scales compete in the same section and are marked.
+        </p>
+      )}
       <div className="winner-records">
         {leaders.map((record) => (
-          <Record key={record.frontend} record={record} select={select} />
+          <Record key={record.frontend} record={record} select={select} marked={scales.size > 1} />
         ))}
       </div>
       {board.records.length > leaders.length && (
@@ -302,7 +273,14 @@ function Board({ board, select }: { board: WinnerBoard; select: (o: Observation)
           {expanded &&
             board.records
               .filter((record) => record.rank !== 1)
-              .map((record) => <Record key={record.frontend} record={record} select={select} />)}
+              .map((record) => (
+                <Record
+                  key={record.frontend}
+                  record={record}
+                  select={select}
+                  marked={scales.size > 1}
+                />
+              ))}
         </details>
       )}
     </article>
@@ -312,9 +290,22 @@ function Board({ board, select }: { board: WinnerBoard; select: (o: Observation)
 function rateRange(minimum: number, maximum: number): string {
   return minimum === maximum ? format(maximum) : `${format(minimum)}–${format(maximum)}`;
 }
-function Record({ record, select }: { record: FrontendRecord; select: (o: Observation) => void }) {
+function Record({
+  record,
+  select,
+  marked,
+}: {
+  record: FrontendRecord;
+  select: (o: Observation) => void;
+  marked: boolean;
+}) {
   const [open, setOpen] = useState(false),
     [limit, setLimit] = useState(10);
+  const contexts = record.groups.map((g) => g.representative.run.context);
+  const commits = [...new Set(contexts.map((x) => shortCommit(x.commit)))],
+    scales = [...new Set(contexts.map((x) => scaleLabel(x.pixel_ratio)))],
+    refreshes = [...new Set(contexts.map((x) => refreshLabel(x.refresh_hz)))],
+    protocols = [...new Set(contexts.map((x) => x.display_protocol ?? 'protocol not recorded'))];
   return (
     <div className="frontend-record">
       <div className="record-title">
@@ -333,17 +324,32 @@ function Record({ record, select }: { record: FrontendRecord; select: (o: Observ
             ? 'incomplete'
             : `${format(record.cpuPercent)}%`}
       </p>
+      <p className="record-context muted small">
+        commit {commits.join(' / ')} · {scales.join(' / ')} · {refreshes.join(' / ')} ·{' '}
+        {protocols.join(' / ')}
+      </p>
       <ul className="winning-hosts">
         {record.groups.slice(0, limit).map((g) => {
-          const c = g.representative.campaign;
+          const { campaign: c, run: r } = g.representative;
+          const slug = sectionOf(r.config)?.slug;
           return (
             <li key={g.key}>
-              <a href={'#results?host=' + encodeURIComponent(c.host.id)}>{c.host.label}</a>
+              <a
+                href={
+                  '#results?host=' +
+                  encodeURIComponent(c.host.id) +
+                  (slug ? '&section=' + slug : '')
+                }
+              >
+                {c.host.label}
+              </a>
               <span>
                 {c.host.cpu} · {c.host.gpu ?? 'GPU not recorded'} · {c.host.os}
               </span>
+              <span>{contextLine(r.context)}</span>
               <span>
-                {g.successful}/{g.attempted} successful runs · {g.campaigns.length} campaigns
+                {g.successful}/{g.attempted} successful runs · {g.campaigns.length} campaign
+                {g.campaigns.length === 1 ? '' : 's'}
               </span>
               <span>
                 {format(g.rates.median)} updates/s · Median peak RSS{' '}
@@ -355,6 +361,9 @@ function Record({ record, select }: { record: FrontendRecord; select: (o: Observ
                   ? 'unavailable'
                   : `${format(g.resources.cpuPercent)}%`}
               </span>
+              {marked && (
+                <Pill tone="amber">{scaleLabel(r.context.pixel_ratio)} display scale</Pill>
+              )}
               {g.limited > 0 && <Pill tone="amber">{g.limited} source-limited</Pill>}
               {g.successful < g.attempted && (
                 <Pill tone="danger">{g.attempted - g.successful} without valid rate</Pill>
