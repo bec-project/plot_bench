@@ -203,6 +203,13 @@ def test_results_filters_details_submission_and_mobile():
             await page.goto(url)
             rail = page.get_by_role("navigation", name="Sections")
             nav = page.get_by_role("navigation", name="Main navigation")
+            # The site opens on the Winners page; every board pairs facts with a chart.
+            await expect(
+                nav.get_by_role("link", name="Winners", exact=True)
+            ).to_have_attribute("aria-current", "page")
+            await expect(page.locator(".winner-board")).to_have_count(7)
+            await expect(page.locator(".board-chart .chart-rows")).to_have_count(7)
+            await page.goto(url + "#results")
             await expect(rail.get_by_role("link")).to_have_count(8)
             await expect(
                 rail.get_by_role("link", name="All sections")
@@ -215,6 +222,18 @@ def test_results_filters_details_submission_and_mobile():
             # Two frontends on the fixture host plus one on the other: 3 groups per section.
             await expect(groups).to_have_count(21)
             await expect(page.locator(".section-divider")).to_have_count(7)
+            # Groups are ordered by median updates/s inside a section: the 30 Hz qtgraphs
+            # group on the other host comes last; the Order selector persists in the URL.
+            await expect(groups.nth(2)).to_contain_text("qtgraphs")
+            await expect(groups.first.locator(".rate")).to_have_text("60")
+            await page.get_by_label("Order", exact=True).select_option("frontend")
+            await expect(groups.first).to_contain_text("matplotlib")
+            await page.reload()
+            await expect(page.get_by_label("Order", exact=True)).to_have_value(
+                "frontend"
+            )
+            await page.get_by_label("Order", exact=True).select_option("")
+            await expect(groups.nth(2)).to_contain_text("qtgraphs")
             await rail.get_by_role("link", name="2 Multi-curve").click()
             await expect(
                 rail.get_by_role("link", name="2 Multi-curve")
@@ -426,7 +445,7 @@ def test_grouped_campaign_weights_drilldown_dates_pagination_winners_and_overall
         async with TestServer(app) as server, async_playwright() as playwright:
             browser, page, errors = await launch(playwright)
             url = str(server.make_url(base))
-            await page.goto(url)
+            await page.goto(url + "#results")
             rail = page.get_by_role("navigation", name="Sections")
             nav = page.get_by_role("navigation", name="Main navigation")
             groups = page.locator(".result-group")
@@ -502,6 +521,14 @@ def test_grouped_campaign_weights_drilldown_dates_pagination_winners_and_overall
             await expect(board.locator(".frontend-record")).to_have_count(1)
             await board.locator(".other-records > summary").click()
             await expect(board.locator(".frontend-record")).to_have_count(9)
+            await expect(board.locator(".board-chart .chart-row")).to_have_count(9)
+            await expect(board.locator(".board-chart .chart-row-winner")).to_have_count(
+                1
+            )
+            widths = await board.locator(
+                ".board-chart .chart-row > .chart-track > .chart-bar"
+            ).evaluate_all("els => els.map(e => e.getBoundingClientRect().width)")
+            assert widths[0] > widths[-1] > 0, widths
             await page.get_by_label("Acquired through (UTC)").fill("2026-09-16")
             await expect(
                 page.get_by_role("heading", name="No eligible benchmark results")
@@ -691,6 +718,10 @@ def test_built_catalogue_renders_results_or_the_empty_state():
             rail = page.get_by_role("navigation", name="Sections")
             nav = page.get_by_role("navigation", name="Main navigation")
             await expect(rail.get_by_role("link")).to_have_count(8)
+            await expect(
+                nav.get_by_role("link", name="Winners", exact=True)
+            ).to_have_attribute("aria-current", "page")
+            await nav.get_by_role("link", name="Results", exact=True).click()
             if catalog["campaigns"]:
                 await expect(page.locator(".result-group").first).to_be_visible()
                 await nav.get_by_role("link", name="Hosts", exact=True).click()

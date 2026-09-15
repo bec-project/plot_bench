@@ -19,15 +19,25 @@ import {
 import './style.css';
 
 const VIEWS = [
-  ['results', 'Results'],
   ['winners', 'Winners'],
+  ['results', 'Results'],
   ['overall', 'Overall'],
   ['hosts', 'Hosts'],
   ['suite', 'Suite'],
   ['contribute', 'Contribute'],
 ] as const;
 type View = (typeof VIEWS)[number][0];
-const FILTER_KEYS = ['section', 'host', 'frontend', 'from', 'to', 'layout', 'close', 'scale'];
+const FILTER_KEYS = [
+  'section',
+  'host',
+  'frontend',
+  'from',
+  'to',
+  'layout',
+  'sort',
+  'close',
+  'scale',
+];
 const HEADINGS: Record<View, { title: string; lede: string }> = {
   results: {
     title: 'Baseline results, in context.',
@@ -67,14 +77,14 @@ function download(campaign: Submission) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 // Unknown keys and unknown section slugs are dropped, so old links degrade to the
-// unfiltered page instead of breaking.
+// unfiltered page instead of breaking. The site opens on the Winners page.
 function readLocation(): { view: View; filters: URLSearchParams } {
   const [view, query = ''] = location.hash.slice(1).split('?');
   const raw = new URLSearchParams(query),
     filters = new URLSearchParams();
   for (const key of FILTER_KEYS) if (raw.get(key)) filters.set(key, raw.get(key)!);
   return {
-    view: VIEWS.some(([v]) => v === view) ? (view as View) : 'results',
+    view: VIEWS.some(([v]) => v === view) ? (view as View) : 'winners',
     filters,
   };
 }
@@ -123,10 +133,10 @@ function App() {
   return (
     <>
       <a href="#main" className="skip">
-        Skip to results
+        Skip to content
       </a>
       <header className="topbar">
-        <a className="brand" href="#results" aria-label="Plotbench home">
+        <a className="brand" href="#winners" aria-label="Plotbench home">
           <svg viewBox="0 0 36 28" aria-hidden="true">
             <path d="M1 21h6l4-15 6 21 6-23 5 17h7" />
           </svg>

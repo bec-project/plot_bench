@@ -31,7 +31,18 @@ UI previews: [results, desktop](docs/results-desktop.png) ·
 [winners, mobile](docs/winners-mobile.png) ·
 [overall, desktop](docs/overall-desktop.png).
 
+The site opens on the Winners page; Results, Overall, Hosts, Suite and
+Contribute are one click away in the top navigation.
+
 ## Winners across hosts
+
+Each section board pairs its facts with a bar chart drawn from the same records
+as the ranking: one horizontal bar per frontend record at its campaign-weighted
+median submitted updates/s, a whisker for the observed range of the valid
+repetition rates behind that record, and a dashed line at the paced target. A
+record that merges equally ranked groups (same rate band, tied resources) spans
+its lowest to highest group median, the same range its record row prints. The
+chart adds no statistic and shows submitted updates, not displayed FPS.
 
 The Winners page keeps one board per baseline section, in suite order. A board
 ranks configurations by throughput first, then memory and CPU when update rates
@@ -150,14 +161,16 @@ retained; source-limited successful measurements remain included and visible.
 Within each campaign, expansion shows the repetition median, observed min/max,
 completion status, recorded/planned totals, notes and links to run details.
 
-Groups are ordered by section, then by latest acquisition, not by performance. No
-timing percentiles are pooled across runs. The grouped counts cover recorded
+Groups are ordered by section, then by median updates/s with the highest first;
+the **Order** selector switches to latest acquisition or frontend name and the
+choice persists in the URL as `sort`. The order changes what is shown first, not
+what is grouped. No timing percentiles are pooled across runs. The grouped counts cover recorded
 attempts; unrecorded planned cases are exposed at campaign level, not invented as
 failures in a particular group. This is a display aggregation, not a file merge.
 
 The Results page filters are the section rail, the host and frontend selectors,
 the inclusive UTC date range and the grouped/individual layout. Together with the
-Winners and Overall controls, the URL carries `section`, `host`, `frontend`,
+Winners and Overall controls, the URL carries `section`, `host`, `frontend`, `sort`,
 `from`, `to`, `layout`, `close` and `scale`; unknown keys or slugs fall back to
 the unfiltered page, so old links keep working.
 

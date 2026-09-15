@@ -9,7 +9,7 @@ import {
 import { inDateRange } from './aggregation';
 import { sectionBySlug, sectionOf, type Section } from './baseline';
 import { GroupedResults } from './grouped-results';
-import { Field, Pill, format } from './presentation';
+import { Field, format, Pill, rateRange } from './presentation';
 import { workloadLabel, type Observation } from './model';
 import {
   DateRange,
@@ -22,6 +22,7 @@ import {
   shortCommit,
 } from './section-rail';
 import { sectionHref } from './results-page';
+import { BoardChart } from './board-chart';
 
 /** Distinct display scales in the collection, as select options ("1x", "2x"). */
 export function scaleOptions(observations: readonly Observation[]): [string, string][] {
@@ -216,48 +217,54 @@ function Board({ board, select }: { board: WinnerBoard; select: (o: Observation)
           host{board.hosts === 1 ? '' : 's'}
         </span>
       </header>
-      <div className="winner-heading">
-        <div>
-          <p className="eyebrow">{label}</p>
-          <h3>{leaders.map((record) => record.frontend).join(' · ')}</h3>
-          <p>
-            {workloadLabel(r.config)} · seed {r.config.seed}
-          </p>
-          <div className="pills">
-            <Pill>
-              {r.backend} · {r.mode}
-            </Pill>
-            <Pill>
-              {r.warmup_seconds}s warmup + {r.measurement_seconds}s measurement
-            </Pill>
-            {scales.size > 1 && <Pill tone="amber">Records at different display scales</Pill>}
+      <div className="board-layout">
+        <div className="board-facts">
+          <div className="winner-heading">
+            <div>
+              <p className="eyebrow">{label}</p>
+              <h3>{leaders.map((record) => record.frontend).join(' · ')}</h3>
+              <p>
+                {workloadLabel(r.config)} · seed {r.config.seed}
+              </p>
+              <div className="pills">
+                <Pill>
+                  {r.backend} · {r.mode}
+                </Pill>
+                <Pill>
+                  {r.warmup_seconds}s warmup + {r.measurement_seconds}s measurement
+                </Pill>
+                {scales.size > 1 && <Pill tone="amber">Records at different display scales</Pill>}
+              </div>
+            </div>
+            <div className="winner-score">
+              <strong>
+                {rateRange(
+                  Math.min(...leaders.map((r) => r.minimumScore)),
+                  Math.max(...leaders.map((r) => r.score)),
+                )}
+              </strong>
+              <span>median updates/s</span>
+              <small>Target {r.config.hz} Hz</small>
+            </div>
           </div>
+          <p className="muted winner-context">
+            {board.records.length} frontend{board.records.length === 1 ? '' : 's'} · {board.hosts}{' '}
+            host
+            {board.hosts === 1 ? '' : 's'} · {board.evaluatedGroups} eligible group
+            {board.evaluatedGroups === 1 ? '' : 's'}. Priority: throughput bands (
+            {board.closeRatePercent}%) → peak RSS → mean CPU. Resource values use equal campaign
+            weights; CPU 100% means one logical CPU.
+          </p>
+          {image && (
+            <p className="muted">
+              Image sections rasterise {r.config.width} × {r.config.height} × scale² device pixels
+              per plot, so a record at 2x scaling pushes four times the pixels of one at 1x. Records
+              at different scales compete in the same section and are marked.
+            </p>
+          )}
         </div>
-        <div className="winner-score">
-          <strong>
-            {rateRange(
-              Math.min(...leaders.map((r) => r.minimumScore)),
-              Math.max(...leaders.map((r) => r.score)),
-            )}
-          </strong>
-          <span>median updates/s</span>
-          <small>Target {r.config.hz} Hz</small>
-        </div>
+        <BoardChart board={board} />
       </div>
-      <p className="muted winner-context">
-        {board.records.length} frontend{board.records.length === 1 ? '' : 's'} · {board.hosts} host
-        {board.hosts === 1 ? '' : 's'} · {board.evaluatedGroups} eligible group
-        {board.evaluatedGroups === 1 ? '' : 's'}. Priority: throughput bands (
-        {board.closeRatePercent}%) → peak RSS → mean CPU. Resource values use equal campaign
-        weights; CPU 100% means one logical CPU.
-      </p>
-      {image && (
-        <p className="muted">
-          Image sections rasterise {r.config.width} × {r.config.height} × scale² device pixels per
-          plot, so a record at 2x scaling pushes four times the pixels of one at 1x. Records at
-          different scales compete in the same section and are marked.
-        </p>
-      )}
       <div className="winner-records">
         {leaders.map((record) => (
           <Record key={record.frontend} record={record} select={select} marked={scales.size > 1} />
@@ -287,9 +294,6 @@ function Board({ board, select }: { board: WinnerBoard; select: (o: Observation)
   );
 }
 
-function rateRange(minimum: number, maximum: number): string {
-  return minimum === maximum ? format(maximum) : `${format(minimum)}–${format(maximum)}`;
-}
 function Record({
   record,
   select,
