@@ -2,9 +2,23 @@ import { boardChart, resourceChart, type ResourceChartData } from './chart';
 import { format, rateRange } from './presentation';
 import type { WinnerBoard } from './winners';
 
+// Row highlight shared with the profile glyphs: hovering a frontend anywhere in
+// the winner card lights up its row in all three tables. Optional, so the chart
+// still renders standalone (e.g. in tests) without the hover wiring.
+export type RowHover = { hovered?: string | null; onHover?: (frontend: string | null) => void };
+export function rowClass(base: string, frontend: string, hover: RowHover): string {
+  return hover.onHover && hover.hovered === frontend ? `${base} chart-row-hover` : base;
+}
+export function rowHoverProps(frontend: string, { onHover }: RowHover) {
+  return onHover
+    ? { onMouseEnter: () => onHover(frontend), onMouseLeave: () => onHover(null) }
+    : {};
+}
+
 // Same encoding as the offline HTML reports. A table keeps the label, bar and
 // value columns aligned across every row and the axis row, and reads as data.
-export function BoardChart({ board }: { board: WinnerBoard }) {
+export function BoardChart({ board, hovered = null, onHover }: { board: WinnerBoard } & RowHover) {
+  const hover: RowHover = { hovered, onHover };
   const { target, max, bars } = boardChart(board);
   const pct = (value: number) => `${((value / max) * 100).toFixed(2)}%`;
   const where = board.section ? ` in the ${board.section.title} section` : '';
@@ -31,7 +45,12 @@ export function BoardChart({ board }: { board: WinnerBoard }) {
           {bars.map((bar) => (
             <tr
               key={bar.frontend}
-              className={bar.winner ? 'chart-row chart-row-winner' : 'chart-row'}
+              className={rowClass(
+                bar.winner ? 'chart-row chart-row-winner' : 'chart-row',
+                bar.frontend,
+                hover,
+              )}
+              {...rowHoverProps(bar.frontend, hover)}
             >
               <th scope="row" className="chart-label">
                 <span className="muted">#{bar.rank}</span> {bar.frontend}
@@ -87,6 +106,7 @@ export function BoardChart({ board }: { board: WinnerBoard }) {
         section={where}
         unit=" MiB"
         emptyLabel="No memory coverage in these records."
+        hover={hover}
       />
       <ResourceChart
         title="Mean CPU"
@@ -96,6 +116,7 @@ export function BoardChart({ board }: { board: WinnerBoard }) {
         unit="%"
         referenceLabel="1 core"
         emptyLabel="No CPU coverage in these records."
+        hover={hover}
       />
       <figcaption>
         Bars: the ranked value of each frontend's record — median submitted updates/s, then median
@@ -119,6 +140,7 @@ function ResourceChart({
   unit,
   referenceLabel,
   emptyLabel,
+  hover,
 }: {
   title: string;
   hint: string;
@@ -127,6 +149,7 @@ function ResourceChart({
   unit: string;
   referenceLabel?: string;
   emptyLabel: string;
+  hover: RowHover;
 }) {
   const pct = (value: number) => `${((value / chart.max) * 100).toFixed(2)}%`;
   const valueText = (value: number) =>
@@ -157,7 +180,12 @@ function ResourceChart({
           chart.bars.map((bar) => (
             <tr
               key={bar.frontend}
-              className={bar.winner ? 'chart-row chart-row-winner' : 'chart-row'}
+              className={rowClass(
+                bar.winner ? 'chart-row chart-row-winner' : 'chart-row',
+                bar.frontend,
+                hover,
+              )}
+              {...rowHoverProps(bar.frontend, hover)}
             >
               <th scope="row" className="chart-label">
                 <span className="muted">#{bar.rank}</span> {bar.frontend}
