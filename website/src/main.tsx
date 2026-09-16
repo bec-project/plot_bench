@@ -137,10 +137,13 @@ function App() {
       </a>
       <header className="topbar">
         <a className="brand" href="#winners" aria-label="Plotbench home">
-          <svg viewBox="0 0 36 28" aria-hidden="true">
-            <path d="M1 21h6l4-15 6 21 6-23 5 17h7" />
-          </svg>
-          <strong>plotbench</strong>
+          <img
+            className="brand-wordmark"
+            src={`${import.meta.env.BASE_URL}brand/plotbench-wordmark-on-dark.svg`}
+            alt="plotbench"
+            width="145"
+            height="29"
+          />
           <span>/ baseline</span>
         </a>
         <nav aria-label="Main navigation">

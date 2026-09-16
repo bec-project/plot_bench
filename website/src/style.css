@@ -572,20 +572,14 @@ pre {
 .brand:hover {
   text-decoration: none;
 }
-.brand strong {
-  font-size: 17px;
-  letter-spacing: -0.02em;
+.brand-wordmark {
+  display: block;
+  width: 145px;
+  height: 29px;
 }
 .brand span {
   font-size: 13px;
   color: var(--muted);
-}
-.brand svg {
-  width: 28px;
-  height: 22px;
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 2;
 }
 .topbar nav {
   display: flex;
