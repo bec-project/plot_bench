@@ -39,7 +39,8 @@ times the whole frame across every plot and `conversion_ms` covers every image
 conversion in it. A frontend that draws four plots with four curves each submits
 one update per frame, not sixteen. Every frontend arranges the plots with the same
 grid rule and equal cell sizes ([presentation](presentation.md)), and metadata
-records `plot_counts`, `curves` and the physical data area of the first plot of
+records `plot_counts`, `curves`, every physical data area in `plot_viewports_all`,
+and the physical data area of the first plot of
 each kind, so compare plot-count workloads only against the same counts and
 window size: more plots in the same window means smaller plots. The official
 `baseline` suite covers them with a ten-curve section and a two-plot,
@@ -105,3 +106,12 @@ Use receiver probes to investigate source/delivery limits, replay to investigate
 transport-independent rendering, and longer stability runs for sustained behavior.
 Keep diagnostic attempts separate from the main comparison and retain failures.
 Document conditions that changed between attempts.
+
+
+Rendering contract `data-area-v1` normalizes the data rectangle using the
+[shared sizing rule](presentation.md#data-area-contract-data-area-v1). Reports
+exclude runs whose measured geometry fails that contract. This removes the former
+native-layout size discrepancy; it does not make API timings equivalent, normalize
+axis/text rendering, or remove documented renderer limitations such as Plotly's
+default line antialiasing. Historical unversioned runs remain fixed-window
+application measurements and are kept in separate aggregation contexts.

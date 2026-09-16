@@ -45,10 +45,11 @@ func (t benchTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.Colo
 
 // plotCard is one plot widget: a bold title, the physical-pixel image and a subtitle.
 type plotCard struct {
-	image    *canvas.Image
-	title    *widget.Label
-	subtitle *widget.Label
-	object   fyne.CanvasObject
+	image      *canvas.Image
+	title      *widget.Label
+	subtitle   *widget.Label
+	object     fyne.CanvasObject
+	dataLayout *dataAreaLayout
 }
 
 func newPlotCard(title string, fill canvas.ImageFill) *plotCard {
@@ -57,7 +58,10 @@ func newPlotCard(title string, fill canvas.ImageFill) *plotCard {
 	img.FillMode = fill
 	t := widget.NewLabelWithStyle(title, fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 	s := widget.NewLabel("")
-	return &plotCard{image: img, title: t, subtitle: s, object: container.NewBorder(t, s, nil, nil, container.NewStack(canvas.NewRectangle(plotBackground), img))}
+	dataLayout := &dataAreaLayout{size: fyne.NewSize(1, 1)}
+	body := container.New(dataLayout, img)
+	return &plotCard{image: img, title: t, subtitle: s, dataLayout: dataLayout,
+		object: container.NewBorder(t, s, nil, nil, container.NewStack(canvas.NewRectangle(plotBackground), body))}
 }
 
 // buildPlots replaces the grid's widgets with `waveform_plots` waveform cards
@@ -252,6 +256,13 @@ func main() {
 				two.SetChecked(c.View != "waveform")
 				changing = false
 			}
+			slot := dataSlot(w.Canvas().Size(), len(waveCards)+len(imgCards))
+			for _, card := range append(append([]*plotCard{}, waveCards...), imgCards...) {
+				if card.dataLayout.size != slot {
+					card.dataLayout.size = slot
+					card.object.Refresh()
+				}
+			}
 			scale := physicalScale(w.Canvas())
 			start := time.Now()
 			conversion := 0.0
@@ -313,7 +324,7 @@ func main() {
 					r := math.Min(float64(v.Width*scale)/float64(c.Width), float64(v.Height*scale)/float64(c.Height))
 					viewports["image"] = []float64{float64(c.Width) * r, float64(c.Height) * r}
 				}
-				metrics.set(map[string]any{"config": c, "pixel_ratio": scale, "viewport_size": []float32{size.Width, size.Height}, "plot_viewports": viewports, "plot_counts": map[string]int{"waveform": waveforms, "image": images}, "curves": c.Curves, "display": nil, "receiver_connection_epoch": reconnects + 1, "replay_frames": replayCount, "replay_bytes": replayBytes})
+				metrics.set(map[string]any{"render_contract": "data-area-v1", "plot_viewports_all": allDataAreas(waveCards, imgCards, c, scale), "config": c, "pixel_ratio": scale, "viewport_size": []float32{size.Width, size.Height}, "plot_viewports": viewports, "plot_counts": map[string]int{"waveform": waveforms, "image": images}, "curves": c.Curves, "display": nil, "receiver_connection_epoch": reconnects + 1, "replay_frames": replayCount, "replay_bytes": replayBytes})
 			}
 		}
 		if time.Since(lastStatus) >= 500*time.Millisecond {

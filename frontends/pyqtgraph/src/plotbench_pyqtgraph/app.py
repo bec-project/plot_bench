@@ -1,6 +1,7 @@
 """Compare PyQtGraph's raster viewport and OpenGL curve path."""
 
 import logging
+import math
 import os
 import platform
 import sys
@@ -13,7 +14,8 @@ import pyqtgraph as pg
 from plotbench.client import FrameSource, MetricsSink, frontend_parser
 from plotbench.palette import COLORMAP, CURVE_COLORS
 from plotbench.qt_metadata import qt_window_metadata
-from qtpy.QtCore import Qt, QTimer, Slot, qVersion
+from plotbench.render_contract import VERSION, image_size, slot_size
+from qtpy.QtCore import QSizeF, Qt, QTimer, Slot, qVersion
 from qtpy.QtGui import QFont, QSurfaceFormat
 from qtpy.QtWidgets import QApplication, QMainWindow
 
@@ -58,6 +60,7 @@ class PlotWindow(QMainWindow):
         self.setCentralWidget(self.dashboard)
 
         self.metadata = {
+            "render_contract": VERSION,
             "measurement_stage": "scalar-to-uint8 index conversion + setData + ImageItem.setImage "
             "submission; deferred Indexed8 QImage/color-table preparation, QPainter LUT "
             "expansion/paint and GPU work excluded",
@@ -124,8 +127,11 @@ class PlotWindow(QMainWindow):
         plot.setMouseEnabled(x=False, y=False)
         plot.setMenuEnabled(False)
         plot.disableAutoRange()
-        plot.setMinimumSize(100, 100)
+        plot.setMinimumSize(1, 1)
         plot.getPlotItem().layout.setContentsMargins(0, 8, 0, 0)
+        plot.getPlotItem().layout.setSpacing(0)
+        plot.getAxis("left").setWidth(56)
+        plot.getAxis("bottom").setHeight(36)
         plot.hideButtons()
         for axis_name in ("left", "bottom"):
             axis = plot.getAxis(axis_name)
@@ -153,7 +159,8 @@ class PlotWindow(QMainWindow):
         plot.setLabel("bottom", "Sample")
         plot.setLabel("left", "Amplitude")
         card = PlotCard("Waveform")
-        card.content.addWidget(plot, 1)
+        card.content.addWidget(plot, 0, Qt.AlignmentFlag.AlignHCenter)
+        card.content.addStretch(1)
         self.waveform_cards.append(card)
         self.waveform_plots.append(plot)
         self.curves.append([])
@@ -167,7 +174,8 @@ class PlotWindow(QMainWindow):
         item = pg.ImageItem(axisOrder="row-major", autoDownsample=False)
         plot.addItem(item)
         card = PlotCard("Image")
-        card.content.addWidget(plot, 1)
+        card.content.addWidget(plot, 0, Qt.AlignmentFlag.AlignHCenter)
+        card.content.addStretch(1)
         self.image_cards.append(card)
         self.image_plots.append(plot)
         self.image_items.append(item)
@@ -227,6 +235,27 @@ class PlotWindow(QMainWindow):
             card.subtitle.setText(subtitle)
             plot.setRange(xRange=(0, config["width"]), yRange=(0, config["height"]), padding=0)
             item.setLookupTable(COLORMAP if config["image_mode"] == "scalar" else None)
+        self.layout_data_areas()
+
+    def layout_data_areas(self):
+        if not self.config:
+            return
+        count = len(self.waveform_plots) + len(self.image_plots)
+        slot = slot_size(self.width(), self.height(), count)
+        fitted = image_size(slot, self.config["width"], self.config["height"])
+        for plots, size in ((self.waveform_plots, slot), (self.image_plots, fitted)):
+            for plot in plots:
+                view = plot.getViewBox()
+                view.setMinimumSize(QSizeF(*size))
+                view.setMaximumSize(QSizeF(*size))
+                # Fix the plot widget too: otherwise its axes stretch to the old
+                # container while the constrained ViewBox occupies only part of it.
+                plot.setFixedSize(math.ceil(size[0] + 56), math.ceil(size[1] + 44))
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if hasattr(self, "waveform_plots"):
+            self.layout_data_areas()
 
     @Slot()
     def poll_frame(self):
@@ -291,7 +320,7 @@ class PlotWindow(QMainWindow):
         # All grid cells are equal, so the first plot of each kind describes every plot.
         waveform_area = image_area = None
         if self.waveform is not None and self.waveform.isVisible():
-            waveform_area = self.waveform.getViewBox().sceneBoundingRect()
+            waveform_area = self.waveform.getViewBox().rect()
         if self.image_plot is not None and self.image_plot.isVisible():
             image_area = self.image_item.mapRectToDevice(self.image_item.boundingRect())
         self.metadata.update(
@@ -311,6 +340,17 @@ class PlotWindow(QMainWindow):
                     if image_area is not None
                     else None
                 ),
+            },
+            plot_viewports_all={
+                "waveform": [
+                    [p.getViewBox().width() * ratio, p.getViewBox().height() * ratio]
+                    for p in self.waveform_plots
+                ],
+                "image": [
+                    [r.width() * ratio, r.height() * ratio] if r is not None else None
+                    for item in self.image_items
+                    for r in [item.mapRectToDevice(item.boundingRect())]
+                ],
             },
             plot_counts={"waveform": len(self.waveform_plots), "image": len(self.image_plots)},
             curves=self.curve_count,

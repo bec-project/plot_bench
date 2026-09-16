@@ -313,6 +313,34 @@ impl canvas::Program<Message> for Waveform {
     }
 }
 
+// Hidden waveform caches are not visible plots (not even null observations).
+fn waveform_data_areas(waveforms: &[Waveform], count: usize, scale: f32) -> Vec<Option<[f32; 2]>> {
+    waveforms
+        .iter()
+        .take(count)
+        .map(|waveform| {
+            waveform
+                .data_area
+                .lock()
+                .unwrap()
+                .map(|size| [size.width * scale, size.height * scale])
+        })
+        .collect()
+}
+
+// data-area-v1; logical window dimensions, not the toolkit's content allocation.
+fn data_slot(width: f32, height: f32, count: usize) -> Size {
+    let (columns, rows) = grid_shape(count);
+    Size::new(
+        ((width - 48.0 - 16.0 * (columns - 1) as f32) / columns as f32 - 120.0)
+            .floor()
+            .max(1.0),
+        ((height - 340.0 - 16.0 * (rows - 1) as f32) / rows as f32 - 140.0)
+            .floor()
+            .max(1.0),
+    )
+}
+
 fn plot_area(size: Size) -> Rectangle {
     Rectangle {
         x: 42.0,
@@ -352,7 +380,7 @@ struct App {
     images: Vec<image_allocation::Allocation>,
     readiness: Readiness<Packet>,
     preparing: Option<PreparedFrame>,
-    image_area: Arc<Mutex<Option<Size>>>,
+    image_area: Arc<Mutex<Vec<Option<Size>>>>,
     pending: Option<Sample>,
     last_identity: Option<Identity>,
     recent: VecDeque<Instant>,
@@ -427,7 +455,7 @@ impl App {
             images: Vec::new(),
             readiness: Readiness::default(),
             preparing: None,
-            image_area: Arc::new(Mutex::new(None)),
+            image_area: Arc::new(Mutex::new(Vec::new())),
             pending: None,
             last_identity: None,
             recent: VecDeque::new(),
@@ -460,15 +488,12 @@ impl App {
 
     /// Estimated Canvas size of one grid cell before the first layout pass reports it.
     fn estimated_canvas_size(&self, config: &Config) -> Size {
-        let (columns, rows) =
-            grid_shape(config.visible_waveform_plots() + config.visible_image_plots());
-        let width = (self.args.width as f32 - 48.0 - GRID_SPACING * (columns - 1) as f32)
-            / columns as f32
-            - 36.0;
-        let height = (self.args.height as f32 - 276.0 - GRID_SPACING * (rows - 1) as f32)
-            / rows as f32
-            - 84.0;
-        Size::new(width.max(1.0), height.max(1.0))
+        let slot = data_slot(
+            self.args.width as f32,
+            self.args.height as f32,
+            config.visible_waveform_plots() + config.visible_image_plots(),
+        );
+        Size::new(slot.width + 58.0, slot.height + 46.0)
     }
 
     /// The Canvas size to build waveform plot `plot` for: the last measured layout of that
@@ -519,11 +544,20 @@ impl App {
         let image = if self.config.view == "waveform" {
             None
         } else {
-            *self.image_area.lock().unwrap()
+            self.image_area.lock().unwrap().first().copied().flatten()
         };
         let dimensions =
             |size: Option<Size>, ratio| size.map(|s| [s.width * ratio, s.height * ratio]);
         let mut buffer = self.metrics.buffer.lock().unwrap();
+        buffer.metadata["render_contract"] = json!("data-area-v1");
+        buffer.metadata["viewport_size"] = json!([self.args.width, self.args.height]);
+        buffer.metadata["plot_viewports_all"] = json!({
+            "waveform": waveform_data_areas(&self.waveforms, self.config.visible_waveform_plots(), self.scale),
+            "image": if self.config.view == "waveform" { Vec::new() } else {
+                let areas = self.image_area.lock().unwrap();
+                (0..self.config.visible_image_plots()).map(|index| dimensions(areas.get(index).copied().flatten(), self.scale)).collect::<Vec<_>>()
+            },
+        });
         buffer.metadata["plot_viewports"] = json!({
             "waveform": dimensions(waveform, self.scale),
             "image": dimensions(image, self.scale),
@@ -1099,6 +1133,11 @@ impl App {
     /// Waveform cards first, then image cards, in the shared `ceil(sqrt(n))`-column grid.
     /// Trailing cells of the last row stay empty so every cell keeps the same size.
     fn plot_grid(&self) -> Element<'_, Message> {
+        let slot = data_slot(
+            self.args.width as f32,
+            self.args.height as f32,
+            self.config.visible_waveform_plots() + self.config.visible_image_plots(),
+        );
         let mut cells: Vec<Element<'_, Message>> = Vec::new();
         if self.config.view != "image" {
             let count = self.waveforms.len();
@@ -1122,7 +1161,10 @@ impl App {
                         grouped_count(self.config.points),
                         self.config.waveform_mode
                     ),
-                    canvas.into(),
+                    container(canvas)
+                        .width(slot.width + 58.0)
+                        .height(slot.height + 46.0)
+                        .into(),
                 ));
             }
         }
@@ -1139,9 +1181,10 @@ impl App {
                     responsive(move |available| {
                         let original =
                             Size::new(self.config.width as f32, self.config.height as f32);
-                        if index == 0 {
-                            *self.image_area.lock().unwrap() =
-                                Some(iced::ContentFit::Contain.fit(original, available));
+                        {
+                            let mut areas = self.image_area.lock().unwrap();
+                            areas.resize(self.config.visible_image_plots(), None);
+                            areas[index] = Some(iced::ContentFit::Contain.fit(original, available));
                         }
                         image(handle.handle().clone())
                             .filter_method(image::FilterMethod::Nearest)
@@ -1160,7 +1203,10 @@ impl App {
                 cells.push(plot_card(
                     plot_title("Image", index, count),
                     format!("{} × {} · {}", self.config.width, self.config.height, mode),
-                    image_view,
+                    container(image_view)
+                        .width(slot.width)
+                        .height(slot.height)
+                        .into(),
                 ));
             }
         }
@@ -1536,6 +1582,33 @@ fn plot_button_style(selected: bool, status: button::Status) -> button::Style {
 
 #[cfg(test)]
 mod selection_tests {
+    #[test]
+    fn geometry_omits_hidden_caches_and_keeps_missing_visible_observations() {
+        let waves = vec![super::Waveform::new(1.0)];
+        assert!(super::waveform_data_areas(&waves, 0, 2.0).is_empty());
+        assert_eq!(super::waveform_data_areas(&waves, 1, 2.0), vec![None]);
+        *waves[0].data_area.lock().unwrap() = Some(super::Size::new(398.0, 340.0));
+        assert_eq!(
+            super::waveform_data_areas(&waves, 1, 2.0),
+            vec![Some([796.0, 680.0])]
+        );
+    }
+
+    #[test]
+    fn data_area_contract_matches_shared_vectors() {
+        for (count, width, height) in [
+            (1, 932.0, 340.0),
+            (2, 398.0, 340.0),
+            (4, 398.0, 92.0),
+            (6, 220.0, 92.0),
+        ] {
+            assert_eq!(
+                super::data_slot(1100.0, 820.0, count),
+                super::Size::new(width, height)
+            );
+        }
+    }
+
     use super::*;
 
     fn config(view: &str, curves: usize, waveform_plots: usize, image_plots: usize) -> Config {

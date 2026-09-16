@@ -109,6 +109,12 @@ final class Plots {
     final ChartRenderingInfo info = new ChartRenderingInfo(null);
     BufferedImage buffer;
     double scale = 1;
+    double dataWidth = 1, dataHeight = 1, axisWidth = 100, axisHeight = 80;
+
+    void dataSize(double width, double height) {
+      dataWidth = width;
+      dataHeight = height;
+    }
 
     Surface(String title, XYPlot plot) {
       chart = new JFreeChart(title, new Font(Font.SANS_SERIF, Font.BOLD, 16), plot, false);
@@ -145,7 +151,14 @@ final class Plots {
         g.scale(scale, scale);
         if (chart.getXYPlot().getRenderer() instanceof XYLineAndShapeRenderer renderer)
           renderer.setDefaultStroke(new BasicStroke((float) (1 / scale)), false);
-        chart.draw(g, new Rectangle2D.Double(0, 0, getWidth(), getHeight()), info);
+        g.setColor(BACKGROUND);
+        g.fillRect(0, 0, getWidth(), getHeight());
+        chart.draw(g, new Rectangle2D.Double(0, 0, dataWidth + axisWidth, dataHeight + axisHeight), info);
+        Rectangle2D area = info.getPlotInfo().getDataArea();
+        // Native title/axis spacing is learned from the previous layout. It settles
+        // during warmup; metadata reports the actual rectangle, never the target.
+        axisWidth = Math.max(0, Math.min(300, axisWidth + dataWidth - area.getWidth()));
+        axisHeight = Math.max(0, Math.min(300, axisHeight + dataHeight - area.getHeight()));
       } finally {
         g.dispose();
       }
@@ -172,6 +185,7 @@ final class Plots {
   final List<Pixels> pixels = new ArrayList<>();
   final List<Surface> waveforms = new ArrayList<>(), images = new ArrayList<>();
   Protocol.Config config;
+  JPanel grid;
 
   boolean configure(Protocol.Config c, JPanel grid) {
     if (config != null
@@ -181,6 +195,7 @@ final class Plots {
         && config.imagePlots() == c.imagePlots()
         && config.curves() == c.curves()) return false;
     config = c;
+    this.grid = grid;
     waves.clear();
     pixels.clear();
     waveforms.clear();
@@ -218,12 +233,27 @@ final class Plots {
     return true;
   }
 
+  static double[] dataSlot(double width, double height, int count) {
+    double columns = Math.ceil(Math.sqrt(count)), rows = Math.ceil(count / columns);
+    return new double[] {
+      Math.max(1, Math.floor((width - 48 - 16 * (columns - 1)) / columns - 120)),
+      Math.max(1, Math.floor((height - 340 - 16 * (rows - 1)) / rows - 140))
+    };
+  }
+
   static ByteBuffer plotSlice(ByteBuffer data, int plot, int bytes) {
     return data.slice(plot * bytes, bytes).order(ByteOrder.LITTLE_ENDIAN);
   }
 
   double[] update(Protocol.Frame f, int[] palette) {
     long start = System.nanoTime();
+    JRootPane root = grid == null ? null : SwingUtilities.getRootPane(grid);
+    double windowWidth = root == null ? 1100 : root.getContentPane().getWidth();
+    double windowHeight = root == null ? 820 : root.getContentPane().getHeight();
+    double[] slot = dataSlot(windowWidth, windowHeight, waveforms.size() + images.size());
+    for (Surface waveform : waveforms) waveform.dataSize(slot[0], slot[1]);
+    double fit = Math.min(slot[0] / f.config().width(), slot[1] / f.config().height());
+    for (Surface image : images) image.dataSize(f.config().width() * fit, f.config().height() * fit);
     var c = f.config();
     for (int p = 0; p < waves.size(); p++)
       waves.get(p).update(

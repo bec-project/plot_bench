@@ -428,7 +428,7 @@ def test_qml_builds_series_and_images_per_plot(qml_window):
     named = app.named_objects(window)
     assert named["plotGrid"].property("columns") == 3
     for p in range(2):
-        assert named[f"waveformGraph-{p}"].metaObject().className() == "QGraphsView"
+        assert named[f"waveformGraph-{p}"].inherits("QGraphsView")
         for c in range(3):
             series = named[f"waveformSeries-{p}-{c}"]
             assert isinstance(series, app.QLineSeries)

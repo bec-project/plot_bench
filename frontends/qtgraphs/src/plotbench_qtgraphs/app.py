@@ -471,7 +471,7 @@ class Controller(QObject):
             "update": f"{metrics['update_ms']:.2f}",
             "skipped": f"{metrics['skipped']:,}",
             "age": "—" if age is None else f"{age:.1f}",
-            "ageUnit": ("replay" if self.args.mode == "replay" else "") if age is None else "ms",
+            "ageUnit": (("replay" if self.args.mode == "replay" else "") if age is None else "ms"),
             "state": state,
             "error": bool(error),
             "details": error or self.source.status,
@@ -489,6 +489,7 @@ class Controller(QObject):
             for series in plot_series:
                 series.setWidth(1 / ratio)
         self.sink.metadata.update(
+            render_contract="data-area-v1",
             pixel_ratio=ratio,
             viewport_size=[self.window.width(), self.window.height()],
             viewport_size_units="logical pixels",
@@ -498,10 +499,36 @@ class Controller(QObject):
             plot_counts={"waveform": self.waveformPlots, "image": self.imagePlots},
             curves=self.curves,
         )
+        named = named_objects(self.window)
+
+        def measured(name, count, image=False):
+            result = []
+            for index in range(count):
+                item = named.get(f"{name}-{index}")
+                if item is None:
+                    result.append(None)
+                elif image:
+                    result.append(
+                        [
+                            item.property("paintedWidth") * ratio,
+                            item.property("paintedHeight") * ratio,
+                        ]
+                    )
+                else:
+                    rect = item.property("plotArea")
+                    result.append([rect.width() * ratio, rect.height() * ratio])
+            return result
+
+        self.sink.metadata["plot_viewports_all"] = {
+            "waveform": measured("waveformGraph", self.waveformPlots),
+            "image": measured("streamImage", self.imagePlots, True),
+        }
         area = self.first_graph.property("plotArea") if self.first_graph is not None else None
         image = self.first_image
         self.sink.metadata["plot_viewports"] = {
-            "waveform": [area.width() * ratio, area.height() * ratio] if area is not None else None,
+            "waveform": (
+                [area.width() * ratio, area.height() * ratio] if area is not None else None
+            ),
             "image": (
                 [image.property("paintedWidth") * ratio, image.property("paintedHeight") * ratio]
                 if image is not None
