@@ -13,7 +13,9 @@ does not establish support for the complete harness.
 | Ubuntu 24.04 x86-64 | CI installation/build/tests and software/offscreen checks | Native Wayland checks required; not yet qualified |
 | AlmaLinux 9/10 x86-64 | CI installation/build/tests in distribution containers | Native Wayland and installed-browser checks required; not yet qualified |
 
-Linux ARM, Windows and X11/XWayland qualification are outside the initial release.
+Linux ARM, Windows and plain X11 qualification are outside the initial release.
+JFreeChart's XWayland path on Ubuntu 24.04 is covered by the visible validation
+record below; this does not qualify other XWayland frontends.
 CI workflows are supplied with the source; their first remote execution depends
 on configuring the public repository. A configured workflow is not a passed run.
 
@@ -342,10 +344,18 @@ conversion and Java2D raster contents, and final telemetry. Core validation pass
 test and committed-bundle rebuild also passed. CI is configured for Java 17 and 25
 on macOS and Linux. Local checks used Java 25 only.
 
-Visible Linux remains **unsupported** for this adapter: stock Swing does not
-establish the repository's native Wayland contract. Headless Java2D tests on Linux
-are functional diagnostics, not visible platform qualification. Retina/HiDPI
-JFreeChart rendering has not been validated locally.
+Linux JFreeChart uses XWayland under a Wayland desktop. Doctor verifies the
+XWAYLAND server extension, and run metadata records `display_protocol=xwayland`.
+On 2026-09-16, Ubuntu 24.04 x86-64 with OpenJDK 17.0.20 passed doctor and one
+visible Rust-backed stream smoke case (replace/scalar, 30 Hz, 1 s warmup and 3 s
+measurement). Its run completed with telemetry. A subsequent official baseline
+across all nine frontends completed 189/189 runs, including JFreeChart's 21/21
+XWayland runs. The large-image section was source limited for all frontends.
+These checks establish operation on this Ubuntu desktop, not broader Linux
+qualification or source-independent large-image capacity. XWayland results have
+a different display path from native Wayland frontends.
+Headless Java2D tests are functional diagnostics only. Retina/HiDPI JFreeChart
+rendering has not been validated locally.
 
 A separate Rust-backed repeated campaign completed **12/12** runs: the two
 combined workloads, stream/replay and three repetitions, with 10 seconds of JVM

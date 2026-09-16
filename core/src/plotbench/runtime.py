@@ -43,7 +43,7 @@ def display_session():
 
 
 def require_wayland():
-    """Require a live native Wayland socket; never fall back to XWayland."""
+    """Require a live native Wayland socket."""
     if platform.system() != "Linux":
         return
     display = os.environ.get("WAYLAND_DISPLAY")
@@ -62,11 +62,26 @@ def require_wayland():
         raise ValueError(f"Cannot connect to the current Wayland compositor: {exc}") from exc
 
 
+def require_xwayland():
+    """Require Swing's X display to belong to the active Wayland session."""
+    if platform.system() != "Linux":
+        return
+    if os.environ.get("XDG_SESSION_TYPE") != "wayland" or not os.environ.get("DISPLAY"):
+        raise ValueError("JFreeChart on Linux requires XWayland in a Wayland desktop session")
+    if not shutil.which("xdpyinfo"):
+        raise ValueError("JFreeChart on Linux requires xdpyinfo (Ubuntu: x11-utils)")
+    extensions = _run_check(["xdpyinfo", "-queryExtensions"])
+    if not any(line.strip().startswith("XWAYLAND  (") for line in extensions.splitlines()):
+        raise ValueError("DISPLAY is not an XWayland server")
+
+
 def frontend_environment(*, frontends=(), headless=False):
     """Environment for a new frontend process, preserving explicit renderer choices."""
     environment = os.environ.copy()
     if platform.system() == "Linux" and frontends and not headless:
         require_wayland()
+        if "jfreechart" in frontends:
+            require_xwayland()
         if set(frontends).intersection(QT_FRONTENDS):
             requested = environment.get("QT_QPA_PLATFORM")
             if requested and requested != "wayland":
@@ -279,10 +294,12 @@ def preflight(*, frontends=(), backends=(), browser_executable=None, headless=Fa
                     libraries_to_check = []
                     if details.get("java_feature", 0) < 17:
                         raise ValueError("JFreeChart requires Java 17+")
-                    if system != "Darwin" or details.get("headless"):
-                        raise ValueError(
-                            "JFreeChart visible runs currently require macOS; native Wayland Swing is unvalidated"
-                        )
+                    if details.get("headless"):
+                        raise ValueError("JFreeChart requires a visible desktop")
+                    if system == "Linux":
+                        require_xwayland()
+                        if details.get("display_protocol") != "xwayland":
+                            raise ValueError("JFreeChart must report XWayland on Linux")
                 if component == "fyne":
                     details = json.loads(_run_check([str(executable), "--runtime-info"]))
                     runtime.setdefault("components", {})[component] = details

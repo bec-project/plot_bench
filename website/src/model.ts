@@ -125,7 +125,10 @@ export function classify(runs: Run[]): Submission['classification'] {
     runs.some(
       (r) =>
         r.context.headless !== false ||
-        !['native', 'wayland'].includes(r.context.display_protocol ?? ''),
+        !(
+          ['native', 'wayland'].includes(r.context.display_protocol ?? '') ||
+          (r.frontend === 'jfreechart' && r.context.display_protocol === 'xwayland')
+        ),
     )
   )
     return 'diagnostic';

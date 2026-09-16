@@ -1,6 +1,6 @@
 {
   "name": "JFreeChart functional validation",
-  "description": "Java2D combined and single-view cases, both sources and delivery modes. macOS visible validation; short warmup is functional only.",
+  "description": "Java2D combined and single-view cases, both sources and delivery modes. macOS or Linux XWayland visible validation; short warmup is functional only.",
   "warmup_seconds": 1,
   "measurement_seconds": 3,
   "repetitions": 1,

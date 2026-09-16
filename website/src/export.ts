@@ -243,9 +243,14 @@ export async function exportSummary(raw: unknown, options: ExportOptions): Promi
             waveform: pair(record(m.plot_viewports).waveform),
             image: pair(record(m.plot_viewports).image),
           },
-          display_protocol: ['native', 'wayland', 'x11', 'offscreen', 'headless'].includes(
-            protocol ?? '',
-          )
+          display_protocol: [
+            'native',
+            'wayland',
+            'xwayland',
+            'x11',
+            'offscreen',
+            'headless',
+          ].includes(protocol ?? '')
             ? protocol
             : null,
           refresh_hz: numeric(display.refresh_hz),
@@ -394,9 +399,11 @@ export function suggestSubmission(raw: unknown): SubmissionDefaults {
         ? 'Native desktop'
         : protocols[0] === 'wayland'
           ? 'Wayland'
-          : protocols[0] === 'x11'
-            ? 'X11'
-            : 'Visible';
+          : protocols[0] === 'xwayland'
+            ? 'XWayland'
+            : protocols[0] === 'x11'
+              ? 'X11'
+              : 'Visible';
     sentences.push(
       `${label} display${refreshes[0] ? ` at ${refreshes[0]} Hz` : ''}${scales[0] ? ` and ${scales[0]}× scaling` : ''}.`,
     );

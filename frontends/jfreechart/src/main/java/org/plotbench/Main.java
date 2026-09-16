@@ -43,10 +43,16 @@ public final class Main {
     }
     info.put("jvm_arguments", ManagementFactory.getRuntimeMXBean().getInputArguments());
     info.put("headless", GraphicsEnvironment.isHeadless());
-    info.put(
-        "display_protocol",
-        System.getProperty("os.name").startsWith("Mac") ? "native" : "unvalidated");
+    info.put("display_protocol", displayProtocol());
     return info;
+  }
+
+  static String displayProtocol() {
+    if (System.getProperty("os.name").startsWith("Mac")) return "native";
+    if (System.getProperty("os.name").startsWith("Linux")
+        && "wayland".equals(System.getenv("XDG_SESSION_TYPE"))
+        && System.getenv("DISPLAY") != null) return "xwayland";
+    return "unvalidated";
   }
 
   static Map<String, String> arguments(String[] args) {
@@ -90,10 +96,9 @@ public final class Main {
       return;
     }
     Map<String, String> options = arguments(args);
-    if (!System.getProperty("os.name").startsWith("Mac") || GraphicsEnvironment.isHeadless())
+    if (displayProtocol().equals("unvalidated") || GraphicsEnvironment.isHeadless())
       throw new IllegalStateException(
-          "Visible JFreeChart runs currently require macOS. Native Wayland Swing is unvalidated; no"
-              + " XWayland fallback.");
+          "Visible JFreeChart runs require macOS or XWayland in a Wayland session.");
     Map<String, Object> versions = runtimeInfo();
     SwingUtilities.invokeAndWait(() -> new Main(options, versions));
   }
@@ -116,7 +121,7 @@ public final class Main {
                 "versions",
                 versions,
                 "display_protocol",
-                "native",
+                versions.get("display_protocol"),
                 "update_strategy",
                 "full authoritative window; no decimation; one reusable raster per plot",
                 "expected_duration",
