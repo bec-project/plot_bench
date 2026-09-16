@@ -328,14 +328,21 @@ fn waveform_data_areas(waveforms: &[Waveform], count: usize, scale: f32) -> Vec<
         .collect()
 }
 
-// data-area-v1; logical window dimensions, not the toolkit's content allocation.
-fn data_slot(width: f32, height: f32, count: usize) -> Size {
+// data-area-v2; logical window dimensions, not the toolkit's content allocation.
+fn data_slot(width: f32, height: f32, count: usize, image: bool) -> Size {
     let (columns, rows) = grid_shape(count);
+    let (horizontal, vertical) = if image && count > 1 {
+        (16.0, 16.0)
+    } else if image {
+        (96.0, 100.0)
+    } else {
+        (100.0, 120.0)
+    };
     Size::new(
-        ((width - 48.0 - 16.0 * (columns - 1) as f32) / columns as f32 - 120.0)
+        ((width - 48.0 - 16.0 * (columns - 1) as f32) / columns as f32 - horizontal)
             .floor()
             .max(1.0),
-        ((height - 340.0 - 16.0 * (rows - 1) as f32) / rows as f32 - 140.0)
+        ((height - 220.0 - 16.0 * (rows - 1) as f32) / rows as f32 - vertical)
             .floor()
             .max(1.0),
     )
@@ -492,6 +499,7 @@ impl App {
             self.args.width as f32,
             self.args.height as f32,
             config.visible_waveform_plots() + config.visible_image_plots(),
+            false,
         );
         Size::new(slot.width + 58.0, slot.height + 46.0)
     }
@@ -549,7 +557,7 @@ impl App {
         let dimensions =
             |size: Option<Size>, ratio| size.map(|s| [s.width * ratio, s.height * ratio]);
         let mut buffer = self.metrics.buffer.lock().unwrap();
-        buffer.metadata["render_contract"] = json!("data-area-v1");
+        buffer.metadata["render_contract"] = json!("data-area-v2");
         buffer.metadata["viewport_size"] = json!([self.args.width, self.args.height]);
         buffer.metadata["plot_viewports_all"] = json!({
             "waveform": waveform_data_areas(&self.waveforms, self.config.visible_waveform_plots(), self.scale),
@@ -1028,30 +1036,20 @@ impl App {
             "●  Connected"
         };
         let header = row![
-            column![
-                text("PLOTTING BENCHMARK").size(10).color(MUTED),
-                row![
-                    text("Iced").size(26).color(PRIMARY),
-                    badge("Canvas / wgpu", false),
-                    badge(self.args.mode.name(), true)
-                ]
-                .spacing(12)
-                .align_y(alignment::Vertical::Center),
-            ]
-            .spacing(9),
+            text("Iced").size(20).color(PRIMARY),
+            badge("Canvas / wgpu", false),
+            badge(self.args.mode.name(), true),
             space().width(Fill),
-            column![
-                text(connection)
-                    .size(11)
-                    .color(if self.connection_error { ERROR } else { ACCENT }),
-                button(text("Source controls").size(12))
-                    .padding([10, 14])
-                    .on_press(Message::OpenControls)
-                    .style(source_button),
-            ]
-            .spacing(9)
-            .align_x(alignment::Horizontal::Right),
+            text(connection)
+                .size(11)
+                .color(if self.connection_error { ERROR } else { ACCENT }),
+            button(text("Source controls").size(12))
+                .padding([5, 12])
+                .on_press(Message::OpenControls)
+                .style(source_button),
         ]
+        .spacing(12)
+        .height(28)
         .align_y(alignment::Vertical::Center);
         let (waveform_suffix, image_suffix) = workload_suffixes(&self.config);
         let workload = container(
@@ -1086,7 +1084,8 @@ impl App {
             ]
             .spacing(16),
         )
-        .padding([14, 18])
+        .padding([4, 12])
+        .height(40)
         .style(panel_style);
         let metrics = row![
             metric_item("Submitted", &self.hud[0], &self.hud_targets[0]),
@@ -1107,7 +1106,7 @@ impl App {
         ]
         .spacing(12)
         .align_y(alignment::Vertical::Center);
-        let mut body = column![header, workload, metrics].spacing(16);
+        let mut body = column![header, workload, metrics].spacing(8);
         if let Some(error) = &self.selection_error {
             body = body.push(text(error).size(11).color(ERROR));
         }
@@ -1137,6 +1136,13 @@ impl App {
             self.args.width as f32,
             self.args.height as f32,
             self.config.visible_waveform_plots() + self.config.visible_image_plots(),
+            false,
+        );
+        let image_slot = data_slot(
+            self.args.width as f32,
+            self.args.height as f32,
+            self.config.visible_waveform_plots() + self.config.visible_image_plots(),
+            true,
         );
         let mut cells: Vec<Element<'_, Message>> = Vec::new();
         if self.config.view != "image" {
@@ -1200,14 +1206,25 @@ impl App {
                         .center_y(Fill)
                         .into()
                 };
-                cells.push(plot_card(
-                    plot_title("Image", index, count),
-                    format!("{} × {} · {}", self.config.width, self.config.height, mode),
-                    container(image_view)
-                        .width(slot.width)
-                        .height(slot.height)
-                        .into(),
-                ));
+                let bare = self.config.visible_waveform_plots() + count > 1;
+                let content = container(image_view)
+                    .width(image_slot.width)
+                    .height(image_slot.height)
+                    .into();
+                cells.push(if bare {
+                    container(content)
+                        .padding(8)
+                        .width(Fill)
+                        .height(Fill)
+                        .style(panel_style)
+                        .into()
+                } else {
+                    plot_card(
+                        plot_title("Image", index, count),
+                        format!("{} × {} · {}", self.config.width, self.config.height, mode),
+                        content,
+                    )
+                });
             }
         }
         let (columns, _) = grid_shape(cells.len());
@@ -1424,9 +1441,9 @@ fn plot_card<'a>(
             text(subtitle).size(11).color(MUTED),
             content,
         ]
-        .spacing(10),
+        .spacing(8),
     )
-    .padding(18)
+    .padding(12)
     .width(Fill)
     .height(Fill)
     .style(panel_style)
@@ -1438,7 +1455,7 @@ fn workload_item(label: &str, value: String) -> Element<'_, Message> {
         text(label).size(9).color(MUTED),
         text(value).size(12).color(PRIMARY)
     ]
-    .spacing(7)
+    .spacing(0)
     .width(Fill)
     .into()
 }
@@ -1476,18 +1493,19 @@ fn metric_item<'a>(label: &'a str, value: &'a str, target: &'a str) -> Element<'
     tooltip(
         container(
             column![
-                text(label).size(11).color(MUTED),
-                text(value).size(25).color(PRIMARY),
-                text(target).size(10).color(MUTED),
+                text(label).size(10).color(MUTED),
+                text(value).size(18).color(PRIMARY),
             ]
-            .spacing(3)
+            .spacing(0)
             .width(Fill),
         )
-        .padding([10, 18])
+        .padding([4, 12])
         .width(Fill)
-        .height(88)
+        .height(48)
         .style(panel_style),
-        text(METRIC_GUIDE).size(11).width(300),
+        text(format!("{target}\n{METRIC_GUIDE}"))
+            .size(11)
+            .width(300),
         tooltip::Position::Bottom,
     )
     .style(panel_style)
@@ -1583,27 +1601,42 @@ fn plot_button_style(selected: bool, status: button::Status) -> button::Style {
 #[cfg(test)]
 mod selection_tests {
     #[test]
+    fn compact_image_slots() {
+        for (count, width, height) in [
+            (1, 956.0, 500.0),
+            (2, 502.0, 584.0),
+            (4, 502.0, 276.0),
+            (6, 324.0, 276.0),
+        ] {
+            assert_eq!(
+                super::data_slot(1100.0, 820.0, count, true),
+                super::Size::new(width, height)
+            );
+        }
+    }
+
+    #[test]
     fn geometry_omits_hidden_caches_and_keeps_missing_visible_observations() {
         let waves = vec![super::Waveform::new(1.0)];
         assert!(super::waveform_data_areas(&waves, 0, 2.0).is_empty());
         assert_eq!(super::waveform_data_areas(&waves, 1, 2.0), vec![None]);
-        *waves[0].data_area.lock().unwrap() = Some(super::Size::new(398.0, 340.0));
+        *waves[0].data_area.lock().unwrap() = Some(super::Size::new(418.0, 480.0));
         assert_eq!(
             super::waveform_data_areas(&waves, 1, 2.0),
-            vec![Some([796.0, 680.0])]
+            vec![Some([836.0, 960.0])]
         );
     }
 
     #[test]
     fn data_area_contract_matches_shared_vectors() {
         for (count, width, height) in [
-            (1, 932.0, 340.0),
-            (2, 398.0, 340.0),
-            (4, 398.0, 92.0),
-            (6, 220.0, 92.0),
+            (1, 952.0, 480.0),
+            (2, 418.0, 480.0),
+            (4, 418.0, 172.0),
+            (6, 240.0, 172.0),
         ] {
             assert_eq!(
-                super::data_slot(1100.0, 820.0, count),
+                super::data_slot(1100.0, 820.0, count, false),
                 super::Size::new(width, height)
             );
         }

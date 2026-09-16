@@ -79,6 +79,10 @@ func buildPlots(c Config, plots *fyne.Container) (waveCards, imgCards []*plotCar
 	for i := 0; i < images; i++ {
 		card := newPlotCard(plotTitle("Image", i, images), canvas.ImageFillContain)
 		card.subtitle.SetText(imageSubtitle(c))
+		if waveforms+images > 1 {
+			card.title.Hide()
+			card.subtitle.Hide()
+		}
 		imgCards = append(imgCards, card)
 		objects = append(objects, card.object)
 	}
@@ -194,8 +198,11 @@ func main() {
 	if locked {
 		controls.Disable()
 	}
-	header := container.NewVBox(widget.NewLabelWithStyle("PLOTTING BENCHMARK · Fyne", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}), container.NewHBox(widget.NewLabel("Go · CPU raster / Fyne OpenGL · "+*mode), controls, status), workload, container.NewHBox(widget.NewLabel("PLOTS"), one, two), container.NewGridWithColumns(4, submitted, update, skips, age))
-	footer := widget.NewLabel("Submitted updates · not displayed FPS\nCustom CPU waveform + RGBA conversion; Fyne canvas upload/paint deferred")
+	header := container.NewVBox(
+		container.NewHBox(widget.NewLabelWithStyle("Fyne · "+*mode, fyne.TextAlignLeading, fyne.TextStyle{Bold: true}), layout.NewSpacer(), status, controls),
+		container.NewHBox(workload, layout.NewSpacer(), one, two),
+		container.NewGridWithColumns(4, submitted, update, skips, age))
+	footer := widget.NewLabel("Submitted updates · not displayed FPS")
 	w.SetContent(container.New(layout.NewCustomPaddedLayout(24, 24, 24, 24), container.NewBorder(header, footer, nil, nil, plots)))
 	meta := runtimeInfo()
 	meta["renderer"] = "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve"
@@ -256,8 +263,8 @@ func main() {
 				two.SetChecked(c.View != "waveform")
 				changing = false
 			}
-			slot := dataSlot(w.Canvas().Size(), len(waveCards)+len(imgCards))
-			for _, card := range append(append([]*plotCard{}, waveCards...), imgCards...) {
+			for i, card := range append(append([]*plotCard{}, waveCards...), imgCards...) {
+				slot := dataSlot(w.Canvas().Size(), len(waveCards)+len(imgCards), i >= len(waveCards))
 				if card.dataLayout.size != slot {
 					card.dataLayout.size = slot
 					card.object.Refresh()
@@ -293,14 +300,13 @@ func main() {
 			count++
 			skippedTotal += skipped
 			if count == 1 || now.Sub(lastHUD) >= 500*time.Millisecond {
-				period := 1000 / c.Hz
 				rate := float64(count-hudCount) / math.Max(.001, now.Sub(lastHUD).Seconds())
-				submitted.SetText(fmt.Sprintf("Submitted\n%.1f updates/s (%.0f target)", rate, c.Hz))
-				update.SetText(fmt.Sprintf("Update time\n%.2f ms (%.1f budget)", elapsed, period))
-				skips.SetText(fmt.Sprintf("Skipped\n%d (0 target)", skippedTotal))
+				submitted.SetText(fmt.Sprintf("Submitted\n%.1f updates/s", rate))
+				update.SetText(fmt.Sprintf("Update time\n%.2f ms", elapsed))
+				skips.SetText(fmt.Sprintf("Skipped\n%d", skippedTotal))
 				ageText := "N/A (replay)"
 				if receiveAge != nil {
-					ageText = fmt.Sprintf("%.1f ms (<%.1f guide)", *receiveAge, period)
+					ageText = fmt.Sprintf("%.1f ms", *receiveAge)
 				}
 				age.SetText("Receive age\n" + ageText)
 				workload.SetText(workloadText(c))
@@ -309,6 +315,10 @@ func main() {
 				}
 				for _, card := range imgCards {
 					card.subtitle.SetText(imageSubtitle(c))
+					if waveforms+images > 1 {
+						card.title.Hide()
+						card.subtitle.Hide()
+					}
 				}
 				lastHUD = now
 				hudCount = count
@@ -324,7 +334,7 @@ func main() {
 					r := math.Min(float64(v.Width*scale)/float64(c.Width), float64(v.Height*scale)/float64(c.Height))
 					viewports["image"] = []float64{float64(c.Width) * r, float64(c.Height) * r}
 				}
-				metrics.set(map[string]any{"render_contract": "data-area-v1", "plot_viewports_all": allDataAreas(waveCards, imgCards, c, scale), "config": c, "pixel_ratio": scale, "viewport_size": []float32{size.Width, size.Height}, "plot_viewports": viewports, "plot_counts": map[string]int{"waveform": waveforms, "image": images}, "curves": c.Curves, "display": nil, "receiver_connection_epoch": reconnects + 1, "replay_frames": replayCount, "replay_bytes": replayBytes})
+				metrics.set(map[string]any{"render_contract": "data-area-v2", "plot_viewports_all": allDataAreas(waveCards, imgCards, c, scale), "config": c, "pixel_ratio": scale, "viewport_size": []float32{size.Width, size.Height}, "plot_viewports": viewports, "plot_counts": map[string]int{"waveform": waveforms, "image": images}, "curves": c.Curves, "display": nil, "receiver_connection_epoch": reconnects + 1, "replay_frames": replayCount, "replay_bytes": replayBytes})
 			}
 		}
 		if time.Since(lastStatus) >= 500*time.Millisecond {

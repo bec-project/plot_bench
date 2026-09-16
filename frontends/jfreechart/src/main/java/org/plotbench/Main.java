@@ -125,21 +125,21 @@ public final class Main {
                 "error",
                 "active_seconds",
                 0.0));
-    JPanel root = new JPanel(new BorderLayout(0, 16));
+    JPanel root = new JPanel(new BorderLayout(0, 8));
     root.setBackground(new Color(0x0b141c));
     root.setBorder(BorderFactory.createEmptyBorder(24, 24, 24, 24));
     JPanel top = new JPanel();
     top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
     top.setOpaque(false);
     JLabel heading =
-        new JLabel("PLOTTING BENCHMARK   /   JFreeChart   /   Java2D · " + source.mode);
+        new JLabel("JFreeChart · Java2D · " + source.mode);
     heading.setAlignmentX(Component.LEFT_ALIGNMENT);
     workload.setAlignmentX(Component.LEFT_ALIGNMENT);
     heading.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
-    top.add(heading);
-    JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 8));
+    JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
     actions.setOpaque(false);
     actions.setAlignmentX(Component.LEFT_ALIGNMENT);
+    actions.add(heading);
     actions.add(status);
     JButton controls = new JButton("Source controls");
     controls.setEnabled(!recorded);
@@ -165,12 +165,14 @@ public final class Main {
     one.addActionListener(e -> requestView());
     two.addActionListener(e -> requestView());
     top.add(workload);
-    top.add(Box.createVerticalStrut(14));
+    top.add(Box.createVerticalStrut(8));
     JPanel hud = new JPanel(new GridLayout(1, 4, 14, 0));
     hud.setOpaque(false);
+    hud.setPreferredSize(new Dimension(100,48));
+    hud.setMaximumSize(new Dimension(Integer.MAX_VALUE,48));
     hud.setAlignmentX(Component.LEFT_ALIGNMENT);
     for (JLabel label : indicators) {
-      label.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+      label.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 12));
       label.setOpaque(true);
       label.setBackground(Plots.BACKGROUND);
       hud.add(label);
@@ -311,8 +313,8 @@ public final class Main {
     };
     for (int i = 0; i < 4; i++) {
       indicators[i].setText(
-          "<html>" + values[i] + "<br><small>(" + targets[i] + ")</small></html>");
-      indicators[i].setToolTipText("Guides only; these do not measure GPU or display deadlines.");
+          "<html>" + values[i].replace(": ", "<br>") + "</html>");
+      indicators[i].setToolTipText(targets[i] + "; these do not measure GPU or display deadlines.");
     }
     geometry();
   }
@@ -322,7 +324,7 @@ public final class Main {
     var gc = window.getGraphicsConfiguration();
     var device = gc.getDevice();
     var dm = device.getDisplayMode();
-    metrics.set(Map.of("render_contract", "data-area-v1", "plot_viewports_all", Map.of(
+    metrics.set(Map.of("render_contract", "data-area-v2", "plot_viewports_all", Map.of(
         "waveform", plots.waveforms.stream().map(Plots.Surface::viewport).toList(),
         "image", plots.images.stream().map(Plots.Surface::viewport).toList())));
     Map<String, Object> areas = new HashMap<>();

@@ -157,8 +157,13 @@ final class Plots {
         Rectangle2D area = info.getPlotInfo().getDataArea();
         // Native title/axis spacing is learned from the previous layout. It settles
         // during warmup; metadata reports the actual rectangle, never the target.
-        axisWidth = Math.max(0, Math.min(300, axisWidth + dataWidth - area.getWidth()));
-        axisHeight = Math.max(0, Math.min(300, axisHeight + dataHeight - area.getHeight()));
+        // Java2D rounds layout to device pixels. Do not integrate a subpixel
+        // residual forever: that alternates adjacent pixel sizes between frames.
+        double dx = dataWidth - area.getWidth(), dy = dataHeight - area.getHeight();
+        if (Math.abs(dx) > 0.5 / scale)
+          axisWidth = Math.max(0, Math.min(300, axisWidth + dx));
+        if (Math.abs(dy) > 0.5 / scale)
+          axisHeight = Math.max(0, Math.min(300, axisHeight + dy));
       } finally {
         g.dispose();
       }
@@ -225,6 +230,11 @@ final class Plots {
       plot.getRangeAxis().setInverted(true);
       plot.addAnnotation(image);
       Surface surface = new Surface(ni == 1 ? "Image" : "Image " + (p + 1), plot);
+      if (nw + ni > 1) {
+        surface.chart.setTitle((String) null);
+        plot.getDomainAxis().setVisible(false);
+        plot.getRangeAxis().setVisible(false);
+      }
       pixels.add(image);
       images.add(surface);
       grid.add(surface);
@@ -233,11 +243,12 @@ final class Plots {
     return true;
   }
 
-  static double[] dataSlot(double width, double height, int count) {
+  static double[] dataSlot(double width, double height, int count, boolean image) {
     double columns = Math.ceil(Math.sqrt(count)), rows = Math.ceil(count / columns);
+    double horizontal = image ? (count > 1 ? 16 : 96) : 100, vertical = image ? (count > 1 ? 16 : 100) : 120;
     return new double[] {
-      Math.max(1, Math.floor((width - 48 - 16 * (columns - 1)) / columns - 120)),
-      Math.max(1, Math.floor((height - 340 - 16 * (rows - 1)) / rows - 140))
+      Math.max(1, Math.floor((width - 48 - 16 * (columns - 1)) / columns - horizontal)),
+      Math.max(1, Math.floor((height - 220 - 16 * (rows - 1)) / rows - vertical))
     };
   }
 
@@ -250,9 +261,10 @@ final class Plots {
     JRootPane root = grid == null ? null : SwingUtilities.getRootPane(grid);
     double windowWidth = root == null ? 1100 : root.getContentPane().getWidth();
     double windowHeight = root == null ? 820 : root.getContentPane().getHeight();
-    double[] slot = dataSlot(windowWidth, windowHeight, waveforms.size() + images.size());
+    double[] slot = dataSlot(windowWidth, windowHeight, waveforms.size() + images.size(), false);
     for (Surface waveform : waveforms) waveform.dataSize(slot[0], slot[1]);
-    double fit = Math.min(slot[0] / f.config().width(), slot[1] / f.config().height());
+    double[] imageSlot = dataSlot(windowWidth, windowHeight, waveforms.size() + images.size(), true);
+    double fit = Math.min(imageSlot[0] / f.config().width(), imageSlot[1] / f.config().height());
     for (Surface image : images) image.dataSize(f.config().width() * fit, f.config().height() * fit);
     var c = f.config();
     for (int p = 0; p < waves.size(); p++)

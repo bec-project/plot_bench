@@ -16,10 +16,21 @@ import org.junit.jupiter.api.Test;
 
 class AdapterTest {
   @Test
+  void compactSlotsMatchCommonVectors() {
+    int[] counts = {1,2,4,6};
+    double[][] images = {{956,500},{502,584},{502,276},{324,276}};
+    double[][] waves = {{952,480},{418,480},{418,172},{240,172}};
+    for (int i=0; i<counts.length; i++) {
+      assertArrayEquals(images[i], Plots.dataSlot(1100,820,counts[i],true));
+      assertArrayEquals(waves[i], Plots.dataSlot(1100,820,counts[i],false));
+    }
+  }
+
+  @Test
   void imageAxesPreserveAspectAndConvergeToContract() throws Exception {
     SwingUtilities.invokeAndWait(() -> {
       for (int count : new int[] {1, 2, 4, 6}) {
-        double[] slot = Plots.dataSlot(1100, 820, count);
+        double[] slot = Plots.dataSlot(1100, 820, count, true);
         var plot = new org.jfree.chart.plot.XYPlot(null,
             new org.jfree.chart.axis.NumberAxis("Column"),
             new org.jfree.chart.axis.NumberAxis("Row"), null);
@@ -34,6 +45,10 @@ class AdapterTest {
         assertEquals(640*fit, area.get(0), 1.5);
         assertEquals(360*fit, area.get(1), 1.5);
         assertEquals(640.0/360, area.get(0)/area.get(1), 0.01);
+        for (int i=0; i<30; i++) {
+          surface.render();
+          assertEquals(area, surface.viewport(), "data geometry must not oscillate after warmup");
+        }
       }
     });
   }

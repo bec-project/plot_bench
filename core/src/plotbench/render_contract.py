@@ -6,15 +6,21 @@ native axes outside the slot; images fit inside it with square source pixels.
 
 import math
 
-VERSION = "data-area-v1"
+VERSION = "data-area-v2"
 
 
-def slot_size(width, height, count):
+def slot_size(width, height, count, *, image=False, version=VERSION):
     columns = math.ceil(math.sqrt(count))
     rows = math.ceil(count / columns)
+    horizontal, vertical = (
+        (120, 140) if version == "data-area-v1" else ((96, 100) if image else (100, 120))
+    )
+    if version == VERSION and image and count > 1:
+        horizontal, vertical = 16, 16
+    chrome = 340 if version == "data-area-v1" else 220
     return (
-        max(1, math.floor((width - 48 - 16 * (columns - 1)) / columns - 120)),
-        max(1, math.floor((height - 340 - 16 * (rows - 1)) / rows - 140)),
+        max(1, math.floor((width - 48 - 16 * (columns - 1)) / columns - horizontal)),
+        max(1, math.floor((height - chrome - 16 * (rows - 1)) / rows - vertical)),
     )
 
 
@@ -28,7 +34,7 @@ def geometry_errors(metadata, config):
     version = metadata.get("render_contract")
     if version is None:
         return []
-    if version != VERSION:
+    if version not in ("data-area-v1", VERSION):
         return [f"Unknown rendering contract: {version}"]
     window = metadata.get("viewport_size") or metadata.get("viewport", {}).get("logical")
     ratio = metadata.get("pixel_ratio")
@@ -45,10 +51,14 @@ def geometry_errors(metadata, config):
         "waveform": config["waveform_plots"] if config["view"] != "image" else 0,
         "image": config["image_plots"] if config["view"] != "waveform" else 0,
     }
-    slot = slot_size(*window, sum(counts.values()))
-    expected = {"waveform": slot, "image": image_size(slot, config["width"], config["height"])}
+    slot = slot_size(*window, sum(counts.values()), version=version)
+    image_slot = slot_size(*window, sum(counts.values()), image=True, version=version)
+    expected = {
+        "waveform": slot,
+        "image": image_size(image_slot, config["width"], config["height"]),
+    }
     errors = []
-    if min(slot) < 32:
+    if (counts["waveform"] and min(slot) < 32) or (counts["image"] and min(image_slot) < 32):
         errors.append(
             "Window too small for this plot count: data-area slots must be at least 32 logical pixels"
         )

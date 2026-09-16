@@ -673,7 +673,7 @@ void Controller::updateHud() {
         viewports.insert(QStringLiteral("image"), QVariantList{image->property("paintedWidth").toDouble() * ratio,
                                                                image->property("paintedHeight").toDouble() * ratio});
     }
-    metadata.insert(QStringLiteral("render_contract"), QStringLiteral("data-area-v1"));
+    metadata.insert(QStringLiteral("render_contract"), QStringLiteral("data-area-v2"));
     QVariantList waveAreas, imageAreas;
     for (int i = 0; i < waveformPlots(); ++i) {
         QQuickItem *item = findItem(m_window->contentItem(), QStringLiteral("waveformGraph-%1").arg(i));

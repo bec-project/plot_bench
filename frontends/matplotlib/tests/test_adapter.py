@@ -313,22 +313,26 @@ def test_layout_places_cards_row_major_on_equal_cells(
     axes = canvas.waveform_axes + canvas.image_axes
     # Image axes keep aspect='equal', so compare the requested (pre-aspect) boxes.
     positions = [axis.get_position(original=True).bounds for axis in axes]
-    widths = {round(bounds[2], 6) for bounds in positions}
-    heights = {round(bounds[3], 6) for bounds in positions}
-    assert len(widths) == 1 and len(heights) == 1
-    x0 = sorted({round(bounds[0], 6) for bounds in positions})
-    y0 = sorted({round(bounds[1], 6) for bounds in positions}, reverse=True)
+    # Equal cells may hold different plot kinds with different shared axis reserves.
+    for group in (canvas.waveform_axes, canvas.image_axes):
+        if group:
+            boxes = [axis.get_position(original=True).bounds for axis in group]
+            assert len({round(b[2], 6) for b in boxes}) == 1
+            assert len({round(b[3], 6) for b in boxes}) == 1
+    panels = [card[0].get_bbox().bounds for card in canvas.cards]
+    x0 = sorted({round(bounds[0], 6) for bounds in panels})
+    y0 = sorted({round(bounds[1], 6) for bounds in panels}, reverse=True)
     assert len(x0) == columns and len(y0) == rows
-    for index, bounds in enumerate(positions):
+    for index, bounds in enumerate(panels):
         assert round(bounds[0], 6) == x0[index % columns]
         assert round(bounds[1], 6) == y0[index // columns]
-    panels = [card[0].get_bbox().bounds for card in canvas.cards]
     assert len({round(panel[2], 6) for panel in panels}) == 1
     assert len({round(panel[3], 6) for panel in panels}) == 1
     assert all(0 <= panel[0] and panel[0] + panel[2] <= 1 for panel in panels)
     assert all(0 <= panel[1] and panel[1] + panel[3] <= 1 for panel in panels)
     for (panel, heading, subtitle), bounds in zip(canvas.cards, positions, strict=True):
-        assert heading.get_position()[1] > subtitle.get_position()[1] > bounds[1] + bounds[3]
+        if heading.get_visible():
+            assert heading.get_position()[1] > subtitle.get_position()[1] > bounds[1] + bounds[3]
         assert abs(heading.get_position()[0] - panel.get_x()) < 0.03
     if rows == 1 and columns == 2:
         # Two plots keep today's side-by-side split of the full height.
@@ -337,7 +341,12 @@ def test_layout_places_cards_row_major_on_equal_cells(
 
 @pytest.mark.parametrize(
     "view,plots,width,height",
-    [("waveform", 2, 512, 512), ("image", 1, 640, 360), ("image", 4, 32, 64)],
+    [
+        ("waveform", 2, 512, 512),
+        ("waveform", 4, 512, 512),
+        ("image", 1, 640, 360),
+        ("image", 4, 32, 64),
+    ],
 )
 def test_render_contract_data_rectangles(canvas, qapp, view, plots, width, height):
     from plotbench.render_contract import VERSION, geometry_errors
