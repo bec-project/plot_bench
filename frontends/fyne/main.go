@@ -96,8 +96,6 @@ func versions() map[string]string {
 	return v
 }
 
-var textureUploadStrategy = "stock-recreate"
-
 func runtimeInfo() map[string]any {
 	settings := map[string]string{}
 	if b, ok := debug.ReadBuildInfo(); ok {
@@ -110,7 +108,7 @@ func runtimeInfo() map[string]any {
 	if strings.Contains(tags, ",release,") {
 		profile = "release"
 	}
-	return map[string]any{"versions": versions(), "display_protocol": displayProtocol, "graphics_api": "OpenGL via Fyne GLFW", "texture_upload_strategy": textureUploadStrategy, "image_conversion_strategy": "branched-clamp-packed-rgba-v1", "build_profile": profile, "graphics_build_settings": settings, "headless": strings.Contains(tags, ",ci,")}
+	return map[string]any{"versions": versions(), "display_protocol": displayProtocol, "graphics_api": "OpenGL via Fyne GLFW", "image_conversion_strategy": "branched-clamp-packed-rgba-v1", "build_profile": profile, "graphics_build_settings": settings, "headless": strings.Contains(tags, ",ci,")}
 }
 
 func main() {
