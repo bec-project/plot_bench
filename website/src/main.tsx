@@ -665,8 +665,8 @@ function Contribute() {
               <p>
                 Raw logs, local paths, command lines and environment values are omitted. Check the
                 proposed host alias, labels, notes, and all public fields before sharing. The export
-                refuses campaigns that deviate from the suite, headless or X11 runs, and modified
-                checkouts.
+                refuses campaigns that deviate from the suite, headless or plain X11 runs, and
+                modified checkouts. Verified JFreeChart XWayland is accepted.
               </p>
             </div>
           </li>

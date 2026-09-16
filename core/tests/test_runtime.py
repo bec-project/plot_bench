@@ -243,16 +243,24 @@ def test_fyne_doctor_rejects_non_wayland_linux_build(monkeypatch, tmp_path, prot
 
 
 @pytest.mark.parametrize(
-    "system,headless,ok",
-    [("Darwin", False, True), ("Darwin", True, False), ("Linux", False, False)],
+    "system,headless,protocol,ok",
+    [
+        ("Darwin", False, "native", True),
+        ("Darwin", True, "native", False),
+        ("Linux", False, "xwayland", True),
+        ("Linux", False, "native", False),
+    ],
 )
-def test_java_doctor_requires_visible_macos(monkeypatch, tmp_path, system, headless, ok):
+def test_java_doctor_requires_verified_display(
+    monkeypatch, tmp_path, system, headless, protocol, ok
+):
     if system == "Linux":
         linux(monkeypatch)
     else:
         monkeypatch.setattr(runtime.platform, "system", lambda: system)
     monkeypatch.setattr(runtime, "ROOT", tmp_path)
     monkeypatch.setattr(runtime, "require_wayland", lambda: None)
+    monkeypatch.setattr(runtime, "require_xwayland", lambda: None)
     monkeypatch.setattr(runtime, "require_current_artifact", lambda *args: {})
     (tmp_path / ".python-version").write_text(runtime.platform.python_version())
     exe = runtime._executable("jfreechart")
@@ -266,11 +274,31 @@ def test_java_doctor_requires_visible_macos(monkeypatch, tmp_path, system, headl
     monkeypatch.setattr(
         runtime,
         "_run_check",
-        lambda command, **kwargs: json.dumps({"java_feature": 17, "headless": headless}),
+        lambda command, **kwargs: json.dumps(
+            {"java_feature": 17, "headless": headless, "display_protocol": protocol}
+        ),
     )
     assert runtime.component_installed("jfreechart")
     result = runtime.preflight(frontends=["jfreechart"])
     assert result["ok"] is ok, result["checks"]
+
+
+def test_jfreechart_linux_requires_xwayland_server(monkeypatch):
+    linux(monkeypatch)
+    monkeypatch.setenv("XDG_SESSION_TYPE", "wayland")
+    monkeypatch.setenv("DISPLAY", ":0")
+    monkeypatch.setattr(runtime.shutil, "which", lambda name: "/usr/bin/xdpyinfo")
+    monkeypatch.setattr(
+        runtime, "_run_check", lambda command, **kwargs: "    XWAYLAND  (opcode: 151)"
+    )
+    runtime.require_xwayland()
+
+    monkeypatch.setattr(runtime, "_run_check", lambda command, **kwargs: "    RANDR  (opcode: 139)")
+    with pytest.raises(ValueError, match="not an XWayland"):
+        runtime.require_xwayland()
+    monkeypatch.delenv("DISPLAY")
+    with pytest.raises(ValueError, match="requires XWayland"):
+        runtime.require_xwayland()
 
 
 def test_java_launch_uses_selected_runtime_and_jar(monkeypatch, tmp_path):

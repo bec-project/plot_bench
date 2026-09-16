@@ -270,6 +270,40 @@ test('longer campaign classification requires three repeats of each exact case',
   }
 });
 
+test('JFreeChart XWayland baseline is publishable but other XWayland frontends stay diagnostic', async () => {
+  const campaign = sample();
+  campaign.runs = campaign.runs
+    .filter((r) => r.frontend === 'pyqtgraph')
+    .map((r) => ({
+      ...r,
+      frontend: 'jfreechart',
+      context: { ...r.context, display_protocol: 'xwayland' },
+    }));
+  campaign.planned_runs = campaign.runs.length;
+  campaign.classification = 'benchmark';
+  assert.equal(classify(campaign.runs), 'benchmark');
+  assert.equal(parseSubmission(campaign).runs.length, 21);
+
+  const other = structuredClone(campaign);
+  other.runs[0].frontend = 'pyqtgraph';
+  assert.equal(classify(other.runs), 'diagnostic');
+
+  const raw: any = rawSummary();
+  raw.runs = raw.runs.filter((r: any) => r.frontend === 'pyqtgraph');
+  raw.campaign.frontends = ['jfreechart'];
+  raw.campaign.runs_planned = raw.runs.length;
+  for (const run of raw.runs) {
+    run.frontend = 'jfreechart';
+    delete run.metadata.qt_platform_plugin;
+    run.metadata.display_protocol = 'xwayland';
+  }
+  const exported = await exportSummary(raw, options);
+  assert.equal(exported.classification, 'benchmark');
+  assert.equal(exported.runs.length, 21);
+  assert.ok(exported.runs.every((r) => r.context.display_protocol === 'xwayland'));
+  assert.equal(parseSubmission(exported).runs.length, 21);
+});
+
 test('export keeps acquisition metadata, omits private fields and does not mutate input', async () => {
   const raw = rawSummary(),
     before = structuredClone(raw);

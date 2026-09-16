@@ -74,7 +74,7 @@ export function SuitePage() {
           <dt>Display</dt>
           <dd>
             A visible desktop (native or Wayland) with a fixed refresh rate and display scale;
-            headless and X11 campaigns are diagnostic and cannot be published
+            JFreeChart may use verified XWayland. Headless and plain X11 campaigns are diagnostic
           </dd>
         </dl>
       </section>

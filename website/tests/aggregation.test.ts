@@ -105,7 +105,7 @@ test('every compatibility dimension separates groups, including explicit context
     (o) => (o.run.context.pixel_ratio = 3),
     (o) => (o.run.context.viewport_size = [123, 456]),
     (o) => (o.run.context.plot_viewports.image = [12, 34]),
-    (o) => (o.run.context.display_protocol = 'wayland'),
+    (o) => (o.run.context.display_protocol = 'xwayland'),
     (o) => (o.run.context.refresh_hz = 144),
     (o) => (o.run.context.headless = true),
   ];
