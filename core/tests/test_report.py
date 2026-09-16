@@ -361,7 +361,7 @@ def test_render_contract_controls_acceptance_and_preserves_raw_samples(tmp_path,
         "render_contract": VERSION,
         "viewport_size": [1100, 820],
         "pixel_ratio": 1,
-        "plot_viewports_all": {"waveform": [], "image": [[680 if matches else 900, 340]]},
+        "plot_viewports_all": {"waveform": [], "image": [[956 if matches else 900, 478]]},
     }
     (folder / "measurements.jsonl").write_text(json.dumps(batch) + "\n")
     row = summarize_run(folder)
@@ -387,4 +387,4 @@ def test_persisted_geometry_rejection_keeps_its_diagnostic(tmp_path):
         "plot_viewports_all": {"image": [[900, 340]]},
     }
     (folder / "measurements.jsonl").write_text(json.dumps(batch) + "\n")
-    assert "expected [340.0, 340.0]" in summarize_run(folder)["error"]
+    assert "expected [500.0, 500.0]" in summarize_run(folder)["error"]

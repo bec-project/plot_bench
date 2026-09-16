@@ -106,15 +106,18 @@ source controls can switch a running demo between the two workloads. Capture onl
 for visual QA, outside performance measurements.
 
 
-## Data-area contract (`data-area-v1`)
+## Data-area contract (`data-area-v2`)
 
 Adapters derive a common data-area slot from the **actual logical window content
 size**, independently of native header, title, axis and font measurements. With
 window size `W × H`, `columns = ceil(sqrt(n))`, and `rows = ceil(n / columns)`:
 
 ```text
-slot_width  = max(1, floor((W - 48  - 16 × (columns - 1)) / columns - 120))
-slot_height = max(1, floor((H - 340 - 16 × (rows    - 1)) / rows    - 140))
+horizontal_reserve, vertical_reserve = (100, 120) for waveforms
+                                     (96, 100) for a single-image window
+                                     (16, 16) for images in multi-plot windows
+slot_width  = max(1, floor((W - 48  - 16 × (columns - 1)) / columns - horizontal_reserve))
+slot_height = max(1, floor((H - 220 - 16 × (rows    - 1)) / rows    - vertical_reserve))
 ```
 
 The reserves leave space for the application controls, per-card captions and
@@ -124,13 +127,27 @@ uses the entire slot. Each image fits inside it with a uniform scale
 are forbidden. Axes must describe that fitted image rectangle, not its padding.
 These rules apply equally to scalar and RGB images, including non-square inputs.
 
-At the default 1100 × 820 window, one plot has a 932 × 340 logical-pixel slot;
-two plots have 398 × 340 each; four have 398 × 92 each. A square image occupies
-340 × 340 or 92 × 92 respectively. Multiply by the recorded device pixel ratio
-for physical dimensions. Different display scales remain different comparison
-contexts. Native chrome and glyph rasterization are not normalized.
+At the default 1100 × 820 window, waveform slots are 952 × 480 for one plot,
+418 × 480 for two, and 418 × 172 for four. A single square image occupies
+500 × 500 pixels. Images in multi-plot windows omit their individual titles,
+subtitles and axes: two image slots are 502 × 584, four are 502 × 276, and six
+are 324 × 276. Four square images therefore each occupy 276 × 276 pixels.
+Each plot type uses the same reserve across every frontend.
 
-Every adapter reports `render_contract: "data-area-v1"` and independently measured
+The top section uses a compact title/control row, workload row and four small
+stats cells, in the same order: Submitted, Update time, Skipped, Receive age.
+The target rate remains in the workload row; per-metric target guides are removed
+from the visible stats. The shared 220-pixel vertical budget includes this chrome,
+outer padding and footer. Native fonts can differ; actual plot dimensions remain
+validated rather than inferred from the top section's height.
+
+Multiply by the recorded device pixel ratio for physical dimensions. Aspect
+fitting may leave padding for non-matching image and slot aspect ratios; images
+are never stretched. Native chrome and glyph rasterization are not normalized.
+Version 1 reserved 340 pixels for window chrome and 120 × 140 per plot. Its runs
+continue to validate against that original rule and remain separate from version 2.
+
+Every adapter reports `render_contract: "data-area-v2"` and independently measured
 `plot_viewports_all` in physical pixels, rather than echoing requested sizes.
 Reports check **every measured-window batch and every plot**, accepting at most
 1.5 physical pixels of rounding per dimension. Missing, non-finite, extra or
@@ -138,7 +155,7 @@ mismatched areas exclude the run with `render-contract-mismatch`; raw samples an
 diagnostics remain available. A window whose slot is smaller than 32 logical
 pixels in either dimension is too small for a comparable run. Such dense grids
 need a larger window. Unversioned historical results remain labelled as legacy
-fixed-window runs and are never pooled with v1 observations.
+fixed-window runs and are never pooled with versioned observations.
 
 Rendering settings retain full authoritative data: fixed waveform ranges, a
 one-physical-pixel stroke, no markers, no automatic decimation or downsampling,

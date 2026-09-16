@@ -489,7 +489,7 @@ class Controller(QObject):
             for series in plot_series:
                 series.setWidth(1 / ratio)
         self.sink.metadata.update(
-            render_contract="data-area-v1",
+            render_contract="data-area-v2",
             pixel_ratio=ratio,
             viewport_size=[self.window.width(), self.window.height()],
             viewport_size_units="logical pixels",

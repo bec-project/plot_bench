@@ -242,7 +242,18 @@ class PlotWindow(QMainWindow):
             return
         count = len(self.waveform_plots) + len(self.image_plots)
         slot = slot_size(self.width(), self.height(), count)
-        fitted = image_size(slot, self.config["width"], self.config["height"])
+        image_slot = slot_size(self.width(), self.height(), count, image=True)
+        fitted = image_size(image_slot, self.config["width"], self.config["height"])
+        bare = count > 1
+        for card, plot in zip(self.image_cards, self.image_plots, strict=True):
+            card.title.setVisible(not bare)
+            card.subtitle.setVisible(not bare)
+            card.layout().setContentsMargins(
+                8 if bare else 16, 8 if bare else 12, 8 if bare else 16, 8
+            )
+            for axis in ("left", "bottom"):
+                plot.getAxis(axis).setVisible(not bare)
+            plot.getPlotItem().layout.setContentsMargins(0, 0 if bare else 8, 0, 0)
         for plots, size in ((self.waveform_plots, slot), (self.image_plots, fitted)):
             for plot in plots:
                 view = plot.getViewBox()
@@ -250,7 +261,8 @@ class PlotWindow(QMainWindow):
                 view.setMaximumSize(QSizeF(*size))
                 # Fix the plot widget too: otherwise its axes stretch to the old
                 # container while the constrained ViewBox occupies only part of it.
-                plot.setFixedSize(math.ceil(size[0] + 56), math.ceil(size[1] + 44))
+                margin_x, margin_y = (0, 0) if plots is self.image_plots and bare else (56, 44)
+                plot.setFixedSize(math.ceil(size[0] + margin_x), math.ceil(size[1] + margin_y))
 
     def resizeEvent(self, event):
         super().resizeEvent(event)

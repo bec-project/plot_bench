@@ -5,13 +5,20 @@ import (
 	"math"
 )
 
-// data-area-v1. Dimensions are logical window pixels; native chrome is outside.
-func dataSlot(window fyne.Size, count int) fyne.Size {
+// data-area-v2. Dimensions are logical window pixels; native chrome is outside.
+func dataSlot(window fyne.Size, count int, image bool) fyne.Size {
 	columns := math.Ceil(math.Sqrt(float64(count)))
 	rows := math.Ceil(float64(count) / columns)
+	horizontal, vertical := 100.0, 120.0
+	if image {
+		horizontal, vertical = 96, 100
+		if count > 1 {
+			horizontal, vertical = 16, 16
+		}
+	}
 	return fyne.NewSize(
-		float32(math.Max(1, math.Floor((float64(window.Width)-48-16*(columns-1))/columns-120))),
-		float32(math.Max(1, math.Floor((float64(window.Height)-340-16*(rows-1))/rows-140))))
+		float32(math.Max(1, math.Floor((float64(window.Width)-48-16*(columns-1))/columns-horizontal))),
+		float32(math.Max(1, math.Floor((float64(window.Height)-220-16*(rows-1))/rows-vertical))))
 }
 
 type dataAreaLayout struct{ size fyne.Size }

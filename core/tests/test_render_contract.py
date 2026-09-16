@@ -7,7 +7,7 @@ from plotbench.render_contract import VERSION, geometry_errors, image_size, slot
 
 
 @pytest.mark.parametrize(
-    "count,expected", [(1, (932, 340)), (2, (398, 340)), (4, (398, 92)), (6, (220, 92))]
+    "count,expected", [(1, (952, 480)), (2, (418, 480)), (4, (418, 172)), (6, (240, 172))]
 )
 def test_standard_window_slots(count, expected):
     assert slot_size(1100, 820, count) == expected
@@ -15,7 +15,7 @@ def test_standard_window_slots(count, expected):
 
 def observation(ratio=1):
     config = Config(view="image", image_plots=4, width=640, height=360).to_dict()
-    area = image_size(slot_size(1100, 820, 4), 640, 360)
+    area = image_size(slot_size(1100, 820, 4, image=True), 640, 360)
     metadata = {
         "render_contract": VERSION,
         "viewport_size": [1100, 820],
@@ -56,4 +56,22 @@ def test_tolerance_is_physical_not_scaled_with_dpr():
     metadata["plot_viewports_all"]["image"][1][0] += 1
     assert geometry_errors(metadata, config) == []
     metadata["plot_viewports_all"]["image"][1][0] += 1
+    assert geometry_errors(metadata, config)
+
+
+@pytest.mark.parametrize(
+    "count,expected", [(1, (956, 500)), (2, (502, 584)), (4, (502, 276)), (6, (324, 276))]
+)
+def test_compact_image_slots(count, expected):
+    assert slot_size(1100, 820, count, image=True) == expected
+
+
+def test_historical_v1_keeps_its_original_geometry():
+    metadata, config = observation()
+    metadata["render_contract"] = "data-area-v1"
+    metadata["plot_viewports_all"]["image"] = [
+        list(image_size((398, 92), 640, 360)) for _ in range(4)
+    ]
+    assert geometry_errors(metadata, config) == []
+    metadata["render_contract"] = VERSION
     assert geometry_errors(metadata, config)

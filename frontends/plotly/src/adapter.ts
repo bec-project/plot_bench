@@ -42,7 +42,7 @@ export class PlotAdapter {
 
   static metadata() {
     return {
-      render_contract: 'data-area-v1',
+      render_contract: 'data-area-v2',
       waveform_antialias: 'renderer-default (scattergl has no public disable switch)',
       renderer: 'Plotly scattergl (WebGL) + heatmap/image (Plotly raster traces)',
       versions: { plotly: (Plotly as typeof Plotly & { version: string }).version },
@@ -82,6 +82,7 @@ export class PlotAdapter {
     this.cells.image.forEach((cell, index) => {
       cell.title.textContent = plotTitle('image', index, config.image_plots);
       cell.subtitle.textContent = imageSubtitle(config);
+      cell.title.parentElement!.style.display = visiblePlotCount(config) > 1 ? 'none' : '';
     });
   }
 
@@ -178,13 +179,14 @@ export class PlotAdapter {
 
   private layout(element: HTMLDivElement, frame: Frame, image: boolean): Partial<Layout> {
     const config = frame.config;
-    const [width, height] = dataSlot(innerWidth, innerHeight, visiblePlotCount(config));
-    const axis = { automargin: false, fixedrange: true, showgrid: false, zeroline: false, color: '#8fa7b6',
+    const [width, height] = dataSlot(innerWidth, innerHeight, visiblePlotCount(config), image);
+    const bare = image && visiblePlotCount(config) > 1;
+    const axis = { visible: !bare, automargin: false, fixedrange: true, showgrid: false, zeroline: false, color: '#8fa7b6',
       tickfont: { size: 10 }, linecolor: '#253745' };
     return {
-      width: width + 61,
-      height: height + 40,
-      margin: { l: 46, r: 15, t: 8, b: 32, pad: 0 },
+      width: width + (bare ? 0 : 61),
+      height: height + (bare ? 0 : 40),
+      margin: bare ? {l: 0, r: 0, t: 0, b: 0, pad: 0} : { l: 46, r: 15, t: 8, b: 32, pad: 0 },
       paper_bgcolor: '#111e28', plot_bgcolor: '#111e28',
       font: { family: 'ui-monospace, SFMono-Regular, monospace', color: '#8fa7b6', size: 10 },
       showlegend: false, hovermode: false, dragmode: false, autosize: false,
@@ -222,7 +224,7 @@ export class PlotAdapter {
     const logical = { waveform: dataArea(first('waveform')), image: dataArea(first('image')) };
     const physical = (area: [number, number] | null) => area?.map((size) => size * ratio) ?? null;
     return {
-      render_contract: 'data-area-v1',
+      render_contract: 'data-area-v2',
       plot_viewports_all: {
         waveform: counts.waveform ? this.cells.waveform.map(cell => physical(dataArea(cell.plot))) : [],
         image: counts.image ? this.cells.image.map(cell => physical(dataArea(cell.plot))) : [],

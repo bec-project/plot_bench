@@ -8,8 +8,11 @@ ApplicationWindow {
     id: root
     readonly property int renderColumns: Math.max(1, benchmark.gridColumns)
     readonly property int renderRows: Math.max(1, Math.ceil((benchmark.waveformPlots + benchmark.imagePlots) / renderColumns))
-    readonly property real dataWidth: Math.max(1, Math.floor((width - 48 - 16 * (renderColumns - 1)) / renderColumns - 120))
-    readonly property real dataHeight: Math.max(1, Math.floor((height - 340 - 16 * (renderRows - 1)) / renderRows - 140))
+    readonly property real dataWidth: Math.max(1, Math.floor((width - 48 - 16 * (renderColumns - 1)) / renderColumns - 100))
+    readonly property real dataHeight: Math.max(1, Math.floor((height - 220 - 16 * (renderRows - 1)) / renderRows - 120))
+    readonly property bool bareImages: benchmark.waveformPlots + benchmark.imagePlots > 1
+    readonly property real imageDataWidth: Math.max(1, Math.floor((width - 48 - 16 * (renderColumns - 1)) / renderColumns - (bareImages ? 16 : 96)))
+    readonly property real imageDataHeight: Math.max(1, Math.floor((height - 220 - 16 * (renderRows - 1)) / renderRows - (bareImages ? 16 : 100)))
     visible: true
     width: 1100
     height: 820
@@ -68,15 +71,16 @@ ApplicationWindow {
         anchors.fill: parent
         anchors.margins: 24
         anchors.bottomMargin: 20
-        spacing: 16
+        spacing: 8
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: 16
+            spacing: 8
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 7
                 Caption {
+                    visible: false
                     text: "PLOTTING BENCHMARK"
                     font.pixelSize: 10
                     font.weight: Font.DemiBold
@@ -86,7 +90,7 @@ ApplicationWindow {
                     Text {
                         text: "Qt Graphs C++"
                         color: "#d8e6ed"
-                        font.pixelSize: 26
+                        font.pixelSize: 20
                         font.weight: Font.DemiBold
                     }
                     Rectangle {
@@ -106,8 +110,8 @@ ApplicationWindow {
                 }
             }
             Item { Layout.fillWidth: true }
-            ColumnLayout {
-                spacing: 7
+            RowLayout {
+                spacing: 8
                 Caption {
                     Layout.alignment: Qt.AlignRight
                     text: "● " + benchmark.presentation.state
@@ -118,7 +122,7 @@ ApplicationWindow {
                 }
                 Button {
                     text: "Source controls  ↗"
-                    implicitHeight: 36
+                    implicitHeight: 28
                     implicitWidth: 140
                     onClicked: benchmark.open_controls()
                     background: Rectangle {
@@ -139,13 +143,13 @@ ApplicationWindow {
 
         Panel {
             Layout.fillWidth: true
-            Layout.preferredHeight: 64
+            Layout.preferredHeight: 40
             RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: 18
                 anchors.rightMargin: 18
-                anchors.topMargin: 12
-                anchors.bottomMargin: 12
+                anchors.topMargin: 4
+                anchors.bottomMargin: 4
                 spacing: 18
                 Repeater {
                     model: [
@@ -157,13 +161,13 @@ ApplicationWindow {
                         required property var modelData
                         Layout.fillWidth: true
                         Layout.preferredWidth: 1
-                        spacing: 5
+                        spacing: 0
                         Caption { text: modelData.heading; font.pixelSize: 10; font.weight: Font.DemiBold }
                         Text {
                             Layout.fillWidth: true
                             text: modelData.value
                             color: "#d8e6ed"
-                            font.pixelSize: 14
+                            font.pixelSize: 12
                             font.weight: Font.Medium
                             elide: Text.ElideRight
                         }
@@ -172,7 +176,7 @@ ApplicationWindow {
                 ColumnLayout {
                     Layout.fillWidth: true
                     Layout.preferredWidth: 1
-                    spacing: 3
+                    spacing: 0
                     Caption { text: "PLOTS"; font.pixelSize: 10; font.weight: Font.DemiBold }
                     RowLayout {
                         spacing: 6
@@ -197,28 +201,28 @@ ApplicationWindow {
                     required property var modelData
                     Layout.fillWidth: true
                     Layout.preferredWidth: 1
-                    Layout.preferredHeight: 88
+                    Layout.preferredHeight: 48
                     ToolTip.visible: metricHover.hovered
                     ToolTip.text: benchmark.metricGuide
                     HoverHandler { id: metricHover }
                     ColumnLayout {
                         anchors.fill: parent
                         anchors.margins: 18
-                        anchors.topMargin: 10
-                        anchors.bottomMargin: 10
-                        spacing: 3
+                        anchors.topMargin: 4
+                        anchors.bottomMargin: 4
+                        spacing: 0
                         Caption { text: modelData.heading }
                         RowLayout {
-                            spacing: 5
+                            spacing: 0
                             Text {
                                 text: modelData.value
                                 color: "#d8e6ed"
-                                font.pixelSize: 25
+                                font.pixelSize: 18
                                 font.weight: Font.DemiBold
                             }
                             Caption { text: modelData.unit; font.pixelSize: 12; Layout.alignment: Qt.AlignBaseline }
                         }
-                        Caption { text: modelData.target; font.pixelSize: 10; Layout.fillWidth: true }
+                        Caption { visible: false; text: modelData.target; font.pixelSize: 10; Layout.fillWidth: true }
                     }
                 }
             }
@@ -254,18 +258,18 @@ ApplicationWindow {
                     Layout.preferredWidth: 1
                     Layout.preferredHeight: 1
                     Text {
-                        x: 16; y: 16
+                        x: 16; y: 12
                         text: benchmark.waveformTitles[wavePanel.index] || "Waveform"
                         color: "#d8e6ed"
                         font.pixelSize: 16
                         font.weight: Font.DemiBold
                     }
-                    Caption { x: 16; y: 42; text: benchmark.workload.waveformSubtitle }
+                    Caption { x: 16; y: 32; text: benchmark.workload.waveformSubtitle }
                     GraphsView {
                         id: graph
                         objectName: "waveformGraph-" + wavePanel.index
-                        x: 4
-                        y: 64
+                        x: 0
+                        y: 48
                         property real axisWidth: 120
                         property real axisHeight: 80
                         width: root.dataWidth + axisWidth
@@ -366,18 +370,19 @@ ApplicationWindow {
                     Layout.preferredWidth: 1
                     Layout.preferredHeight: 1
                     Text {
+                        visible: !root.bareImages
                         x: 16; y: 16
                         text: benchmark.imageTitles[imagePanel.index] || "Image"
                         color: "#d8e6ed"
                         font.pixelSize: 16
                         font.weight: Font.DemiBold
                     }
-                    Caption { x: 16; y: 42; text: benchmark.workload.imageSubtitle }
+                    Caption { visible: !root.bareImages; x: 16; y: 42; text: benchmark.workload.imageSubtitle }
                     Item {
-                        x: 56
-                        y: 68
-                        width: root.dataWidth
-                        height: root.dataHeight
+                        x: root.bareImages ? 8 : 56
+                        y: root.bareImages ? 8 : 68
+                        width: root.imageDataWidth
+                        height: root.imageDataHeight
                         Image {
                             id: streamImage
                             objectName: "streamImage-" + imagePanel.index
@@ -390,6 +395,7 @@ ApplicationWindow {
                             fillMode: Image.PreserveAspectFit
                         }
                         Rectangle {
+                            visible: !root.bareImages
                             anchors.centerIn: parent
                             width: streamImage.paintedWidth
                             height: streamImage.paintedHeight

@@ -2,14 +2,7 @@
 
 from qtpy.QtCore import QSignalBlocker, Qt, QUrl, Signal
 from qtpy.QtGui import QDesktopServices
-from qtpy.QtWidgets import (
-    QFrame,
-    QHBoxLayout,
-    QLabel,
-    QPushButton,
-    QVBoxLayout,
-    QWidget,
-)
+from qtpy.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 BACKGROUND = "#0b141c"
 PANEL = "#111e28"
@@ -50,18 +43,18 @@ class Dashboard(QWidget):
             QLabel {{ color: {TEXT}; background: transparent; border: none;
                       font-family: "Helvetica Neue"; font-size: 12px; }}
             QLabel#eyebrow {{ color: {MUTED}; font-size: 10px; font-weight: 600; }}
-            QLabel#title {{ font-size: 26px; font-weight: 600; }}
+            QLabel#title {{ font-size: 20px; font-weight: 600; }}
             QLabel#badge {{ color: {ACCENT}; background: #173239; border: 1px solid #285052;
                            border-radius: 5px; padding: 5px 8px; font-size: 10px; }}
             QLabel#muted, QLabel#metricLabel {{ color: {MUTED}; font-size: 11px; }}
-            QLabel#summaryValue {{ font-size: 14px; font-weight: 500; }}
-            QLabel#metricValue {{ font-size: 25px; font-weight: 600; }}
+            QLabel#summaryValue {{ font-size: 12px; font-weight: 500; }}
+            QLabel#metricValue {{ font-size: 18px; font-weight: 600; }}
             QLabel#metricTarget {{ color: {MUTED}; font-size: 10px; }}
             QLabel#plotTitle {{ font-size: 16px; font-weight: 600; }}
             QLabel#footer {{ color: {MUTED}; font-size: 10px; }}
             QFrame#panel {{ background: {PANEL}; border: 1px solid {BORDER}; border-radius: 9px; }}
             QPushButton {{ color: {BACKGROUND}; background: {ACCENT}; border: none;
-                           border-radius: 6px; padding: 10px 15px;
+                           border-radius: 6px; padding: 5px 12px;
                            font-family: "Helvetica Neue"; font-size: 12px; font-weight: 600; }}
             QPushButton:hover {{ background: #85e7da; }}
             QPushButton:pressed {{ background: #42bbaa; }}
@@ -75,11 +68,10 @@ class Dashboard(QWidget):
         """)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(24, 24, 24, 20)
-        layout.setSpacing(16)
+        layout.setSpacing(8)
         header = QHBoxLayout()
         heading = QVBoxLayout()
         heading.setSpacing(7)
-        heading.addWidget(label("PLOTTING BENCHMARK", "eyebrow"))
         title_row = QHBoxLayout()
         title_row.setSpacing(12)
         title_row.addWidget(label(title, "title"))
@@ -87,7 +79,7 @@ class Dashboard(QWidget):
         title_row.addStretch()
         heading.addLayout(title_row)
         header.addLayout(heading, 1)
-        actions = QVBoxLayout()
+        actions = QHBoxLayout()
         actions.setSpacing(7)
         self.connection = label("● Connecting", "muted")
         self.connection.setAlignment(Qt.AlignmentFlag.AlignRight)
@@ -101,21 +93,21 @@ class Dashboard(QWidget):
 
         summary = QFrame()
         summary.setObjectName("panel")
-        summary.setFixedHeight(64)
+        summary.setFixedHeight(40)
         summary_layout = QHBoxLayout(summary)
-        summary_layout.setContentsMargins(18, 12, 18, 12)
+        summary_layout.setContentsMargins(12, 4, 12, 4)
         summary_layout.setSpacing(18)
         self.summary_values = []
         for text in ("TARGET RATE", "WAVEFORM", "IMAGE"):
             column = QVBoxLayout()
-            column.setSpacing(5)
+            column.setSpacing(0)
             column.addWidget(label(text, "eyebrow"))
             value = label("—", "summaryValue")
             column.addWidget(value)
             summary_layout.addLayout(column, 1)
             self.summary_values.append(value)
         plot_column = QVBoxLayout()
-        plot_column.setSpacing(3)
+        plot_column.setSpacing(0)
         plot_column.addWidget(label("PLOTS", "eyebrow"))
         toggles = QHBoxLayout()
         toggles.setSpacing(6)
@@ -146,15 +138,16 @@ class Dashboard(QWidget):
         for text in ("Submitted", "Update time", "Skipped", "Receive age"):
             card = QFrame()
             card.setObjectName("panel")
-            card.setFixedHeight(88)
+            card.setFixedHeight(48)
             column = QVBoxLayout(card)
-            column.setContentsMargins(18, 10, 18, 10)
-            column.setSpacing(3)
+            column.setContentsMargins(12, 4, 12, 4)
+            column.setSpacing(0)
             column.addWidget(label(text, "metricLabel"))
             value = label("—", "metricValue")
             column.addWidget(value)
             target = label("", "metricTarget")
             column.addWidget(target)
+            target.hide()
             card.setToolTip(METRIC_GUIDE)
             self.metric_targets.append(target)
             metrics.addWidget(card, 1)
@@ -262,9 +255,11 @@ class Dashboard(QWidget):
             (f"{metrics['updates_hz']:.1f}", "/s"),
             (f"{metrics['update_ms']:.2f}", "ms"),
             (f"{metrics['skipped']:,}", ""),
-            ("—", "replay" if self.mode == "replay" else "")
-            if age is None
-            else (f"{age:.1f}", "ms"),
+            (
+                ("—", "replay" if self.mode == "replay" else "")
+                if age is None
+                else (f"{age:.1f}", "ms")
+            ),
         )
         for widget, (value, unit) in zip(self.metric_values, values, strict=True):
             widget.setText(f'{value} <span style="font-size:12px;color:{MUTED}">{unit}</span>')

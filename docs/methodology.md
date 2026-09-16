@@ -108,10 +108,11 @@ Keep diagnostic attempts separate from the main comparison and retain failures.
 Document conditions that changed between attempts.
 
 
-Rendering contract `data-area-v1` normalizes the data rectangle using the
-[shared sizing rule](presentation.md#data-area-contract-data-area-v1). Reports
+Rendering contract `data-area-v2` normalizes the data rectangle using the
+[shared sizing rule](presentation.md#data-area-contract-data-area-v2). Reports
 exclude runs whose measured geometry fails that contract. This removes the former
 native-layout size discrepancy; it does not make API timings equivalent, normalize
 axis/text rendering, or remove documented renderer limitations such as Plotly's
-default line antialiasing. Historical unversioned runs remain fixed-window
+default line antialiasing. Version 1 retains its original larger margins and is kept separate from version 2.
+Historical unversioned runs remain fixed-window
 application measurements and are kept in separate aggregation contexts.

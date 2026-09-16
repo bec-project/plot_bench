@@ -178,19 +178,36 @@ class PlotCanvas(FigureCanvasQTAgg):
         columns, rows = plot_grid(len(plots))
         if not plots:
             return
-        slot = slot_size(self.window().width(), self.window().height(), len(plots))
         gap_x, gap_y = 16 / width, 16 / height
         cell_width = (1 - gap_x * (columns - 1)) / columns
         cell_height = (1 - gap_y * (rows - 1)) / rows
         for index, (axis, (panel, heading, subtitle)) in enumerate(plots):
+            slot = slot_size(
+                self.window().width(),
+                self.window().height(),
+                len(plots),
+                image=index >= len(self.waveform_axes),
+            )
             column, row = index % columns, index // columns
             left = column * (cell_width + gap_x)
             bottom = 1 - (row + 1) * cell_height - row * gap_y
             panel.set_bounds(left + 0.001, bottom + 0.003, cell_width - 0.002, cell_height - 0.006)
             heading.set_position((left + 16 / width, bottom + cell_height - 16 / height))
             subtitle.set_position((left + 16 / width, bottom + cell_height - 42 / height))
+            bare = index >= len(self.waveform_axes) and len(plots) > 1
+            heading.set_visible(not bare)
+            subtitle.set_visible(not bare)
+            if bare:
+                axis.set_axis_off()
+            else:
+                axis.set_axis_on()
             axis.set_position(
-                (left + 62 / width, bottom + 46 / height, slot[0] / width, slot[1] / height)
+                (
+                    left + (8 if bare else 62) / width,
+                    bottom + (8 if bare else 46) / height,
+                    slot[0] / width,
+                    slot[1] / height,
+                )
             )
 
     def apply_config(self, config):

@@ -377,7 +377,12 @@ def test_hud_records_plot_counts_curves_and_first_plot_viewports(window, monkeyp
 
 @pytest.mark.parametrize(
     "view,plots,width,height",
-    [("waveform", 2, 512, 512), ("image", 1, 640, 360), ("image", 4, 32, 64)],
+    [
+        ("waveform", 2, 512, 512),
+        ("waveform", 4, 512, 512),
+        ("image", 1, 640, 360),
+        ("image", 4, 32, 64),
+    ],
 )
 def test_render_contract_measures_every_data_area(
     window, qapp, monkeypatch, view, plots, width, height
@@ -403,5 +408,13 @@ def test_render_contract_measures_every_data_area(
     window.update_hud()
     assert geometry_errors(window.metadata, config) == []
     for plot in window.waveform_plots + window.image_plots:
-        assert abs(plot.getAxis("left").height() - plot.getViewBox().height()) < 1
-        assert abs(plot.getAxis("bottom").width() - plot.getViewBox().width()) < 1
+        if plot.getAxis("left").isVisible():
+            assert abs(plot.getAxis("left").height() - plot.getViewBox().height()) < 1
+            assert abs(plot.getAxis("bottom").width() - plot.getViewBox().width()) < 1
+
+    for card, plot in zip(
+        window.waveform_cards + window.image_cards,
+        window.waveform_plots + window.image_plots,
+        strict=True,
+    ):
+        assert plot.mapTo(card, plot.rect().bottomRight()).y() <= card.height() - 4
