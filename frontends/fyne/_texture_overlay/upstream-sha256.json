@@ -1,0 +1,12 @@
+{
+  "internal/driver/common/canvas.go": "b7f6fb4aa2e9c2ec384d66154e9ffe8f41d172c106215e79bedafbf6399c5628",
+  "internal/painter/gl/context.go": "0f3afe0ded4890a11e3c36f8e2c1e715cca87baa3d1536b32a869a516cc82c27",
+  "internal/painter/gl/gl_core.go": "889556a4d75356946a44101a037ca308df86e18e7a789238cb8ddb236612bc54",
+  "internal/painter/gl/gl_es.go": "59a0497f8574aed034b13994d5cbc8fb2bc44bc08d7a13e0f542f9b6f428d93f",
+  "internal/painter/gl/gl_gomobile.go": "974512c8438a6bc3c6ccdc624cc89ccb7c8da45d461d5bea03860bf34583bbe5",
+  "internal/painter/gl/gl_wasm.go": "24cdd3c5ba8584c063c2f74a10a82a7c17bc72bdf227ddcd64cffe05246f0602",
+  "internal/painter/gl/image_texture.go": null,
+  "internal/painter/gl/image_texture_test.go": null,
+  "internal/painter/gl/painter.go": "0e5d081ecf534be738e2f2bdfe9ad33a1780535e700b67e85c23e7364af1928c",
+  "internal/painter/gl/texture.go": "7991cac5bece2d8f228ed83d1ac99f54b89fd8789e7c972bc880c59d24b55655"
+}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"image"
 	"image/color"
 	"math"
@@ -28,23 +29,33 @@ func curveColor(c int) color.RGBA { return curveColors[c%len(curveColors)] }
 // adopted update, before canvas submission.
 func colorImage(data []byte, c Config, palette [256]color.RGBA) *image.RGBA {
 	out := image.NewRGBA(image.Rect(0, 0, c.Width, c.Height))
-	for i := 0; i < c.Width*c.Height; i++ {
-		p := palette[0]
-		if c.ImageMode == "rgb" {
-			p = color.RGBA{data[i*3], data[i*3+1], data[i*3+2], 255}
-		} else {
-			v := scalar(data, i)
-			if math.IsNaN(v) {
-				v = 0
-			}
-			v = math.Max(0, math.Min(1, v))
-			p = palette[int(math.Floor(v*255))]
+	dst := out.Pix
+	// Select the input representation once per image, not once per pixel.
+	if c.ImageMode == "rgb" {
+		for i, j := 0, 0; j < len(dst); i, j = i+3, j+4 {
+			rgb := data[i : i+3]
+			binary.LittleEndian.PutUint32(dst[j:j+4], uint32(rgb[0])|uint32(rgb[1])<<8|uint32(rgb[2])<<16|0xff000000)
 		}
-		j := i * 4
-		out.Pix[j] = p.R
-		out.Pix[j+1] = p.G
-		out.Pix[j+2] = p.B
-		out.Pix[j+3] = 255
+		return out
+	}
+	// Prepack opaque colours so each pixel is written with a single 32-bit store.
+	// Encoding/binary keeps the byte layout portable without unsafe alignment casts.
+	var packed [256]uint32
+	for i, p := range palette {
+		packed[i] = uint32(p.R) | uint32(p.G)<<8 | uint32(p.B)<<16 | 0xff000000
+	}
+	for j := 0; j < len(dst); j += 4 {
+		v := float64(math.Float32frombits(binary.LittleEndian.Uint32(data[j : j+4])))
+		index := 0
+		if v >= 1 {
+			index = 255
+		} else if v > 0 {
+			index = int(v * 255)
+		}
+		// Negative values and NaN select zero. For positive finite values below one,
+		// truncation equals floor. Keep float64 multiplication to preserve the exact
+		// existing LUT boundaries for float32 source values.
+		binary.LittleEndian.PutUint32(dst[j:j+4], packed[index])
 	}
 	return out
 }
