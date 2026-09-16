@@ -147,3 +147,52 @@ References: [Fyne canvas images](https://docs.fyne.io/canvas/image/),
 [build tags](https://docs.fyne.io/explore/compiling/).
 
 ![Fyne combined waveform and scalar image, untimed visual QA](screenshots/stream-scalar.png)
+
+## Experimental texture storage reuse
+
+This worktree includes source overrides for the pinned Fyne 2.8.1 renderer in
+`_texture_overlay/` (Fyne's BSD license is retained there). They are applied to an
+isolated local fork under `.cache/`, never to the downloaded module cache. The
+build helper verifies the original files against a SHA-256 manifest and uses a
+Go-generated alternate modfile; the normal dependency locks remain unchanged.
+
+From the repository root, with the selected components already installed:
+
+```sh
+.envs/plotting-benchmark/bin/python frontends/fyne/build_texture.py
+.envs/plotting-benchmark/bin/python -m plotbench.provenance fyne
+```
+
+Add `--stock` to the helper for an unmodified-library comparison build, then
+record provenance again. `--prepare-only` creates the fork and prints the
+alternate modfile for renderer tests. Ordinary `scripts/setup fyne` still builds
+the stock library. Runtime metadata identifies the actual binary's strategy as
+`stock-recreate` or `reuse-rgba8-subimage-v1`; build/texture-build.json records
+source override hashes. The source overrides themselves are included in the
+benchmark source identity.
+
+Image refresh marks an existing texture dirty. The next paint uploads the latest
+pixels once with `TexSubImage2D` if dimensions are unchanged. A size change uses
+`TexImage2D` to redefine storage on the same handle. All input image types are
+normalized to tightly packed RGBA8, including strided subimages; filtering updates
+are retained. Cache eviction and canvas teardown still free textures. The change
+is confined to canvas.Image; raster widgets and other canvas objects retain their
+original refresh behavior.
+
+CPU waveform rasterization, per-frame RGBA conversion/allocation, source payloads,
+and measurement boundaries are unchanged. Upload remains deferred and excluded
+from update_ms. This experiment tests storage reuse, not persistent CPU buffers,
+GPU colour mapping, partial-frame uploads, or presented FPS.
+
+### Experimental conversion loop
+
+The adapter additionally selects scalar versus RGB conversion once per image,
+prepacks the scalar LUT into opaque RGBA words, and uses explicit clamp branches
+with truncation for positive values below one. Multiplication remains float64,
+matching the previous LUT boundary behavior for float32 source samples; NaN and
+negative values map to entry zero, and values at or above one map to entry 255.
+Little-endian word stores produce portable RGBA byte order without unsafe casts.
+Each frame still owns a fresh buffer because texture upload is deferred.
+Runtime metadata records `image_conversion_strategy=branched-clamp-packed-rgba-v1`.
+`BenchmarkColorImage4MP` is an isolated deterministic conversion microbenchmark;
+its fixture is never used as a frontend campaign source.
