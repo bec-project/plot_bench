@@ -65,9 +65,8 @@ on this directory, so both the exporter and CI report it with a message starting
   (every included frontend needs all seven sections with repetitions 1, 2 and 3,
   and the planned run count must be 21 per frontend);
 - a smoke or diagnostic classification: headless runs, an unknown display
-  context, or a display protocol other than native/Wayland. X11 stays diagnostic
-  under the repository's current qualification scope, so X11 hosts cannot publish
-  until that scope changes;
+  context, or a display protocol other than native/Wayland or JFreeChart's verified
+  XWayland path. Plain X11 and XWayland for other frontends remain diagnostic;
 - runs with an unknown source commit or a dirty checkout: records on the site
   show their commit, so it must be recorded and clean.
 
@@ -126,8 +125,9 @@ Classification is computed, not chosen by the contributor, and only **benchmark*
 campaigns are published:
 
 - **Diagnostic:** any run is headless, has an unknown display context, or uses a
-  protocol other than native/Wayland. X11 remains diagnostic under the repository's
-  current qualification scope. This does not qualify a new platform for support.
+  protocol other than native/Wayland or JFreeChart's verified XWayland path.
+  Plain X11 and XWayland for other frontends remain diagnostic. This does not
+  qualify other XWayland adapters for support.
 - **Benchmark:** every exact frontend/backend/mode/workload/context/timing group
   has at least three distinct repetitions, each measuring for at least 10 seconds,
   and no run meets the diagnostic condition. The baseline's 3 × 30 s recipe meets

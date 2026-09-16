@@ -301,7 +301,7 @@
                 "additionalProperties": false
               },
               "display_protocol": {
-                "enum": ["native", "wayland", "x11", "offscreen", "headless", null]
+                "enum": ["native", "wayland", "xwayland", "x11", "offscreen", "headless", null]
               },
               "refresh_hz": {
                 "type": ["number", "null"],

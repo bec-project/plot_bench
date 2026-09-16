@@ -29,7 +29,7 @@ builds the plotting adapter, not the matrix editor or source controls.
 | `core` | uv; Python is installed locally |
 | `pyqtgraph`, `pyqtgraph-gl`, `matplotlib`, `qtgraphs` | Graphical desktop and Qt runtime system libraries |
 | `rust` | Rust/Cargo and a native linker/compiler |
-| `jfreechart` | JDK 17+ (`java`, `javac`, `jar`); visible macOS desktop |
+| `jfreechart` | JDK 17+ (`java`, `javac`, `jar`); macOS or Linux Wayland desktop with XWayland and `xdpyinfo` |
 | `fyne` | Go 1.26+, native C compiler, OpenGL; native Wayland development libraries on Linux |
 | `iced` | Rust/Cargo, native linker/compiler, graphics drivers and Wayland libraries on Linux |
 | `plotly` | npm to bootstrap local Node; Chromium or an explicitly selected installed browser |
@@ -231,7 +231,8 @@ and builds the independently packaged adapter in `frontends/jfreechart/build`.
 The dependency JARs remain separate and unmodified, including their notices.
 Doctor verifies deployed JARs, adapter sources and the selected Java runtime.
 
-Visible benchmarking currently requires macOS. Stock Swing on Linux does not
-establish the repository's native Wayland requirement; doctor rejects it rather
-than using XWayland. Headless Java tests are functional checks only. See the
+Visible Linux runs use XWayland and require `xdpyinfo` (Ubuntu: `x11-utils`).
+Doctor requires an active Wayland session and confirms that `DISPLAY` exposes
+the XWAYLAND extension. Record XWayland separately from native Wayland results.
+Headless Java tests are functional checks only. See the
 [JFreeChart adapter](../frontends/jfreechart/README.md) for timing and warmup.

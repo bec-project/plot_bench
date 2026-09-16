@@ -2,7 +2,9 @@
 
 An independent Java 17+ adapter using **JFreeChart 1.5.6**, the version used by
 PShell. This measures the Plotbench adapter, not PShell application performance.
-Visible runs currently support macOS; native Wayland Swing remains unvalidated.
+Visible runs support macOS and Linux Wayland desktops with XWayland. On Linux,
+Swing renders through XWayland; doctor checks for the XWAYLAND server extension.
+Record this as a distinct display protocol when comparing results.
 
 The adapter consumes protocol v2, including multiple waveform plots, curves per
 plot and scalar/RGB image plots. Plots use the shared grid and curve colours;
