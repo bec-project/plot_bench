@@ -36,16 +36,25 @@ export function scaleOptions(observations: readonly Observation[]): [string, str
     .sort((a, b) => a - b)
     .map((ratio) => [String(ratio), scaleLabel(ratio)]);
 }
-/** Benchmark observations within the page's date range and display scale. */
+/** Distinct hosts in the collection, as [id, label] select options, sorted by id. */
+export function hostOptions(observations: readonly Observation[]): [string, string][] {
+  const labels = new Map<string, string>();
+  for (const { campaign: c } of observations)
+    if (!labels.has(c.host.id)) labels.set(c.host.id, c.host.label);
+  return [...labels].sort((a, b) => a[0].localeCompare(b[0]));
+}
+/** Benchmark observations within the page's date range, display scale and host. */
 export function eligibleObservations(
   observations: readonly Observation[],
   filters: URLSearchParams,
 ): Observation[] {
-  const scale = filters.get('scale');
+  const scale = filters.get('scale'),
+    host = filters.get('host');
   return observations.filter(
     ({ campaign: c, run: r }) =>
       c.classification === 'benchmark' &&
       (!scale || String(r.context.pixel_ratio) === scale) &&
+      (!host || c.host.id === host) &&
       inDateRange(c.recorded_at, filters.get('from') ?? '', filters.get('to') ?? ''),
   );
 }
@@ -63,7 +72,7 @@ export function RankingControls({
 }) {
   const tolerance = closeRatePercent(filters.get('close'));
   return (
-    <div className="toolbar" role="group" aria-label="Ranking controls">
+    <div className="toolbar toolbar-5" role="group" aria-label="Ranking controls">
       <Field label="Close update rates">
         <select
           aria-label="Close update rates"
@@ -80,6 +89,13 @@ export function RankingControls({
         </select>
       </Field>
       <Select
+        label="Host"
+        all="All hosts"
+        value={filters.get('host') ?? ''}
+        onChange={(v) => filter('host', v)}
+        options={hostOptions(observations)}
+      />
+      <Select
         label="Display scale"
         all="All scales"
         value={filters.get('scale') ?? ''}
@@ -88,7 +104,7 @@ export function RankingControls({
       />
       <DateRange filters={filters} filter={filter} />
       <div className="toolbar-end">
-        {['close', 'scale', 'from', 'to', 'section'].some((k) => filters.get(k)) && (
+        {['close', 'host', 'scale', 'from', 'to', 'section'].some((k) => filters.get(k)) && (
           <a href={reset}>Reset</a>
         )}
       </div>
