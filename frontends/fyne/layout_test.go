@@ -105,6 +105,11 @@ func TestBuildPlotsOrdersTitlesAndLaysOutRebuiltCards(t *testing.T) {
 	if waves[0].subtitle.Text != waveformSubtitle(c) || images[0].subtitle.Text != imageSubtitle(c) {
 		t.Fatal("rebuilt cards must carry their subtitle immediately", waves[0].subtitle.Text, images[0].subtitle.Text)
 	}
+	slot := dataSlot(fyne.NewSize(1100, 820), 5)
+	for _, card := range append(waves, images...) {
+		card.dataLayout.size = slot
+		card.object.Refresh()
+	}
 	first := waves[0].image.Size()
 	if first.Width <= 0 || first.Height <= 0 {
 		t.Fatal("rebuilt cards must be laid out before the first raster", first)
@@ -120,6 +125,8 @@ func TestBuildPlotsOrdersTitlesAndLaysOutRebuiltCards(t *testing.T) {
 	if len(waves) != 0 || len(images) != 1 || len(plots.Objects) != 1 || images[0].title.Text != "Image" {
 		t.Fatal("image-only single plot", len(waves), len(images), len(plots.Objects))
 	}
+	images[0].dataLayout.size = dataSlot(fyne.NewSize(1100, 820), 1)
+	images[0].object.Refresh()
 	if s := images[0].image.Size(); s.Width <= first.Width || s.Height <= first.Height {
 		t.Fatal("single cell must use the whole grid", s)
 	}

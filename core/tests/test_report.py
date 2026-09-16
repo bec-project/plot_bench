@@ -344,3 +344,47 @@ def test_workload_label_names_plot_and_curve_counts_only_when_they_exceed_one():
     assert workload_label(dict(multi, curves="3", waveform_plots=True)) == workload_label(
         dict(base, image_plots=3)
     )
+
+
+@pytest.mark.parametrize("matches", [True, False])
+def test_render_contract_controls_acceptance_and_preserves_raw_samples(tmp_path, matches):
+    from plotbench.config import Config
+    from plotbench.render_contract import VERSION
+
+    folder = tmp_path / "geometry"
+    write_run(folder)
+    manifest = json.loads((folder / "run.json").read_text())
+    manifest["config"] = Config(view="image", width=640, height=320, hz=10).to_dict()
+    (folder / "run.json").write_text(json.dumps(manifest))
+    batch = json.loads((folder / "measurements.jsonl").read_text())
+    batch["metadata"] = {
+        "render_contract": VERSION,
+        "viewport_size": [1100, 820],
+        "pixel_ratio": 1,
+        "plot_viewports_all": {"waveform": [], "image": [[680 if matches else 900, 340]]},
+    }
+    (folder / "measurements.jsonl").write_text(json.dumps(batch) + "\n")
+    row = summarize_run(folder)
+    assert row["status"] == ("ok" if matches else "render-contract-mismatch")
+    assert row["samples"] == 20
+    assert aggregate([row])[0]["valid"] == int(matches)
+
+
+def test_persisted_geometry_rejection_keeps_its_diagnostic(tmp_path):
+    from plotbench.config import Config
+    from plotbench.render_contract import VERSION
+
+    folder = tmp_path / "geometry"
+    write_run(folder, status="render-contract-mismatch")
+    manifest = json.loads((folder / "run.json").read_text())
+    manifest["config"] = Config(view="image").to_dict()
+    (folder / "run.json").write_text(json.dumps(manifest))
+    batch = json.loads((folder / "measurements.jsonl").read_text())
+    batch["metadata"] = {
+        "render_contract": VERSION,
+        "viewport_size": [1100, 820],
+        "pixel_ratio": 1,
+        "plot_viewports_all": {"image": [[900, 340]]},
+    }
+    (folder / "measurements.jsonl").write_text(json.dumps(batch) + "\n")
+    assert "expected [340.0, 340.0]" in summarize_run(folder)["error"]

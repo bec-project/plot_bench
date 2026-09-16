@@ -66,8 +66,9 @@ language-neutral rule so that screenshots and physical plot areas stay comparabl
    `· K curves` when `curves` is greater than one.
 4. Rebuild the widget set when the source generation changes the counts. One
    update submission per frame covers all plots, and the recorded metadata keeps
-   `plot_viewports` as the data area of the first plot of each kind (all cells are
-   equal) and adds `plot_counts` and `curves`.
+   `plot_viewports` as the data area of the first plot of each kind and
+   `plot_viewports_all` as the measured data areas of **every** plot, in plot order.
+   It also records `plot_counts` and `curves`.
 
 ### Curve palette
 
@@ -95,12 +96,56 @@ from VGA through 4K UHD. Presets populate the editable rate or width/height fiel
 select **Apply workload** to publish the changes. Custom values remain available.
 The dropdowns follow draft values and external source changes without resetting the
 selected 1D/2D view or other unsaved edits. Both source backends serve this same page.
-Toolkit-specific axis layout and font rasterization can differ. Actual plot areas
-remain recorded in metadata; similar appearance does not imply identical raster
-workload or change the documented measurement boundaries.
+Toolkit-specific axis layout and font rasterization can differ. The data rectangle
+follows the versioned contract below; this does not change measurement boundaries.
 
 For presentation screenshots, use the official baseline's `waveform` section
 (60 Hz, one curve of 10,000 points in replace mode) for waveform captures and its
 `scalar-image` section (60 Hz, a 512 × 512 scalar image) for image captures; the
 source controls can switch a running demo between the two workloads. Capture only
 for visual QA, outside performance measurements.
+
+
+## Data-area contract (`data-area-v1`)
+
+Adapters derive a common data-area slot from the **actual logical window content
+size**, independently of native header, title, axis and font measurements. With
+window size `W × H`, `columns = ceil(sqrt(n))`, and `rows = ceil(n / columns)`:
+
+```text
+slot_width  = max(1, floor((W - 48  - 16 × (columns - 1)) / columns - 120))
+slot_height = max(1, floor((H - 340 - 16 × (rows    - 1)) / rows    - 140))
+```
+
+The reserves leave space for the application controls, per-card captions and
+native axes; they are layout budgets, not additional rendered data. Each waveform
+uses the entire slot. Each image fits inside it with a uniform scale
+`min(slot_width / image_width, slot_height / image_height)`; cropping and stretching
+are forbidden. Axes must describe that fitted image rectangle, not its padding.
+These rules apply equally to scalar and RGB images, including non-square inputs.
+
+At the default 1100 × 820 window, one plot has a 932 × 340 logical-pixel slot;
+two plots have 398 × 340 each; four have 398 × 92 each. A square image occupies
+340 × 340 or 92 × 92 respectively. Multiply by the recorded device pixel ratio
+for physical dimensions. Different display scales remain different comparison
+contexts. Native chrome and glyph rasterization are not normalized.
+
+Every adapter reports `render_contract: "data-area-v1"` and independently measured
+`plot_viewports_all` in physical pixels, rather than echoing requested sizes.
+Reports check **every measured-window batch and every plot**, accepting at most
+1.5 physical pixels of rounding per dimension. Missing, non-finite, extra or
+mismatched areas exclude the run with `render-contract-mismatch`; raw samples and
+diagnostics remain available. A window whose slot is smaller than 32 logical
+pixels in either dimension is too small for a comparable run. Such dense grids
+need a larger window. Unversioned historical results remain labelled as legacy
+fixed-window runs and are never pooled with v1 observations.
+
+Rendering settings retain full authoritative data: fixed waveform ranges, a
+one-physical-pixel stroke, no markers, no automatic decimation or downsampling,
+nearest-neighbor image sampling, the shared 256-entry scalar LUT and fixed [0,1]
+levels. Antialiasing is disabled where exposed by the renderer. Plotly `scattergl`
+retains its renderer-default edge treatment: its public
+[trace API](https://plotly.com/javascript/reference/scattergl/) exposes no AA-off
+setting. Its metadata records this exception rather than claiming AA equivalence.
+Texture allocation/reuse and CPU/GPU conversion choices remain adapter-specific.
+GPU completion, presentation and submitted-update timing are unchanged.

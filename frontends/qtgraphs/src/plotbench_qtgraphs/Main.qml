@@ -6,6 +6,10 @@ import QtGraphs
 
 ApplicationWindow {
     id: root
+    readonly property int renderColumns: Math.max(1, benchmark.gridColumns)
+    readonly property int renderRows: Math.max(1, Math.ceil((benchmark.waveformPlots + benchmark.imagePlots) / renderColumns))
+    readonly property real dataWidth: Math.max(1, Math.floor((width - 48 - 16 * (renderColumns - 1)) / renderColumns - 120))
+    readonly property real dataHeight: Math.max(1, Math.floor((height - 340 - 16 * (renderRows - 1)) / renderRows - 140))
     visible: true
     width: 1100
     height: 820
@@ -252,11 +256,22 @@ ApplicationWindow {
                     GraphsView {
                         id: graph
                         objectName: "waveformGraph-" + waveformPanel.index
-                        anchors.fill: parent
-                        anchors.topMargin: 64
-                        anchors.bottomMargin: 12
-                        anchors.leftMargin: 4
-                        anchors.rightMargin: 12
+                        x: 4
+                        y: 64
+                        property real axisWidth: 120
+                        property real axisHeight: 80
+                        width: root.dataWidth + axisWidth
+                        height: root.dataHeight + axisHeight
+                        // Axis labels are toolkit-sized. Solve for the actual data rectangle
+                        // after layout, rather than treating GraphsView bounds as its plot area.
+                        function fitDataArea() {
+                            if (plotArea.width <= 0 || plotArea.height <= 0) return;
+                            const dw = root.dataWidth - plotArea.width;
+                            const dh = root.dataHeight - plotArea.height;
+                            if (Math.abs(dw) > 0.1) axisWidth = Math.max(0, Math.min(300, axisWidth + dw));
+                            if (Math.abs(dh) > 0.1) axisHeight = Math.max(0, Math.min(300, axisHeight + dh));
+                        }
+                        onPlotAreaChanged: Qt.callLater(fitDataArea)
                         antialiasing: false
                         axisXSmoothing: 0
                         axisYSmoothing: 0
@@ -332,11 +347,10 @@ ApplicationWindow {
                     }
                     Caption { x: 16; y: 42; text: benchmark.workload.imageSubtitle }
                     Item {
-                        anchors.fill: parent
-                        anchors.topMargin: 68
-                        anchors.bottomMargin: 44
-                        anchors.leftMargin: 56
-                        anchors.rightMargin: 24
+                        x: 56
+                        y: 68
+                        width: root.dataWidth
+                        height: root.dataHeight
                         Image {
                             id: streamImage
                             objectName: "streamImage-" + imagePanel.index

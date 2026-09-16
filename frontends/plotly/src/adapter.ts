@@ -1,4 +1,5 @@
 import Plotly from 'plotly.js-dist-min';
+import { dataSlot } from './render-contract';
 import type { Config, Data, Layout } from 'plotly.js';
 import type { Configuration, Frame } from './protocol';
 import type { PlotKind } from './plot-selection';
@@ -41,6 +42,8 @@ export class PlotAdapter {
 
   static metadata() {
     return {
+      render_contract: 'data-area-v1',
+      waveform_antialias: 'renderer-default (scattergl has no public disable switch)',
       renderer: 'Plotly scattergl (WebGL) + heatmap/image (Plotly raster traces)',
       versions: { plotly: (Plotly as typeof Plotly & { version: string }).version },
       update_strategy: 'One Plotly.react per plot widget per frame (waveform_plots + image_plots calls); every curve is a separate scattergl trace of the same plot; full authoritative array replacement for both replace and append modes; no decimation',
@@ -175,12 +178,12 @@ export class PlotAdapter {
 
   private layout(element: HTMLDivElement, frame: Frame, image: boolean): Partial<Layout> {
     const config = frame.config;
-    const bounds = element.getBoundingClientRect();
-    const axis = { fixedrange: true, showgrid: false, zeroline: false, color: '#8fa7b6',
+    const [width, height] = dataSlot(innerWidth, innerHeight, visiblePlotCount(config));
+    const axis = { automargin: false, fixedrange: true, showgrid: false, zeroline: false, color: '#8fa7b6',
       tickfont: { size: 10 }, linecolor: '#253745' };
     return {
-      width: Math.max(120, Math.floor(bounds.width)),
-      height: Math.max(100, Math.floor(bounds.height)),
+      width: width + 61,
+      height: height + 40,
       margin: { l: 46, r: 15, t: 8, b: 32, pad: 0 },
       paper_bgcolor: '#111e28', plot_bgcolor: '#111e28',
       font: { family: 'ui-monospace, SFMono-Regular, monospace', color: '#8fa7b6', size: 10 },
@@ -219,6 +222,11 @@ export class PlotAdapter {
     const logical = { waveform: dataArea(first('waveform')), image: dataArea(first('image')) };
     const physical = (area: [number, number] | null) => area?.map((size) => size * ratio) ?? null;
     return {
+      render_contract: 'data-area-v1',
+      plot_viewports_all: {
+        waveform: counts.waveform ? this.cells.waveform.map(cell => physical(dataArea(cell.plot))) : [],
+        image: counts.image ? this.cells.image.map(cell => physical(dataArea(cell.plot))) : [],
+      },
       pixel_ratio: ratio,
       viewport: { logical: [innerWidth, innerHeight], physical: [innerWidth * ratio, innerHeight * ratio] },
       plot_viewport_units: 'physical pixels; data drawing area excluding axes and margins',

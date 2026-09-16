@@ -361,7 +361,7 @@ def test_hud_records_plot_counts_curves_and_first_plot_viewports(window, monkeyp
     window.update_hud()
     assert window.metadata["plot_counts"] == {"waveform": 2, "image": 3}
     assert window.metadata["curves"] == 3
-    first = window.waveform_plots[0].getViewBox().sceneBoundingRect()
+    first = window.waveform_plots[0].getViewBox().rect()
     ratio = window.devicePixelRatioF()
     assert window.metadata["plot_viewports"]["waveform"] == [
         first.width() * ratio,
@@ -373,3 +373,35 @@ def test_hud_records_plot_counts_curves_and_first_plot_viewports(window, monkeyp
     window.update_hud()
     assert window.metadata["plot_counts"] == {"waveform": 0, "image": 3}
     assert window.metadata["plot_viewports"]["waveform"] is None
+
+
+@pytest.mark.parametrize(
+    "view,plots,width,height",
+    [("waveform", 2, 512, 512), ("image", 1, 640, 360), ("image", 4, 32, 64)],
+)
+def test_render_contract_measures_every_data_area(
+    window, qapp, monkeypatch, view, plots, width, height
+):
+    from plotbench.render_contract import geometry_errors
+
+    monkeypatch.setattr(window.sink, "snapshot", dict, raising=False)
+    monkeypatch.setattr(window.dashboard, "update_metrics", lambda *args: None)
+    window.resize(1100, 820)
+    config = Config(
+        view=view,
+        points=16,
+        append_count=4,
+        waveform_plots=plots,
+        image_plots=plots,
+        width=width,
+        height=height,
+    ).to_dict()
+    submit(window, config)
+    window.show()
+    for _ in range(5):
+        qapp.processEvents()
+    window.update_hud()
+    assert geometry_errors(window.metadata, config) == []
+    for plot in window.waveform_plots + window.image_plots:
+        assert abs(plot.getAxis("left").height() - plot.getViewBox().height()) < 1
+        assert abs(plot.getAxis("bottom").width() - plot.getViewBox().width()) < 1

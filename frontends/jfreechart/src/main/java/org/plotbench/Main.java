@@ -322,6 +322,9 @@ public final class Main {
     var gc = window.getGraphicsConfiguration();
     var device = gc.getDevice();
     var dm = device.getDisplayMode();
+    metrics.set(Map.of("render_contract", "data-area-v1", "plot_viewports_all", Map.of(
+        "waveform", plots.waveforms.stream().map(Plots.Surface::viewport).toList(),
+        "image", plots.images.stream().map(Plots.Surface::viewport).toList())));
     Map<String, Object> areas = new HashMap<>();
     if (!view.equals("image")) areas.put("waveform", plots.waveforms.get(0).viewport());
     if (!view.equals("waveform")) areas.put("image", plots.images.get(0).viewport());

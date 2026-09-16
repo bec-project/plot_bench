@@ -17,6 +17,7 @@ from matplotlib.patches import FancyBboxPatch
 from plotbench.client import FrameSource, MetricsSink, frontend_parser
 from plotbench.palette import COLORMAP, CURVE_COLORS
 from plotbench.qt_metadata import qt_window_metadata
+from plotbench.render_contract import VERSION, slot_size
 from qtpy.QtCore import Qt, QTimer, Slot, qVersion
 from qtpy.QtWidgets import QApplication, QMainWindow
 
@@ -131,7 +132,7 @@ class PlotCanvas(FigureCanvasQTAgg):
         for card in self.cards:
             for item in card:
                 item.remove()
-        self.waveform_axes, self.image_axes, self.lines, self.image_artists = [], [], [], []
+        self.waveform_axes, self.image_axes, self.lines, self.image_artists = ([], [], [], [])
         self.cards = []
         for index in range(waveform_count):
             self._make_card("Waveform" if waveform_count == 1 else f"Waveform {index + 1}")
@@ -177,6 +178,7 @@ class PlotCanvas(FigureCanvasQTAgg):
         columns, rows = plot_grid(len(plots))
         if not plots:
             return
+        slot = slot_size(self.window().width(), self.window().height(), len(plots))
         gap_x, gap_y = 16 / width, 16 / height
         cell_width = (1 - gap_x * (columns - 1)) / columns
         cell_height = (1 - gap_y * (rows - 1)) / rows
@@ -188,12 +190,7 @@ class PlotCanvas(FigureCanvasQTAgg):
             heading.set_position((left + 16 / width, bottom + cell_height - 16 / height))
             subtitle.set_position((left + 16 / width, bottom + cell_height - 42 / height))
             axis.set_position(
-                (
-                    left + 62 / width,
-                    bottom + 46 / height,
-                    max(30 / width, cell_width - 82 / width),
-                    max(40 / height, cell_height - 114 / height),
-                )
+                (left + 62 / width, bottom + 46 / height, slot[0] / width, slot[1] / height)
             )
 
     def apply_config(self, config):
@@ -278,7 +275,7 @@ class PlotCanvas(FigureCanvasQTAgg):
 
 def axis_viewport(axis):
     """Physical data area of the first plot of a kind, or None when that kind is hidden."""
-    return None if axis is None else [axis.bbox.width, axis.bbox.height]
+    return None if axis is None else [float(axis.bbox.width), float(axis.bbox.height)]
 
 
 class PlotWindow(QMainWindow):
@@ -397,6 +394,11 @@ class PlotWindow(QMainWindow):
     def plot_metadata(self):
         """Plot counts, curves and first-plot viewports of the current plot set."""
         return {
+            "render_contract": VERSION,
+            "plot_viewports_all": {
+                "waveform": [axis_viewport(a) for a in self.canvas.waveform_axes],
+                "image": [axis_viewport(a) for a in self.canvas.image_axes],
+            },
             "plot_viewport_units": "physical pixels; data drawing area excluding axes",
             "plot_viewports": {
                 "waveform": axis_viewport(self.canvas.waveform_axis),

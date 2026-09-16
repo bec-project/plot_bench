@@ -16,6 +16,29 @@ import org.junit.jupiter.api.Test;
 
 class AdapterTest {
   @Test
+  void imageAxesPreserveAspectAndConvergeToContract() throws Exception {
+    SwingUtilities.invokeAndWait(() -> {
+      for (int count : new int[] {1, 2, 4, 6}) {
+        double[] slot = Plots.dataSlot(1100, 820, count);
+        var plot = new org.jfree.chart.plot.XYPlot(null,
+            new org.jfree.chart.axis.NumberAxis("Column"),
+            new org.jfree.chart.axis.NumberAxis("Row"), null);
+        plot.getDomainAxis().setRange(0, 640);
+        plot.getRangeAxis().setRange(0, 360);
+        var surface = new Plots.Surface("Image", plot);
+        surface.setSize(1100, 820);
+        double fit = Math.min(slot[0]/640, slot[1]/360);
+        surface.dataSize(640*fit, 360*fit);
+        for (int i=0; i<4; i++) surface.render();
+        var area = surface.viewport();
+        assertEquals(640*fit, area.get(0), 1.5);
+        assertEquals(360*fit, area.get(1), 1.5);
+        assertEquals(640.0/360, area.get(0)/area.get(1), 0.01);
+      }
+    });
+  }
+
+  @Test
   void authoritativeSourcePacketsRenderEveryPlotAndCurve() throws Exception {
     Path directory = Path.of(System.getProperty("plotbench.protocolFixtures"));
     int[] palette = Protocol.palette(Files.readAllBytes(directory.resolve("palette.json")));

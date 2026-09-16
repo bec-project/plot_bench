@@ -329,7 +329,10 @@ def run_suite(args):
             if manifest["status"] == "ok":
                 from .report import summarize_run
 
-                manifest["status"] = summarize_run(folder)["status"]
+                summary = summarize_run(folder)
+                manifest["status"] = summary["status"]
+                if summary.get("error"):
+                    manifest["error"] = summary["error"]
                 (folder / "run.json").write_text(json.dumps(manifest, indent=2) + "\n")
             if manifest["status"] != "ok":
                 failed += 1

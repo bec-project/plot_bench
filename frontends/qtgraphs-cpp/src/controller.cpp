@@ -673,6 +673,22 @@ void Controller::updateHud() {
         viewports.insert(QStringLiteral("image"), QVariantList{image->property("paintedWidth").toDouble() * ratio,
                                                                image->property("paintedHeight").toDouble() * ratio});
     }
+    metadata.insert(QStringLiteral("render_contract"), QStringLiteral("data-area-v1"));
+    QVariantList waveAreas, imageAreas;
+    for (int i = 0; i < waveformPlots(); ++i) {
+        QQuickItem *item = findItem(m_window->contentItem(), QStringLiteral("waveformGraph-%1").arg(i));
+        if (!item) { waveAreas.append(QVariant()); continue; }
+        const QRectF area = item->property("plotArea").toRectF();
+        waveAreas.append(QVariant(QVariantList{area.width() * ratio, area.height() * ratio}));
+    }
+    for (int i = 0; i < imagePlots(); ++i) {
+        QQuickItem *item = findItem(m_window->contentItem(), QStringLiteral("streamImage-%1").arg(i));
+        if (!item) { imageAreas.append(QVariant()); continue; }
+        imageAreas.append(QVariant(QVariantList{item->property("paintedWidth").toDouble() * ratio,
+                                               item->property("paintedHeight").toDouble() * ratio}));
+    }
+    metadata.insert(QStringLiteral("plot_viewports_all"),
+                    QVariantMap{{QStringLiteral("waveform"), waveAreas}, {QStringLiteral("image"), imageAreas}});
     metadata.insert(QStringLiteral("plot_viewports"), viewports);
     metadata.insert(QStringLiteral("plot_counts"),
                     QVariantMap{{QStringLiteral("waveform"), waveformPlots()}, {QStringLiteral("image"), imagePlots()}});

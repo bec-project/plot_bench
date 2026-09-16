@@ -333,3 +333,32 @@ def test_layout_places_cards_row_major_on_equal_cells(
     if rows == 1 and columns == 2:
         # Two plots keep today's side-by-side split of the full height.
         assert all(abs(panel[3] - 0.994) < 1e-9 for panel in panels)
+
+
+@pytest.mark.parametrize(
+    "view,plots,width,height",
+    [("waveform", 2, 512, 512), ("image", 1, 640, 360), ("image", 4, 32, 64)],
+)
+def test_render_contract_data_rectangles(canvas, qapp, view, plots, width, height):
+    from plotbench.render_contract import VERSION, geometry_errors
+
+    from plotbench_matplotlib.app import axis_viewport
+
+    canvas.resize(1100, 820)
+    canvas.show()
+    qapp.processEvents()
+    config = Config(
+        view=view, waveform_plots=plots, image_plots=plots, width=width, height=height
+    ).to_dict()
+    canvas.apply_config(config)
+    canvas.draw()
+    metadata = {
+        "render_contract": VERSION,
+        "viewport_size": [1100, 820],
+        "pixel_ratio": canvas.devicePixelRatioF(),
+        "plot_viewports_all": {
+            "waveform": [axis_viewport(a) for a in canvas.waveform_axes],
+            "image": [axis_viewport(a) for a in canvas.image_axes],
+        },
+    }
+    assert geometry_errors(metadata, config) == []
