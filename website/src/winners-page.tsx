@@ -23,6 +23,9 @@ import {
 } from './section-rail';
 import { sectionHref } from './results-page';
 import { BoardChart } from './board-chart';
+// Profile radar (top-left of the winner card). Self-contained — remove its
+// import, its element below and its CSS block to drop it.
+import { ProfileRadar } from './winner-radar';
 
 /** Distinct display scales in the collection, as select options ("1x", "2x"). */
 export function scaleOptions(observations: readonly Observation[]): [string, string][] {
@@ -211,6 +214,9 @@ function Board({ board, select }: { board: WinnerBoard; select: (o: Observation)
     section = board.section,
     leaders = board.records.filter((record) => record.rank === 1);
   const [expanded, setExpanded] = useState(false);
+  // Shared highlight for the profile glyphs and the bar charts, scoped to this
+  // board so sibling boards do not cross-highlight.
+  const [hovered, setHovered] = useState<string | null>(null);
   const label =
     board.records.length === 1
       ? 'Best recorded frontend (only entrant)'
@@ -234,6 +240,9 @@ function Board({ board, select }: { board: WinnerBoard; select: (o: Observation)
         </span>
       </header>
       <div className="board-layout">
+        <div className="winner-profiles">
+          <ProfileRadar board={board} hovered={hovered} onHover={setHovered} />
+        </div>
         <div className="board-facts">
           <div className="winner-heading">
             <div>
@@ -279,7 +288,7 @@ function Board({ board, select }: { board: WinnerBoard; select: (o: Observation)
             </p>
           )}
         </div>
-        <BoardChart board={board} />
+        <BoardChart board={board} hovered={hovered} onHover={setHovered} />
         <div className="board-records">
           <div className="winner-records">
             {leaders.map((record) => (
