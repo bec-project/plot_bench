@@ -85,76 +85,80 @@ export function ProfileRadar({
       <figcaption className="profile-title">
         Profile <span className="muted">· higher is better on every axis</span>
       </figcaption>
-      <svg viewBox="0 0 220 184" role="img" aria-label={radarSummary(active, axes)}>
-        <g aria-hidden="true">
-          {RINGS.map((g) => (
-            <polygon key={g} className="profile-grid" points={poly([g, g, g])} />
-          ))}
-          {axes.map((ax) => {
-            const [x, y] = polar(1, ax.angle);
-            return <line key={ax.label} className="profile-grid" x1={CX} y1={CY} x2={x} y2={y} />;
-          })}
-          <polygon className="profile-worst" points={worstPoly} />
-          <polygon
-            className="profile-active"
-            points={activePoly}
-            style={{ fill: tone, stroke: tone }}
-          />
-          {axes.map((ax) => {
-            const [x, y] = polar(ax.goodness(active), ax.angle);
-            return <circle key={ax.label} r={2.6} cx={x} cy={y} style={{ fill: tone }} />;
-          })}
-          {axes.map((ax) => {
-            const [x, y] = polar(1.18, ax.angle);
-            return (
-              <text
-                key={ax.label}
-                className="profile-axis-name"
-                x={x}
-                y={ax.angle === -90 ? y - 1 : y + 4}
-                textAnchor={ax.anchor}
-              >
-                {ax.label}
-              </text>
-            );
-          })}
-        </g>
-      </svg>
-      <p className="profile-active-name">
-        <span className="profile-swatch" style={{ background: tone }} aria-hidden="true" />
-        <strong>{active.frontend}</strong>
-        <span className="muted"> · #{active.rank}</span>
-        {!active.inBand && <span className="muted"> · below top band</span>}
-      </p>
-      <p className="profile-values muted">
-        {axes.map((ax, i) => (
-          <span key={ax.label}>
-            {i > 0 && ' · '}
-            {ax.label} {ax.value(active)}
-          </span>
-        ))}
-      </p>
-      <ul className="profile-legend" aria-label="Highlight a frontend">
-        {data.points.map((p) => (
-          <li key={p.frontend}>
-            <button
-              type="button"
-              className={p.frontend === active.frontend ? 'is-active' : undefined}
-              onMouseEnter={() => onHover(p.frontend)}
-              onMouseLeave={() => onHover(null)}
-              onFocus={() => onHover(p.frontend)}
-              onBlur={() => onHover(null)}
-            >
-              {p.frontend}
-            </button>
-          </li>
-        ))}
-      </ul>
-      <figcaption className="profile-note muted">
-        Solid shape: the highlighted frontend. Faint inner shape: the worst value seen on each axis.
-        Throughput is scaled to the {format(data.target)} Hz target; RAM and CPU to the lightest
-        frontend, so a hungrier one reaches proportionally less.
-      </figcaption>
+      <div className="profile-body">
+        <svg viewBox="16 2 188 140" role="img" aria-label={radarSummary(active, axes)}>
+          <g aria-hidden="true">
+            {RINGS.map((g) => (
+              <polygon key={g} className="profile-grid" points={poly([g, g, g])} />
+            ))}
+            {axes.map((ax) => {
+              const [x, y] = polar(1, ax.angle);
+              return <line key={ax.label} className="profile-grid" x1={CX} y1={CY} x2={x} y2={y} />;
+            })}
+            <polygon className="profile-worst" points={worstPoly} />
+            <polygon
+              className="profile-active"
+              points={activePoly}
+              style={{ fill: tone, stroke: tone }}
+            />
+            {axes.map((ax) => {
+              const [x, y] = polar(ax.goodness(active), ax.angle);
+              return <circle key={ax.label} r={2.6} cx={x} cy={y} style={{ fill: tone }} />;
+            })}
+            {axes.map((ax) => {
+              const [x, y] = polar(1.18, ax.angle);
+              return (
+                <text
+                  key={ax.label}
+                  className="profile-axis-name"
+                  x={x}
+                  y={ax.angle === -90 ? y - 1 : y + 4}
+                  textAnchor={ax.anchor}
+                >
+                  {ax.label}
+                </text>
+              );
+            })}
+          </g>
+        </svg>
+        <div className="profile-readout">
+          <p className="profile-active-name">
+            <span className="profile-swatch" style={{ background: tone }} aria-hidden="true" />
+            <strong>{active.frontend}</strong>
+            <span className="muted"> · #{active.rank}</span>
+            {!active.inBand && <span className="muted"> · below top band</span>}
+          </p>
+          <p className="profile-values muted">
+            {axes.map((ax, i) => (
+              <span key={ax.label}>
+                {i > 0 && ' · '}
+                {ax.label} {ax.value(active)}
+              </span>
+            ))}
+          </p>
+          <ul className="profile-legend" aria-label="Highlight a frontend">
+            {data.points.map((p) => (
+              <li key={p.frontend}>
+                <button
+                  type="button"
+                  className={p.frontend === active.frontend ? 'is-active' : undefined}
+                  onMouseEnter={() => onHover(p.frontend)}
+                  onMouseLeave={() => onHover(null)}
+                  onFocus={() => onHover(p.frontend)}
+                  onBlur={() => onHover(null)}
+                >
+                  {p.frontend}
+                </button>
+              </li>
+            ))}
+          </ul>
+          <p className="profile-note muted">
+            Solid shape: the highlighted frontend. Faint inner shape: the worst value seen on each
+            axis. Throughput is scaled to the {format(data.target)} Hz target; RAM and CPU to the
+            lightest frontend, so a hungrier one reaches proportionally less.
+          </p>
+        </div>
+      </div>
     </figure>
   );
 }

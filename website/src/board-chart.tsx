@@ -19,6 +19,9 @@ export function rowHoverProps(frontend: string, { onHover }: RowHover) {
 // value columns aligned across every row and the axis row, and reads as data.
 export function BoardChart({ board, hovered = null, onHover }: { board: WinnerBoard } & RowHover) {
   const hover: RowHover = { hovered, onHover };
+  // While a frontend is hovered, drop the winner row's standing emphasis so only
+  // the frontend being inspected stands out.
+  const hovering = onHover != null && hovered != null;
   const { target, max, bars } = boardChart(board);
   const pct = (value: number) => `${((value / max) * 100).toFixed(2)}%`;
   const where = board.section ? ` in the ${board.section.title} section` : '';
@@ -26,7 +29,7 @@ export function BoardChart({ board, hovered = null, onHover }: { board: WinnerBo
   const memory = resourceChart(board, 'rss_peak_mib', (r) => r.memoryMib);
   const cpu = resourceChart(board, 'cpu_mean_percent', (r) => r.cpuPercent, 100);
   return (
-    <figure className="board-chart">
+    <figure className={hovering ? 'board-chart board-chart--hovering' : 'board-chart'}>
       <table
         className="chart-table chart-throughput"
         aria-label={`Median submitted updates per second by frontend${where}`}
