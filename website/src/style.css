@@ -1187,6 +1187,15 @@ pre {
 .chart-row-hover .chart-bar {
   opacity: 1;
 }
+/* While a frontend is being inspected (hovered), the winner row drops its
+   standing emphasis so only the hovered row stands out. The hovered row keeps
+   its highlight even when it is the winner. */
+.board-chart--hovering .chart-row-winner:not(.chart-row-hover) .chart-label {
+  font-weight: 400 !important;
+}
+.board-chart--hovering .chart-row-winner:not(.chart-row-hover) .chart-bar {
+  opacity: 0.45;
+}
 .chart-row {
   transition: background 0.12s ease;
 }
@@ -1320,6 +1329,22 @@ pre {
   width: 100%;
   height: auto;
   overflow: visible;
+}
+/* Radar card: the triangle sits left and its readout fills the space to the
+   right; on a narrow card (e.g. beside the scatter) the readout wraps below. */
+.profile-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 18px;
+}
+.profile-body svg {
+  flex: 0 0 auto;
+  width: min(210px, 100%);
+}
+.profile-readout {
+  flex: 1 1 190px;
+  min-width: 0;
 }
 .profile-title {
   font-size: 12px;
