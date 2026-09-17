@@ -37,15 +37,18 @@ export async function digest(value: string): Promise<string> {
 // Normalize the reported windowing system to the submission's protocol names.
 function displayProtocol(metadata: RecordValue, provenance: RecordValue): string | null {
   const runtime = record(record(provenance.preflight).runtime);
-  const reported =
-    string(metadata.qt_platform_plugin) ??
-    string(metadata.display_protocol) ??
-    string(record(runtime.display).display_protocol);
-  return reported === 'cocoa' || reported === 'windows'
+  const reported = string(metadata.qt_platform_plugin) ?? string(metadata.display_protocol);
+  // "browser" identifies the adapter, not its windowing system. Use the worker's
+  // recorded desktop session (or preflight for older reports), never launch requests.
+  const protocol =
+    (reported === 'browser'
+      ? string(record(metadata.display_session).display_protocol)
+      : reported) ?? string(record(runtime.display).display_protocol);
+  return protocol === 'cocoa' || protocol === 'windows'
     ? 'native'
-    : reported === 'xcb'
+    : protocol === 'xcb'
       ? 'x11'
-      : reported;
+      : protocol;
 }
 // summary.json rows carry the workload plus a `generation` counter; only the published
 // fields are exported, and summaries written before plot counts existed mean one plot.
