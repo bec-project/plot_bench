@@ -9,7 +9,7 @@ PLOTBENCH_COMPONENTS=()
 PLOTBENCH_DEV=(--no-dev)
 PLOTBENCH_BROWSER=bundled
 usage() {
-  echo 'Usage: ./scripts/setup [core|rust|pyqtgraph|pyqtgraph-gl|matplotlib|qtgraphs|qtgraphs-cpp|iced|fyne|jfreechart|plotly|all]... [--dev] [--browser bundled|system]'
+  echo 'Usage: ./scripts/setup [core|rust|pyqtgraph|pyqtgraph-gl|matplotlib|qtgraphs|qtgraphs-cpp|iced|fyne|fyne-wasm|jfreechart|plotly|all]... [--dev] [--browser bundled|system]'
 }
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -20,8 +20,8 @@ while [[ $# -gt 0 ]]; do
       shift; PLOTBENCH_BROWSER="$1"
       [[ "$1" == bundled || "$1" == system ]] || { usage >&2; exit 2; }
       ;;
-    all) PLOTBENCH_COMPONENTS+=(core rust pyqtgraph matplotlib qtgraphs qtgraphs-cpp iced fyne jfreechart plotly) ;;
-    core|rust|pyqtgraph|matplotlib|qtgraphs|qtgraphs-cpp|iced|fyne|jfreechart|plotly) PLOTBENCH_COMPONENTS+=("$1") ;;
+    all) PLOTBENCH_COMPONENTS+=(core rust pyqtgraph matplotlib qtgraphs qtgraphs-cpp iced fyne fyne-wasm jfreechart plotly) ;;
+    core|rust|pyqtgraph|matplotlib|qtgraphs|qtgraphs-cpp|iced|fyne|fyne-wasm|jfreechart|plotly) PLOTBENCH_COMPONENTS+=("$1") ;;
     pyqtgraph-gl) PLOTBENCH_COMPONENTS+=(pyqtgraph) ;;
     *) usage >&2; exit 2 ;;
   esac
@@ -71,7 +71,9 @@ echo "Using uv $PLOTBENCH_UV_VERSION at $PLOTBENCH_UV_BIN"
 "$PLOTBENCH_UV_BIN" python install "$PLOTBENCH_PYTHON_VERSION" --no-bin
 # The core environment is the CLI/TUI entry point, so it always includes the TUI.
 PLOTBENCH_CORE_ARGS=(--locked --inexact --extra tui)
-selected plotly && PLOTBENCH_CORE_ARGS+=(--extra browser)
+if selected plotly || selected fyne-wasm; then
+  PLOTBENCH_CORE_ARGS+=(--extra browser)
+fi
 # Preserve previously installed optional components when adding another frontend.
 UV_PROJECT_ENVIRONMENT="$PLOTBENCH_ROOT/.envs/plotting-benchmark" "$PLOTBENCH_UV_BIN" sync --project core \
   --python "$PLOTBENCH_PYTHON_VERSION" "${PLOTBENCH_CORE_ARGS[@]}" "${PLOTBENCH_DEV[@]}"
@@ -94,6 +96,12 @@ if selected plotly; then
   "$PLOTBENCH_NODE" "$PLOTBENCH_NPM" ci --prefix frontends/plotly --cache "$PLOTBENCH_ROOT/.cache/npm" --no-audit --no-fund
   "$PLOTBENCH_NODE" "$PLOTBENCH_NPM" run build --prefix frontends/plotly
   .envs/plotting-benchmark/bin/python -m plotbench.provenance plotly
+fi
+if selected fyne-wasm; then
+  .envs/plotting-benchmark/bin/python frontends/fyne-wasm/build.py
+  .envs/plotting-benchmark/bin/python -m plotbench.provenance fyne-wasm
+fi
+if selected plotly || selected fyne-wasm; then
   if [[ "$PLOTBENCH_BROWSER" == bundled ]]; then
     .envs/plotting-benchmark/bin/python -m playwright install chromium
   else
@@ -116,7 +124,7 @@ if selected jfreechart; then
   .envs/plotting-benchmark/bin/python -m plotbench.provenance jfreechart
 fi
 if selected fyne; then
-  command -v go >/dev/null || { echo 'Fyne requires Go 1.26+ and a native C compiler; see docs/setup.md.' >&2; exit 1; }
+  command -v go >/dev/null || { echo 'Fyne requires Go 1.27+ and a native C compiler; see docs/setup.md.' >&2; exit 1; }
   # Keep downloaded modules, compiler artifacts and optional toolchains local.
   export GOPATH="$PLOTBENCH_ROOT/.cache/go"
   export GOCACHE="$PLOTBENCH_ROOT/.cache/go-build"
@@ -125,7 +133,9 @@ if selected fyne; then
     PLOTBENCH_GO_TAGS+=,wayland
   fi
   mkdir -p frontends/fyne/build
-  go -C frontends/fyne build -mod=readonly -trimpath -tags "$PLOTBENCH_GO_TAGS" -o build/plotbench-fyne .
+  # SIMD is the benchmark default; an explicit GOEXPERIMENT (including nosimd
+  # or an empty value for scalar reference builds) remains authoritative.
+  GOEXPERIMENT="${GOEXPERIMENT-simd}" go -C frontends/fyne build -mod=readonly -trimpath -tags "$PLOTBENCH_GO_TAGS" -o build/plotbench-fyne .
   .envs/plotting-benchmark/bin/python -m plotbench.provenance fyne
 fi
 if selected qtgraphs-cpp; then

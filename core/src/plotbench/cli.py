@@ -86,7 +86,7 @@ def main():
         help="browser diagnostic only; not comparable to visible GUIs",
     )
     run.add_argument(
-        "--browser-executable", type=Path, help="use this Chromium executable for Plotly"
+        "--browser-executable", type=Path, help="use this Chromium executable for browser frontends"
     )
     add_suite_options(run)
     report = sub.add_parser(
@@ -101,7 +101,7 @@ def main():
     demo.add_argument("--mode", choices=("stream", "replay"), default="stream")
     demo.add_argument("--url", default="http://127.0.0.1:8765")
     demo.add_argument(
-        "--browser-executable", type=Path, help="use this Chromium executable for Plotly"
+        "--browser-executable", type=Path, help="use this Chromium executable for browser frontends"
     )
     demo.add_argument(
         "--backend",
@@ -128,7 +128,9 @@ def main():
     doctor.add_argument("--frontends", nargs="+", choices=FRONTENDS)
     doctor.add_argument("--backends", nargs="+", choices=BACKENDS)
     doctor.add_argument("--browser-executable", type=Path)
-    doctor.add_argument("--headless", action="store_true", help="check a Plotly diagnostic runtime")
+    doctor.add_argument(
+        "--headless", action="store_true", help="check a browser diagnostic runtime"
+    )
     doctor.add_argument("--json", action="store_true", help="emit machine-readable check results")
     args = parser.parse_args()
     if args.command in ("run", "demo", "probe"):

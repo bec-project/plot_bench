@@ -141,7 +141,7 @@ function App({ options }: { options: Options }) {
       <div className="plot-group" aria-label="Waveform plots" ref={wave} hidden={activeView === 'image'} />
       <div className="plot-group" aria-label="Image plots" ref={image} hidden={activeView === 'waveform'} />
     </section>
-    <footer><span>Submitted updates · not displayed FPS</span><span>scattergl · heatmap / image</span></footer>
+    <footer><span>Submitted updates · not displayed FPS</span><span>scattergl · precolored image</span></footer>
   </main>;
 }
 

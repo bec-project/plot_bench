@@ -313,6 +313,61 @@ def test_same_browser_version_with_different_execution_settings_is_not_pooled(tm
     assert sorted(group["valid"] for group in groups) == [1, 2]
 
 
+@pytest.mark.parametrize("previous_mode", [None, "enabled"])
+def test_network_instrumentation_change_cannot_create_a_sustained_browser_result(
+    tmp_path, previous_mode
+):
+    folder = tmp_path / "run"
+    write_run(folder)
+    monitored = summarize_run(folder)
+    monitored.update(frontend="fyne-wasm", sustained_candidate=True)
+    monitored["metadata"]["browser_version"] = "123.0"
+    if previous_mode is not None:
+        monitored["metadata"]["browser_network_instrumentation"] = previous_mode
+    unmonitored = json.loads(json.dumps(monitored))
+    unmonitored["metadata"]["browser_network_instrumentation"] = "disabled"
+
+    groups = aggregate([monitored, unmonitored, monitored, unmonitored])
+
+    # Two repetitions per instrumentation mode cannot become four comparable
+    # repetitions, including when older telemetry did not record the mode.
+    assert sorted(group["valid"] for group in groups) == [2, 2]
+    assert len({group["context_id"] for group in groups}) == 2
+    assert not any(group["repeated_sustained_candidate"] for group in groups)
+
+
+@pytest.mark.parametrize(
+    "key,before,after",
+    [
+        ("image_conversion_kernel", "scalar-float64", "simd128-float32-wasm"),
+        ("image_conversion_strategy", "original", "packed-rgba"),
+        (
+            "shape_renderer_override",
+            {"requested_renderer": None, "requested_asynchronous": None, "applied_to_shapes": 0},
+            {
+                "requested_renderer": "software",
+                "requested_asynchronous": True,
+                "applied_to_shapes": 1,
+            },
+        ),
+    ],
+)
+def test_image_kernels_and_shape_overrides_are_separate_comparison_contexts(
+    tmp_path, key, before, after
+):
+    folder = tmp_path / "run"
+    write_run(folder)
+    base = summarize_run(folder)
+    base["metadata"][key] = before
+    changed = json.loads(json.dumps(base))
+    changed["metadata"][key] = after
+
+    groups = aggregate([base, changed, base])
+
+    assert sorted(group["valid"] for group in groups) == [1, 2]
+    assert len({group["context_id"] for group in groups}) == 2
+
+
 def test_workload_label_names_plot_and_curve_counts_only_when_they_exceed_one():
     base = {
         "view": "both",

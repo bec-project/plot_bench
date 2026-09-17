@@ -65,14 +65,14 @@ func TestWorkloadAndSubtitleSuffixes(t *testing.T) {
 	if got := workloadText(c); got != "30 Hz · 10000 points / replace · 512×512 / scalar" {
 		t.Fatal(got)
 	}
-	if got := waveformSubtitle(c); got != "10000 points · replace     x: 0 … 9999     y: −1.5 … 1.5" {
+	if got := waveformSubtitle(c); got != "10000 points · replace     x: 0 … 9999     y: -1.5 … 1.5" {
 		t.Fatal(got)
 	}
 	c.Curves, c.WaveformPlots, c.ImagePlots = 3, 2, 3
 	if got := workloadText(c); got != "30 Hz · 10000 points / replace · 2 plots × 3 curves · 512×512 / scalar · 3 plots" {
 		t.Fatal(got)
 	}
-	if got := waveformSubtitle(c); got != "10000 points · replace · 3 curves     x: 0 … 9999     y: −1.5 … 1.5" {
+	if got := waveformSubtitle(c); got != "10000 points · replace · 3 curves     x: 0 … 9999     y: -1.5 … 1.5" {
 		t.Fatal(got)
 	}
 	c.Curves, c.WaveformPlots = 4, 1
@@ -129,5 +129,26 @@ func TestBuildPlotsOrdersTitlesAndLaysOutRebuiltCards(t *testing.T) {
 	images[0].object.Refresh()
 	if s := images[0].image.Size(); s.Width <= first.Width || s.Height <= first.Height {
 		t.Fatal("single cell must use the whole grid", s)
+	}
+}
+
+func TestMultiPlotLongSubtitlesFitRequestedViewport(t *testing.T) {
+	c := Config{Hz: 30, View: "both", Points: 10000, WaveformMode: "append", WaveformPlots: 2, Curves: 3, ImagePlots: 3, Width: 256, Height: 256, ImageMode: "rgb"}
+	plots := container.NewGridWithColumns(1)
+	// Both frontends must honor 1100 pixels; allow the standard 24 pixel
+	// padding without enlarging native windows or overflowing browser canvases.
+	available := fyne.NewSize(1100-48, 500)
+	plots.Resize(available)
+	waves, images := buildPlots(c, plots)
+	if minimum := plots.MinSize(); minimum.Width > available.Width {
+		t.Fatalf("grid requires %.1f pixels, only %.1f available", minimum.Width, available.Width)
+	}
+	for _, card := range append(waves, images...) {
+		if right := card.object.Position().X + card.object.Size().Width; right > available.Width+0.01 {
+			t.Fatalf("plot card extends beyond requested viewport: %f", right)
+		}
+		if size := card.image.Size(); size.Width <= 0 || size.Height <= 0 {
+			t.Fatal("wrapping consumed the plot data area", size)
+		}
 	}
 }

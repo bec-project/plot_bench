@@ -188,14 +188,14 @@ func TestColorConversionAndRaster(t *testing.T) {
 		palette[i] = color.RGBA{uint8(i), 0, 0, 255}
 	}
 	f, _ := decode(testPacket(0, "both", "scalar"))
-	im := colorImage(f.imagePlot(0), f.Header.Config, palette)
+	im := colorImage(nil, f.imagePlot(0), f.Header.Config, &palette)
 	for i, v := range []uint8{0, 127, 255} {
 		if im.RGBAAt(i, 0).R != v {
 			t.Fatalf("LUT index %d: %v", i, im.RGBAAt(i, 0))
 		}
 	}
 	f, _ = decode(testPacket(0, "image", "rgb"))
-	im = colorImage(f.imagePlot(0), f.Header.Config, palette)
+	im = colorImage(im, f.imagePlot(0), f.Header.Config, &palette)
 	if im.RGBAAt(1, 0) != (color.RGBA{0, 255, 0, 255}) {
 		t.Fatal("RGB layout")
 	}
@@ -326,7 +326,7 @@ func TestMultiImageConversionPerPlot(t *testing.T) {
 	}
 	f, _ := decode(multiPacket(0, "image", "scalar", 1, 1, 3))
 	for p := 0; p < 3; p++ {
-		im := colorImage(f.imagePlot(p), f.Header.Config, palette)
+		im := colorImage(nil, f.imagePlot(p), f.Header.Config, &palette)
 		if im.Bounds().Dx() != 2 || im.Bounds().Dy() != 2 {
 			t.Fatal("image plot dimensions")
 		}
@@ -338,7 +338,7 @@ func TestMultiImageConversionPerPlot(t *testing.T) {
 		}
 	}
 	f, _ = decode(multiPacket(0, "image", "rgb", 1, 1, 2))
-	im := colorImage(f.imagePlot(1), f.Header.Config, palette)
+	im := colorImage(nil, f.imagePlot(1), f.Header.Config, &palette)
 	if im.RGBAAt(1, 1) != (color.RGBA{rgbSample(1, 3, 0), rgbSample(1, 3, 1), rgbSample(1, 3, 2), 255}) {
 		t.Fatal("RGB plot 1 pixel", im.RGBAAt(1, 1))
 	}

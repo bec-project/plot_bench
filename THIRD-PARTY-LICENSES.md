@@ -69,7 +69,7 @@ redistributing binaries or applications.
 - black: MIT License, see [here](https://github.com/psf/black/blob/main/LICENSE)
 - isort: MIT License, see [here](https://github.com/PyCQA/isort/blob/main/LICENSE)
 
-## Go / Fyne frontend
+## Go / Fyne frontends (native and WebAssembly)
 
 - Fyne: BSD-3-Clause, [license and bundled asset notices](https://github.com/fyne-io/fyne/blob/v2.8.1/LICENSE).
 - Gorilla WebSocket: BSD-2-Clause, [license](https://github.com/gorilla/websocket/blob/v1.5.3/LICENSE).
@@ -81,6 +81,10 @@ The complete module graph is pinned in `frontends/fyne/go.mod` and checked by
 `go.sum`. Fyne includes fonts and other assets with separate notices in its
 [AUTHORS and license directory](https://github.com/fyne-io/fyne/tree/v2.8.1).
 Redistributed Go binaries incorporate dependencies; retain their applicable notices.
+The `fyne-wasm` frontend builds from the same locked module graph and includes the
+Go toolchain's `wasm_exec.js` browser runtime under the Go BSD-3-Clause license.
+Browser transport uses the browser WebSocket API rather than Gorilla WebSocket.
+Its controlled browser uses the core's Playwright dependency listed above.
 
 ## Java / JFreeChart frontend
 

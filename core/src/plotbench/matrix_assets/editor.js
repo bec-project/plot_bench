@@ -431,6 +431,7 @@ const OPTION_TIPS = {
   iced: "Iced — native Rust GUI on wgpu.",
   jfreechart: "JFreeChart — Java/Swing, synchronous Java2D charts and image annotation (macOS or Linux XWayland).",
   fyne: "Fyne — Go GUI with custom CPU waveform rasterization and RGBA canvas images.",
+  "fyne-wasm": "Fyne WebAssembly — custom CPU waveform rasterization and RGBA canvas images displayed with browser WebGL.",
   plotly: "Plotly.js in a controlled browser.",
   // backends
   python: "The built-in Python source. Always available with a core install.",

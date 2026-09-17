@@ -86,6 +86,13 @@ Image levels always [0,1]. Use the same 256-entry colormap from `GET /api/colorm
 one-physical-pixel waveform stroke, no point markers, no data decimation, fixed
 ranges are the baseline.
 
+Scalar color mapping may use float32 arithmetic or renderer-native rounding. A
+rounding difference of at most one adjacent LUT entry is acceptable; bit-identical
+RGB output across adapters is not required. Keep the shared LUT, fixed levels,
+clamping and full-resolution input. This tolerance does not permit a smaller
+palette, downsampling or omitted pixels. Document the conversion arithmetic and
+any SIMD build variant, and include explicit conversion in image-update timing.
+
 Append mode describes a rolling window advanced by append_count samples each
 source tick. The source transmits the complete authoritative window in both modes,
 so dropped frames cannot corrupt history. Adapters may use native incremental APIs
@@ -232,6 +239,8 @@ All accept `--url`, `--mode stream|replay`, `--run-id`, `--duration` (seconds;
 0 means until closed), `--width` and `--height` (logical window size; defaults
 1100 and 820). PyQtGraph additionally accepts `--opengl`.
 Browser query fields: `url`, `mode`, `run_id`, `duration`, `width`, `height`.
+The browser frontends are `plotly` and `fyne-wasm`; the latter compiles the Go/Fyne
+renderer to WebAssembly and reports its own frontend and browser runtime identity.
 Run native graphical apps sequentially during measurements.
 
 ## Shared Python client API (core package)

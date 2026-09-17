@@ -8,6 +8,27 @@ import pytest
 from plotbench import cli, probe, runner, runtime
 
 
+@pytest.mark.parametrize("frontend", runtime.BROWSER_FRONTENDS)
+def test_browser_frontend_command_keeps_identity_and_launch_options(frontend, tmp_path):
+    command = runner.frontend_command(
+        frontend,
+        "http://localhost:8765",
+        "replay",
+        "browser-test",
+        3,
+        headless=True,
+        screenshot=tmp_path / "preview.png",
+        browser_executable="/custom/chromium",
+    )
+    assert command[1:5] == ["-m", "plotbench.browser_worker", "--frontend", frontend]
+    assert command[command.index("--mode") + 1] == "replay"
+    assert command[command.index("--run-id") + 1] == "browser-test"
+    assert command[command.index("--duration") + 1] == "3"
+    assert "--headless" in command
+    assert command[command.index("--screenshot") + 1] == str(tmp_path / "preview.png")
+    assert command[command.index("--browser-executable") + 1] == "/custom/chromium"
+
+
 @pytest.mark.parametrize("kind", ["run", "probe"])
 def test_failed_preflight_leaves_no_result_directory(tmp_path, monkeypatch, kind):
     suite = tmp_path / "suite.json"

@@ -1,4 +1,5 @@
 import os
+import runpy
 import shutil
 import subprocess
 from pathlib import Path
@@ -294,14 +295,18 @@ def test_cpp_setup_failure_explains_how_to_select_a_qt_sdk(
 
 
 @pytest.mark.parametrize("system,tag", [("Linux", ",wayland"), ("Darwin", "")])
+@pytest.mark.parametrize("experiment", [None, "", "nosimd", "simd"])
 def test_fyne_setup_uses_local_caches_readonly_modules_and_native_tags(
-    tmp_path, setup_root, cpp_toolchain, system, tag
+    tmp_path, setup_root, cpp_toolchain, system, tag, experiment
 ):
     log = tmp_path / "calls"
     environment = setup_environment(cpp_toolchain, log)
+    environment.pop("GOEXPERIMENT", None)
+    if experiment is not None:
+        environment["GOEXPERIMENT"] = experiment
     go = cpp_toolchain / "go"
     go.write_text(
-        '#!/bin/sh\nprintf "go %s GOPATH=%s GOCACHE=%s\\n" "$*" "$GOPATH" "$GOCACHE" '
+        '#!/bin/sh\nprintf "go %s GOPATH=%s GOCACHE=%s GOEXPERIMENT=%s\\n" "$*" "$GOPATH" "$GOCACHE" "$GOEXPERIMENT" '
         '>> "$PLOTBENCH_SETUP_LOG"\n'
     )
     go.chmod(0o755)
@@ -320,3 +325,98 @@ def test_fyne_setup_uses_local_caches_readonly_modules_and_native_tags(
     assert f"build -mod=readonly -trimpath -tags release,no_animations{tag}" in commands
     assert f"GOPATH={setup_root}/.cache/go" in commands
     assert f"GOCACHE={setup_root}/.cache/go-build" in commands
+    assert f"GOEXPERIMENT={'simd' if experiment is None else experiment}\n" in commands
+
+
+@pytest.mark.parametrize("browser", ["bundled", "system"])
+def test_fyne_wasm_setup_installs_browser_support_without_node(
+    tmp_path, setup_root, cpp_toolchain, browser
+):
+    log = tmp_path / "calls"
+    python = setup_root / ".envs/plotting-benchmark/bin/python"
+    write_tool(python, "python")
+    npm = cpp_toolchain / "npm"
+    npm.write_text("#!/bin/sh\necho 'WASM setup must not use npm' >&2\nexit 1\n")
+    npm.chmod(0o755)
+    result = subprocess.run(
+        ["bash", "scripts/setup", "fyne-wasm", "--browser", browser],
+        cwd=setup_root,
+        env=setup_environment(cpp_toolchain, log),
+        text=True,
+        capture_output=True,
+    )
+    assert result.returncode == 0, result.stderr
+    calls = log.read_text().splitlines()
+    assert "--extra browser" in next(call for call in calls if call.startswith("sync "))
+    assert "python frontends/fyne-wasm/build.py" in calls
+    assert "python -m plotbench.provenance fyne-wasm" in calls
+    assert ("python -m playwright install chromium" in calls) is (browser == "bundled")
+
+
+@pytest.mark.parametrize("runtime_directory", ["lib/wasm", "misc/wasm"])
+@pytest.mark.parametrize("license_in_parent", [False, True])
+@pytest.mark.parametrize("experiment", [None, "", "nosimd", "simd"])
+def test_fyne_wasm_builder_uses_selected_go_runtime_and_isolated_cross_compilation(
+    tmp_path, monkeypatch, runtime_directory, license_in_parent, experiment
+):
+    monkeypatch.delenv("GOEXPERIMENT", raising=False)
+    if experiment is not None:
+        monkeypatch.setenv("GOEXPERIMENT", experiment)
+    root = tmp_path / "checkout"
+    here = root / "frontends/fyne-wasm"
+    here.mkdir(parents=True)
+    (here / "index.html").write_text("browser entrypoint")
+    (here / "src").mkdir()
+    (here / "src/main.js").write_text("browser launcher")
+    (here / "dist").mkdir()
+    (here / "dist/stale.js").write_text("obsolete output")
+    goroot = tmp_path / "selected-go-toolchain"
+    runtime = goroot / runtime_directory / "wasm_exec.js"
+    runtime.parent.mkdir(parents=True)
+    runtime.write_text("matching Go runtime")
+    ((goroot.parent if license_in_parent else goroot) / "LICENSE").write_text("Go license")
+    build = Path(__file__).resolve().parents[2] / "frontends/fyne-wasm/build.py"
+    builder = runpy.run_path(str(build))
+    globals_ = builder["main"].__globals__
+    monkeypatch.setitem(globals_, "ROOT", root)
+    monkeypatch.setitem(globals_, "HERE", here)
+    monkeypatch.setattr(shutil, "which", lambda name: "/selected/go")
+    commands = []
+
+    def check_environment(command, env):
+        assert command[:3] == ["/selected/go", "-C", str(root / "frontends/fyne")]
+        assert env["GOPATH"] == str(root / ".cache/go")
+        assert env["GOMODCACHE"] == str(root / ".cache/go/pkg/mod")
+        assert env["GOCACHE"] == str(root / ".cache/go-build")
+        assert (env["GOOS"], env["GOARCH"], env["CGO_ENABLED"]) == ("js", "wasm", "0")
+        assert env["GOEXPERIMENT"] == ("simd" if experiment is None else experiment)
+        commands.append(command)
+
+    def go_environment(command, *, env, text):
+        check_environment(command, env)
+        assert command[3:] == ["env", "GOROOT"]
+        return str(goroot) + "\n"
+
+    def go_build(command, *, env, check):
+        check_environment(command, env)
+        assert check is True
+        assert command[3:8] == [
+            "build",
+            "-mod=readonly",
+            "-trimpath",
+            "-tags",
+            "release,no_animations",
+        ]
+        assert command[-1] == "."
+        Path(command[command.index("-o") + 1]).write_bytes(b"\0asm")
+
+    monkeypatch.setattr(subprocess, "check_output", go_environment)
+    monkeypatch.setattr(subprocess, "run", go_build)
+    builder["main"]()
+    assert len(commands) == 2
+    assert (here / "dist/plotbench-fyne.wasm").read_bytes() == b"\0asm"
+    assert (here / "dist/wasm_exec.js").read_text() == "matching Go runtime"
+    assert (here / "dist/LICENSE-go.txt").read_text() == "Go license"
+    assert (here / "dist/index.html").read_text() == "browser entrypoint"
+    assert (here / "dist/src/main.js").read_text() == "browser launcher"
+    assert not (here / "dist/stale.js").exists()

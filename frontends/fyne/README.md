@@ -2,7 +2,7 @@
 
 Independent Go executable using **Fyne 2.8.1**, its GLFW/OpenGL desktop driver,
 and Gorilla WebSocket. `go.mod` selects dependency versions and `go.sum` verifies
-their contents. Go 1.26+ and a native C compiler are required. Setup keeps Go
+their contents. Go 1.27+ and a native C compiler are required. Setup keeps Go
 modules and build caches inside the repository and builds with `release` and
 `no_animations`; on Linux it also selects the `wayland` build tag.
 
@@ -29,7 +29,7 @@ curves plus several images); to see it on screen run
 
 ![Fyne with two three-curve waveform plots and three images](screenshots/fyne-multi-plot.png)
 
-The capture above is untimed visual QA of the 2 × 3-curve + 3-image smoke workload on macOS (2× pixel ratio).
+The capture above is untimed visual QA of the 2 × 3-curve + 3-image smoke workload on macOS (1× pixel ratio, 1100×820 window).
 
 The decoder requires header `version == 2` and rejects v1 frames. The
 configuration must carry `curves` (1 … 64), `waveform_plots` (1 … 16) and
@@ -80,6 +80,36 @@ source resolution using the source's exact 256-entry LUT and
 `canvas.Image` presents every texture using nearest-neighbour sampling; the
 scientific images retain their aspect ratio. Only the currently adopted CPU images
 are submitted to Fyne, including during cyclic replay.
+
+Each image plot reuses its RGBA pixel storage while the dimensions match. Every
+adopted frame still converts every source pixel, including repeated replay input;
+the cache holds storage, not preconverted frames. Dimension changes allocate a new
+buffer inside conversion timing. Scalar and RGB use separate loops. The scalar
+fallback retains the original float64 `floor(clamp(value,0,1)*255)` result, with
+NaN mapped to zero. The source palette is passed by reference; each conversion
+prepacks its 256 entries into opaque RGBA words.
+
+Setup enables `GOEXPERIMENT=simd` by default. ARM64 and WebAssembly use 128-bit
+float32 SIMD conversion. On x86-64, runtime CPU/OS checks select 512-bit conversion
+when Go's bundled AVX-512 capability is available (F, CD, BW, DQ and VL plus OS
+support for opmask/ZMM state), otherwise 128-bit conversion with AVX. The AVX
+fallback does not require AVX2 or AVX-512; older x86-64 CPUs use the scalar fallback.
+Other architectures, including 32-bit x86, also retain the scalar fallback.
+SIMD keeps the same source palette and full
+pixel count, allowing at most one adjacent palette entry of rounding difference
+from the scalar float64 conversion. RGB conversion and Fyne rendering are unchanged.
+This is an experimental Go API; its build settings must be recorded separately in results.
+Metadata identifies the selected `image_conversion_kernel` and Go build settings.
+Build with `./scripts/setup fyne`; use `GOEXPERIMENT=nosimd ./scripts/setup fyne`
+for the explicit scalar comparison. An explicitly empty `GOEXPERIMENT` also opts
+out; invoking `go build` directly does not enable the experiment automatically.
+
+Buffer writes stay inside the existing `fyne.Do` callback. The pinned Fyne driver
+serializes these callbacks with canvas painting and texture upload, so it finishes
+reading the CPU buffer before a later callback rewrites it. `canvas.Image.Refresh`
+still invalidates the texture when the image pointer is unchanged; Fyne's normal
+texture recreation, upload and rendering remain in use. Receiver buffers and
+waveform raster allocation are unchanged.
 
 One update per frame covers every plot. `update_ms` includes the CPU rasterization
 of every waveform plot, the conversion of every image plot, assignment and canvas
@@ -135,6 +165,8 @@ replay, per-plot LUT/RGB conversion, full-data raster endpoints, per-curve colou
 and overdraw order, the grid-columns rule with equal padded cells, card order and
 titles after a rebuild, workload/subtitle suffixes, mailbox skips, WebSocket ACK
 and shutdown, replay scheduling and final/error telemetry. Native visible validation is separate.
+Image conversion tests also check buffer reuse, changing pixels and image dimensions,
+and scalar boundaries against the original conversion formula on native Go and WASM.
 `--screenshot PATH` captures and closes an **untimed demo** after two seconds;
 it is rejected for a non-demo run or positive duration. Screenshots are canvas QA,
 not evidence of compositor presentation.
@@ -152,11 +184,15 @@ References: [Fyne canvas images](https://docs.fyne.io/canvas/image/),
 
 The adapter selects scalar versus RGB conversion once per image,
 prepacks the scalar LUT into opaque RGBA words, and uses explicit clamp branches
-with truncation for positive values below one. Multiplication remains float64,
+with truncation for positive values below one. Scalar fallback multiplication is float64,
 matching the previous LUT boundary behavior for float32 source samples; NaN and
 negative values map to entry zero, and values at or above one map to entry 255.
 Little-endian word stores produce portable RGBA byte order without unsafe casts.
-Each frame still owns a fresh buffer because texture upload is deferred.
-Runtime metadata records `image_conversion_strategy=branched-clamp-packed-rgba-v1`.
+The owned RGBA storage is reused at matching dimensions under the serialized
+Fyne callback/upload contract described above; every pixel is rewritten.
+Runtime metadata records `image_conversion_strategy=branched-clamp-packed-rgba-v1`
+for the scalar kernel, `simd128-float32-packed-rgba-v1` for 128-bit SIMD, or
+`simd512-float32-packed-rgba-v1` for AVX-512, alongside `image_conversion_kernel`
+and build settings.
 `BenchmarkColorImage4MP` is an isolated deterministic conversion microbenchmark;
 its fixture is never used as a frontend campaign source.

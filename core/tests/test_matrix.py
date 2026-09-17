@@ -219,7 +219,8 @@ def test_presets_gallery_summarizes_scenarios_and_tolerates_broken_files(tmp_pat
             assert presets[0]["official"] is True
             assert presets[1]["filename"] == "aaa-first.json"
             assert presets[0]["name"] == "Plotbench baseline"
-            assert presets[0]["run_count"] == 7 * len(FRONTENDS) * 3
+            baseline = json.loads((scenarios / "baseline.json").read_text())
+            assert presets[0]["run_count"] == 7 * len(baseline["frontends"]) * 3
             assert [preset["official"] for preset in presets[1:]] == [False] * (len(presets) - 1)
             assert [preset["path"] for preset in presets if preset["source"] == "custom"] == [
                 "scenarios_custom/baseline.json",

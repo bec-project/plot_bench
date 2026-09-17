@@ -10,12 +10,10 @@ import (
 	"math"
 	"net/url"
 	"os"
-	"os/signal"
 	"runtime"
 	"runtime/debug"
 	"strings"
 	"sync/atomic"
-	"syscall"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -58,6 +56,9 @@ func newPlotCard(title string, fill canvas.ImageFill) *plotCard {
 	img.FillMode = fill
 	t := widget.NewLabelWithStyle(title, fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 	s := widget.NewLabel("")
+	// Long subtitles must not enlarge a native window or overflow a fixed
+	// browser viewport, since that would change the compared data areas.
+	s.Wrapping = fyne.TextWrapWord
 	dataLayout := &dataAreaLayout{size: fyne.NewSize(1, 1)}
 	body := container.New(dataLayout, img)
 	return &plotCard{image: img, title: t, subtitle: s, dataLayout: dataLayout,
@@ -116,7 +117,14 @@ func runtimeInfo() map[string]any {
 	if strings.Contains(tags, ",release,") {
 		profile = "release"
 	}
-	return map[string]any{"versions": versions(), "display_protocol": displayProtocol, "graphics_api": "OpenGL via Fyne GLFW", "image_conversion_strategy": "branched-clamp-packed-rgba-v1", "build_profile": profile, "graphics_build_settings": settings, "headless": strings.Contains(tags, ",ci,")}
+	strategy := "branched-clamp-packed-rgba-v1"
+	kernel := imageConversionKernel()
+	if strings.HasPrefix(kernel, "simd512-") {
+		strategy = "simd512-float32-packed-rgba-v1"
+	} else if kernel != "scalar-float64" {
+		strategy = "simd128-float32-packed-rgba-v1"
+	}
+	return map[string]any{"versions": versions(), "display_protocol": displayProtocol, "graphics_api": graphicsAPI, "image_conversion_strategy": strategy, "build_profile": profile, "graphics_build_settings": settings, "image_conversion_kernel": kernel, "headless": strings.Contains(tags, ",ci,")}
 }
 
 func main() {
@@ -139,9 +147,9 @@ func main() {
 		os.Exit(2)
 	}
 	source := newSource(*base, *mode)
-	a := app.NewWithID("org.plotbench.fyne")
+	a := app.NewWithID("org.plotbench." + frontendName)
 	a.Settings().SetTheme(benchTheme{theme.DefaultTheme()})
-	w := a.NewWindow("Plotbench · Fyne")
+	w := a.NewWindow("Plotbench · " + frontendTitle)
 	w.Resize(fyne.NewSize(float32(*width), float32(*height)))
 	w.CenterOnScreen()
 	// Plot widgets are created from the first frame's configuration and rebuilt
@@ -199,15 +207,16 @@ func main() {
 		controls.Disable()
 	}
 	header := container.NewVBox(
-		container.NewHBox(widget.NewLabelWithStyle("Fyne · "+*mode, fyne.TextAlignLeading, fyne.TextStyle{Bold: true}), layout.NewSpacer(), status, controls),
+		container.NewHBox(widget.NewLabelWithStyle(frontendTitle+" · "+*mode, fyne.TextAlignLeading, fyne.TextStyle{Bold: true}), layout.NewSpacer(), status, controls),
 		container.NewHBox(workload, layout.NewSpacer(), one, two),
 		container.NewGridWithColumns(4, submitted, update, skips, age))
 	footer := widget.NewLabel("Submitted updates · not displayed FPS")
 	w.SetContent(container.New(layout.NewCustomPaddedLayout(24, 24, 24, 24), container.NewBorder(header, footer, nil, nil, plots)))
 	meta := runtimeInfo()
 	meta["renderer"] = "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve"
-	meta["measurement_stage"] = "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, OpenGL draw and presentation"
-	meta["update_strategy"] = "authoritative full windows; every waveform sample of every curve; per-update CPU RGBA image per image plot; no GPU replay preload"
+	meta["measurement_stage"] = "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation"
+	meta["update_strategy"] = "authoritative full windows; every waveform sample of every curve; per-image-plot reusable CPU RGBA storage, every pixel converted on every adopted frame; Fyne canvas.Image refresh and deferred texture upload; no GPU replay preload"
+	meta["image_conversion"] = "cached source palette prepacked per scalar conversion; scalar/RGB conversion writes every pixel into RGBA storage reused at identical dimensions; allocation on first use or dimension change is timed; all writes occur inside the serialized Fyne event callback"
 	meta["renderer_environment"] = map[string]string{"FYNE_SCALE": os.Getenv("FYNE_SCALE"), "LIBGL_ALWAYS_SOFTWARE": os.Getenv("LIBGL_ALWAYS_SOFTWARE"), "GALLIUM_DRIVER": os.Getenv("GALLIUM_DRIVER")}
 	meta["display_protocol_requested"] = displayProtocol
 	metrics := newMetrics(*base, *mode, *runID, meta)
@@ -225,7 +234,7 @@ func main() {
 		closed = true
 		reason = why
 		close(stop)
-		w.Close()
+		closeWindow(w)
 	}
 	w.SetCloseIntercept(func() { shutdown("user") })
 	source.start()
@@ -280,7 +289,10 @@ func main() {
 			}
 			for p, card := range imgCards {
 				before := time.Now()
-				card.image.Image = colorImage(f.imagePlot(p), c, source.palette)
+				// Fyne's queued callbacks and canvas upload run serially in the pinned
+				// driver. Only mutate this owned raster here, never in the receiver.
+				previous, _ := card.image.Image.(*image.RGBA)
+				card.image.Image = colorImage(previous, f.imagePlot(p), c, &source.palette)
 				conversion += float64(time.Since(before)) / 1e6
 				card.image.Refresh()
 			}
@@ -298,6 +310,9 @@ func main() {
 			lastSample = Sample{Seq: f.Seq, Generation: f.Header.Generation, ClientTime: float64(now.UnixNano()) / 1e6, Update: elapsed, Conversion: conversion, ReceiveAge: receiveAge, Skipped: skipped}
 			metrics.record(lastSample)
 			count++
+			if count == 1 {
+				notifyLifecycle("started", lifecycleState{Submitted: count, Running: true})
+			}
 			skippedTotal += skipped
 			if count == 1 || now.Sub(lastHUD) >= 500*time.Millisecond {
 				rate := float64(count-hudCount) / math.Max(.001, now.Sub(lastHUD).Seconds())
@@ -334,6 +349,7 @@ func main() {
 					r := math.Min(float64(v.Width*scale)/float64(c.Width), float64(v.Height*scale)/float64(c.Height))
 					viewports["image"] = []float64{float64(c.Width) * r, float64(c.Height) * r}
 				}
+				metrics.set(platformMetadata())
 				metrics.set(map[string]any{"render_contract": "data-area-v2", "plot_viewports_all": allDataAreas(waveCards, imgCards, c, scale), "config": c, "pixel_ratio": scale, "viewport_size": []float32{size.Width, size.Height}, "plot_viewports": viewports, "plot_counts": map[string]int{"waveform": waveforms, "image": images}, "curves": c.Curves, "display": nil, "receiver_connection_epoch": reconnects + 1, "replay_frames": replayCount, "replay_bytes": replayBytes})
 			}
 		}
@@ -386,36 +402,40 @@ func main() {
 			}
 		}
 	}()
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
-	defer signal.Stop(signals)
-	go func() {
-		select {
-		case <-stop:
-			return
-		case <-signals:
-			fyne.Do(func() { shutdown("user") })
+	removeStopHandler := installStopHandler(stop,
+		func() { fyne.Do(func() { shutdown("user") }) },
+		func(err error) { fyne.Do(func() { failure = err; shutdown("error") }) },
+	)
+	defer removeStopHandler()
+	runWindow(w, stop, func() {
+		if !closed {
+			close(stop)
 		}
-	}()
-	w.ShowAndRun()
-	if !closed {
-		close(stop)
-	}
-	<-workerDone
-	source.close()
-	active := 0.0
-	if !first.IsZero() {
-		active = time.Since(first).Seconds()
-	}
-	source.mu.Lock()
-	reconnects := source.reconnects
-	source.mu.Unlock()
-	metrics.set(map[string]any{"termination_reason": reason, "active_seconds": active, "receiver_connection_epoch": reconnects + 1})
-	if e := metrics.close(); e != nil {
-		failure = e
-	}
-	if failure != nil {
-		fmt.Fprintln(os.Stderr, failure)
-		os.Exit(1)
-	}
+		<-workerDone
+		source.close()
+		active := 0.0
+		if !first.IsZero() {
+			active = time.Since(first).Seconds()
+		}
+		source.mu.Lock()
+		reconnects := source.reconnects
+		source.mu.Unlock()
+		metrics.set(map[string]any{"termination_reason": reason, "active_seconds": active, "receiver_connection_epoch": reconnects + 1})
+		if e := metrics.close(); e != nil {
+			failure = e
+		}
+		finalState := lifecycleState{Submitted: count, Complete: failure == nil && reason == "duration", StopReason: reason, DroppedMetrics: metrics.lost}
+		if failure != nil {
+			finalState.StopReason = "error"
+			finalState.Error = failure.Error()
+		}
+		if metrics.err != nil {
+			finalState.MetricsError = metrics.err.Error()
+		}
+		notifyLifecycle("stopped", finalState)
+		if failure != nil {
+			fmt.Fprintln(os.Stderr, failure)
+			os.Exit(1)
+		}
+	})
 }

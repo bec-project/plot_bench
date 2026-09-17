@@ -42,6 +42,16 @@ jobs:
         run: .envs/plotting-benchmark/bin/python -m playwright install-deps chromium
       - name: Core and source conformance
         run: .envs/plotting-benchmark/bin/python -m pytest core/tests
+      - name: Browser controller tests with Playwright's bundled Node
+        run: |
+          .envs/plotting-benchmark/bin/python - <<'PY'
+          import subprocess
+          from pathlib import Path
+          import playwright
+
+          node = Path(playwright.__file__).parent / "driver" / "node"
+          subprocess.run([str(node), "--test", "core/tests/browser_driver.test.cjs"], check=True)
+          PY
       - name: Web UI type checking and committed bundle verification
         run: |
           export PATH="$PWD/.envs/node/node_modules/node/bin:$PATH"
@@ -191,15 +201,55 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential pkg-config libgl1-mesa-dev \
             libegl1-mesa-dev libwayland-dev libxkbcommon-dev wayland-protocols
-      - name: Build native frontend and provenance
-        run: ./scripts/setup fyne
-      - name: Go protocol, transport, raster and telemetry tests (test driver)
+      - name: Build native and WebAssembly frontends with provenance
+        run: ./scripts/setup fyne fyne-wasm
+      - name: Browser system libraries
+        if: runner.os == 'Linux'
+        run: .envs/plotting-benchmark/bin/python -m playwright install-deps chromium
+      - name: Scalar reference protocol, transport, raster and telemetry tests
         run: |
           go -C frontends/fyne test -race -tags ci ./...
           go -C frontends/fyne vet -tags ci ./...
           test -z "$(gofmt -l frontends/fyne/*.go)"
           go -C frontends/fyne mod verify
           git diff --exit-code -- frontends/fyne/go.mod frontends/fyne/go.sum
+      - name: WebAssembly protocol and browser WebSocket callback tests
+        run: |
+          GOOS=js GOARCH=wasm go -C frontends/fyne test -mod=readonly \
+            -exec "$(go env GOROOT)/lib/wasm/go_js_wasm_exec" \
+            source.go protocol.go render.go render_float32.go render_scalar.go \
+            stream_wasm.go protocol_test.go render_test.go render_conversion_test.go \
+            render_benchmark_test.go stream_wasm_test.go
+      - name: Default SIMD conversion and x86 fallback checks
+        env:
+          GOEXPERIMENT: simd
+        run: |
+          go -C frontends/fyne test -race -tags ci ./...
+          go -C frontends/fyne vet -tags ci ./...
+          if [ "$(go env GOARCH)" = amd64 ]; then
+            GODEBUG=cpu.avx512f=off go -C frontends/fyne test -tags ci ./...
+            GODEBUG=cpu.avx=off go -C frontends/fyne test -tags ci ./...
+          fi
+          GOOS=js GOARCH=wasm go -C frontends/fyne test -mod=readonly \
+            -exec "$(go env GOROOT)/lib/wasm/go_js_wasm_exec" \
+            source.go protocol.go render.go render_float32.go render_simd.go \
+            stream_wasm.go protocol_test.go render_test.go render_conversion_test.go \
+            render_benchmark_test.go stream_wasm_test.go
+      - name: Browser controller tests with Playwright's bundled Node
+        run: |
+          .envs/plotting-benchmark/bin/python - <<'PY'
+          import subprocess
+          from pathlib import Path
+          import playwright
+
+          node = Path(playwright.__file__).parent / "driver" / "node"
+          subprocess.run([str(node), "--test", "core/tests/browser_driver.test.cjs"], check=True)
+          PY
+      - name: Fyne WebAssembly lifecycle smoke (headless, not performance)
+        run: |
+          ./scripts/plotbench run --suite scenarios/smoke.json --frontends fyne-wasm \
+            --backends python --modes stream replay --limit 1 \
+            --warmup 0.5 --duration 2 --repetitions 1 --cooldown 0 --headless
 
   jfreechart:
     name: JFreeChart Java (${{ matrix.os }}, JDK ${{ matrix.java }})

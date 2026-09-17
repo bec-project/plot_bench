@@ -63,6 +63,8 @@ the outer chart boxes. All three describe the **first** plot of each kind (every
 same size); `plot_counts: {waveform, image}` records the visible widget counts (0 for a kind hidden
 by `view`) and `curves` the curves per waveform plot. Hidden plots are null. Data areas use Plotly 4's resolved axis lengths,
 including aspect-ratio domain constraints; unavailable diagnostics remain null rather than guessed.
+`render_contract` identifies `data-area-v2`; `plot_viewports_all` independently records
+every visible plot's data area, and reports reject mismatched or undersized geometry.
 Keep the window visible and foreground during comparative performance measurements;
 headless runs are useful for functional smoke tests.
 
@@ -76,15 +78,18 @@ values.
 
 The source configuration carries `waveform_plots` (1–16), `curves` per waveform plot (1–64) and
 `image_plots` (1–16). The page shows one card per plot: waveform plots first (`Waveform 1..N`), then
-image plots (`Image 1..M`); a single plot of a kind is titled plainly `Waveform` / `Image`. Subtitles
-show `points · mode` (plus `· K curves` above one curve) and `width × height · mode`. The visible
+image plots. Single-plot cards use the titles `Waveform` / `Image`. Waveform subtitles
+show `points · mode` (plus `· K curves` above one curve); single-image subtitles show
+`width × height · mode`. Multi-plot image cards hide headings and axes to preserve the
+shared data-area layout. The visible
 plots (`n = N + M`, counting only the kinds enabled by `view`) fill a CSS grid with
 `columns = ceil(sqrt(n))` equal-width columns (`repeat(columns, minmax(0, 1fr))`) and
 `ceil(n / columns)` equal-height rows, row-major, trailing cells empty: 1 → 1×1, 2 → side by side,
 3–4 → 2×2, 5–6 → 3×2, 9 → 3×3, up to 6×6 for 16 + 16. `gridColumns` in
 [`src/plot-grid.ts`](src/plot-grid.ts) is the pure rule; the `.plots` section receives the column
-template as an inline style. Card headings truncate with an ellipsis rather than growing, so four or
-more columns still fit at 1100 × 820.
+template as an inline style. Visible card headings truncate with an ellipsis rather than growing.
+The geometry contract rejects dense grids whose slots fall below 32 logical pixels;
+such workloads need a larger viewport.
 
 Every curve `c` of every waveform plot is a separate `scattergl` trace coloured with the shared
 palette `CURVE_COLORS[c % 8]` (`#64dccc`, `#f5c76e`, `#7aa6ff`, `#ff9d7a`, `#c39bff`, `#9be564`,
@@ -101,13 +106,13 @@ generation and cannot lag behind a React render.
 
 ![Plotly with two three-curve waveform plots and three images](screenshots/plotly-multi-plot.png)
 
-The capture above is untimed visual QA of the 2 × 3-curve + 3-image smoke workload on macOS (2× pixel ratio).
+The capture above is post-completion visual QA of the 2 × 3-curve + 3-image smoke workload on macOS (1× pixel ratio, 1100×820 viewport).
 
 **Cost:** each plot is its own Plotly figure, so one frame costs `waveform_plots + image_plots`
 `Plotly.react` calls (N + M per frame), each with a full relayout; `update_ms` covers all of them,
-`conversion_ms` covers every image plot's row views / RGB triples, and `update_complete_ms` waits for
-all N + M returned Promises. Curves add traces to a figure, not figures; images are sliced from the
-plot-major payload with `subarray` without copying.
+`conversion_ms` covers every image plot's RGBA mapping and PNG encoding, and `update_complete_ms`
+waits for all N + M returned Promises. Curves add traces to a figure, not figures; each image reads
+its full block of the plot-major payload directly into a reusable RGBA buffer.
 
 The controls change the **shared source** through `POST /api/config`, including frequency, point
 count, append size, curves per plot, waveform and image plot counts, image dimensions and scalar/RGB
@@ -151,33 +156,37 @@ overhead retained and disclosed; it is not a detached plotting microbenchmark.
 | --- | --- |
 | Waveform replace | One `scattergl` trace per curve (subarray views of the `[plots, curves, points]` payload), full authoritative float32 window supplied to one `Plotly.react` per waveform plot |
 | Waveform append | Same full-window submission, displaying the source's rolling window |
-| Scalar image | `heatmap` per image plot, row views over that plot's block of the float32 buffer, shared color table, fixed `[0, 1]` |
-| RGB image | Native Plotly `image` trace per image plot, materialized nested RGB triples from that plot's block |
+| Scalar image | Direct lookup through the shared 256-color palette into RGBA, full-resolution PNG supplied to one Plotly `image.source` trace per image plot |
+| RGB image | Interleaved RGB expanded directly into opaque RGBA, full-resolution PNG supplied to one Plotly `image.source` trace per image plot |
 
 Append is a data-semantics comparison here: **this adapter does not use `extendTraces`**. Full
 replacement preserves fixed sample indices and recovers immediately after dropped frames. It does
 not represent the best possible performance of a separately optimized incremental Plotly adapter.
 Waveforms use no point markers or decimation, fixed axes and a one-physical-pixel line. Images use
-nearest-neighbor interpolation (`zsmooth: false`) and an equal spatial aspect ratio. The scalar
-colorscale uses repeated boundaries to match the core's discrete `floor(value * 255)` lookup.
+nearest-neighbor interpolation (`zsmooth: false`) and an equal spatial aspect ratio. Scalar values
+are clamped to `[0, 1]` and use the core's discrete `floor(value * 255)` lookup (NaN maps to zero).
 
-The RGB trace's `z` input requires nested pixel arrays, so this adapter converts the shared
-interleaved RGB buffer on every update. That allocation/conversion can be substantial at 2048²
-and is included in the measurements. Plotly also supports `image.source` data URIs; that would be
-a different adapter, with URI preparation/loading included in its measurements. The scalar image
-path uses typed-array row views, leaving color mapping and rasterization to Plotly. These results
-describe the selected trace APIs and do not establish a ceiling for optimized browser image paths.
+The adapter caches a packed 256-color RGBA palette and one canvas, context and `ImageData` buffer per
+image plot. It resizes the buffer when dimensions change and releases it when the plot is removed.
+Every adopted frame still converts every source pixel, calls `putImageData` and encodes a fresh
+full-resolution PNG data URI, including repeated replay frames. There is no rendered-frame cache
+or decimation. Plotly's public `image.source` API consumes this URI and performs its own image
+loading and internal canvas work. This avoids its native heatmap's general color mapping and the
+RGB `z` path's nested pixel arrays, but retains PNG encoding/decoding costs. Fyne uses the same
+palette lookup without the browser PNG stage. Metadata identifies the precolored image path so
+results remain distinguishable from the earlier native heatmap/RGB `z` implementation.
 
 * `update_ms`: monotonic elapsed time for conversion and the synchronous `Plotly.react` calls of
   every plot in the frame.
-* `conversion_ms`: preparing traces for all plots and curves, row views/RGB triples of every image
-  plot, layouts, visibility and the widget-set rebuild on a configuration change.
+* `conversion_ms`: preparing traces for all plots and curves, full-resolution RGBA conversion,
+  `putImageData` and PNG encoding of every image plot, layouts, visibility and the widget-set
+  rebuild on a configuration change. Scratch buffer allocation on first use or resize is included.
 * `draw_ms`: synchronous Plotly update calls; already included in `update_ms` and excludes waiting
   for their returned Promises. Adding it to `update_ms` would count that work twice.
 * `update_complete_ms`: elapsed time from adapter-call start through successful completion of all
   active Plotly Promises (one per plot). Includes conversion, synchronous calls, deferred library
-  work and wait. RGB rasterization/PNG creation can run after synchronous submission and is included
-  here. This is not GPU time, screen presentation time, or a measurement of CPU execution alone.
+  work and wait, including Plotly's image loading and internal canvas work after submission.
+  This is not GPU time, screen presentation time, or a measurement of CPU execution alone.
 * Submitted updates: increments after every active Plotly Promise resolves successfully. Calls are
   serialized until that point. Promise resolution is not a GPU fence or proof of screen presentation.
 * Skipped updates: source sequence gaps between submitted frames, reset when configuration changes.
@@ -212,6 +221,14 @@ the final frontend telemetry flush; preview work is outside the measurement wind
 metadata records whether capture was requested and succeeded. Metadata is exported at shutdown
 even if the periodic upload already drained all samples.
 
+The shared browser launcher disables network instrumentation on Playwright's original Chromium
+session before loading the frontend. This prevents unused WebSocket payload copies through the
+automation transport. Plotly and Fyne WASM use the same launcher; lifecycle bindings, error
+notifications and post-completion screenshots remain available. Metadata records
+`browser_network_instrumentation: "disabled"`, and reports group it separately from earlier runs
+with monitoring enabled or unrecorded. The controller uses Playwright's bundled Node runtime
+and fails explicitly if the installed Playwright cannot disable monitoring on its original session.
+
 Before streaming or replay preload, `browser_context` records the browser-reported screen,
 available screen area, window position/dimensions, DPR, focus/visibility, cross-origin isolation,
 secure-context state and a bounded sample of `performance.now()` increments. The minimum positive
@@ -235,13 +252,17 @@ observation and metrics retry/drop/final-metadata behavior. Tests also cover the
 plot-selection transition matrix, the final-enabled-plot guard,
 configuration/pending/recorded-run locks, confirmed selection after a failed request, sparse
 configuration patches, active-edit preservation, edits during requests and dynamic metric hints.
+Raster tests verify exact scalar/RGB bytes, boundary values, plot-major offsets, buffer reuse with
+changing frames, dimension changes, cleanup and PNG encoding on every call, including failures.
 `npm --prefix frontends/plotly run build` runs strict TypeScript checking and creates
 the production bundle. Vite empties `dist/` first, so after every build the provenance
 must be re-recorded with `.envs/plotting-benchmark/bin/python -m plotbench.provenance plotly`
 (or by running `./scripts/setup plotly`, which builds and records in one step); otherwise the
 core rejects the artifact as stale.
-Core `tests/test_browser_worker.py` checks lifecycle completion, failure/timeout handling and
-post-completion capture order using a Playwright substitute without opening a browser.
+Core `tests/test_browser_worker.py` and `tests/test_browser_controller.py` check lifecycle
+completion, failure/timeout handling, launcher selection and post-completion capture order without
+opening a browser. `core/tests/browser_driver.test.cjs` verifies original-session network monitoring
+is disabled before navigation, lifecycle/error notifications, and controller cleanup.
 
 Functional Chrome smoke tests exercised scalar and RGB images, replace and append windows, both
 transport modes, all three views, configuration updates and automatic final metrics flushing.
@@ -273,10 +294,9 @@ clipped hints, page overflow or JavaScript errors.
 
 * [Plotly update functions](https://plotly.com/javascript/plotlyjs-function-reference/)
 * [Scattergl trace, including linear x coordinates](https://plotly.com/javascript/reference/scattergl/)
-* [Heatmap trace](https://plotly.com/javascript/reference/heatmap/)
-* [RGB image trace](https://plotly.com/javascript/reference/image/)
+* [Image trace and encoded source](https://plotly.com/javascript/reference/image/)
 
 The distributed Plotly bundle currently uses separate DefinitelyTyped declarations. The adapter
-contains narrow assertions for documented runtime properties (`version`, linear coordinate
-parameters and typed-array heatmap rows) missing from those declarations; strict application types
+contains narrow assertions for documented runtime properties (`version` and linear coordinate
+parameters) missing from those declarations; strict application types
 and the browser smoke tests cover their usage.

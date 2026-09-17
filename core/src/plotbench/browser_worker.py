@@ -1,4 +1,4 @@
-"""Isolated visible Chromium process tree used for Plotly measurements."""
+"""Isolated visible Chromium process tree used for browser frontend measurements."""
 
 import asyncio
 import os
@@ -10,17 +10,17 @@ from importlib.metadata import version
 from pathlib import Path
 from urllib.parse import urlencode
 
+from .browser_controller import BrowserController
 from .client import frontend_parser, request
 from .provenance import file_hash
-from .runtime import ROOT, browser_launch_options, display_session
+from .runtime import BROWSER_FRONTENDS, ROOT, browser_launch_options, display_session
 
 
 def completion_grace_seconds(duration):
     """Grace after the nominal duration for the page to finish, flush and signal completion.
 
-    The frontend's teardown after a timed run grows with the number of submitted frames
-    (about 0.7 s per 2048² scalar heatmap frame was observed), so a fixed grace loses
-    otherwise complete measurements of slow workloads as execution failures.
+    Keep the existing duration-scaled allowance for slow frontend telemetry flushes.
+    Completion latency is recorded separately from measured adapter timings.
     """
     return 15 + 2 * duration
 
@@ -123,6 +123,37 @@ class BrowserCompletion:
         return self.state
 
 
+async def run_unobserved_page(args, page_url, options, metadata):
+    completion = BrowserCompletion(args.duration)
+    metadata["completion_grace_seconds"] = completion_grace_seconds(args.duration)
+    controller = await BrowserController.launch(completion, metadata)
+    failure = None
+    try:
+        options = dict(options)
+        options["executablePath"] = options.pop("executable_path")
+        await controller.send(
+            "start", options=options, width=args.width, height=args.height, url=page_url
+        )
+        state = await completion.wait()
+        metadata["termination_reason"] = "duration" if args.duration else "user"
+        metadata["completion_latency_seconds"] = completion.completion_latency_seconds()
+        if state is not None:
+            print(state, flush=True)
+        if args.screenshot:
+            await controller.call("screenshot", path=str(args.screenshot))
+            metadata["qa_screenshot"] = True
+    except Exception as exc:
+        failure = exc
+        raise
+    finally:
+        try:
+            await controller.close()
+        except Exception as exc:
+            if failure is None:
+                raise
+            failure.add_note(f"Browser controller cleanup also failed: {exc}")
+
+
 async def run_browser(args, page_url):
     from playwright.async_api import async_playwright
 
@@ -157,41 +188,9 @@ async def run_browser(args, page_url):
             metadata["display_protocol_requested"] = (
                 "headless" if args.headless else ("wayland" if options.get("args") else "native")
             )
-            browser = await playwright.chromium.launch(**options)
-            try:
-                metadata["browser_version"] = browser.version
-                probe = await browser.new_page(no_viewport=True)
-                pixel_ratio = await probe.evaluate("window.devicePixelRatio")
-                await probe.close()
-                metadata["browser_device_scale_factor"] = pixel_ratio
-                page = await browser.new_page(
-                    viewport={"width": args.width, "height": args.height},
-                    device_scale_factor=pixel_ratio,
-                )
-                completion = BrowserCompletion(args.duration)
-                await page.expose_binding(
-                    "__plotbenchLifecycle", lambda _source, message: completion.notify(message)
-                )
-                page.on("pageerror", lambda error: completion.fail(f"BROWSER ERROR: {error}"))
-                page.on("crash", lambda _page: completion.fail("Browser page crashed"))
-                page.on("close", lambda _page: completion.closed())
-                browser.on("disconnected", lambda _browser: completion.closed())
-                await page.goto(page_url)
-                metadata["completion_grace_seconds"] = completion_grace_seconds(args.duration)
-                state = await completion.wait()
-                metadata["termination_reason"] = "duration" if args.duration else "user"
-                # Time from the nominal end of the run to the flushed completion signal;
-                # page teardown work, not measured plotting or presentation.
-                metadata["completion_latency_seconds"] = completion.completion_latency_seconds()
-                if state is not None:
-                    print(state, flush=True)
-                if args.screenshot:
-                    # Lifecycle completion is emitted only after the final adapter call and
-                    # telemetry flush. No capture work runs inside the measurement window.
-                    await page.screenshot(path=str(args.screenshot))
-                    metadata["qa_screenshot"] = True
-            finally:
-                await browser.close()
+        # End the temporary Python Playwright connection before starting the Node
+        # controller. Only that in-process API can disable its original CDP session.
+        await run_unobserved_page(args, page_url, options, metadata)
     except Exception as exc:
         failure = exc
         metadata["termination_reason"] = "error"
@@ -203,7 +202,7 @@ async def run_browser(args, page_url):
                 request,
                 args.url + "/api/metrics",
                 {
-                    "frontend": "plotly",
+                    "frontend": getattr(args, "frontend", "plotly"),
                     "mode": args.mode,
                     "run_id": args.run_id,
                     "samples": [],
@@ -217,7 +216,8 @@ async def run_browser(args, page_url):
 
 
 def main():
-    parser = frontend_parser("Run the production Plotly frontend in an isolated browser")
+    parser = frontend_parser("Run a production frontend in an isolated browser")
+    parser.add_argument("--frontend", choices=BROWSER_FRONTENDS, default="plotly")
     parser.add_argument("--headless", action="store_true")
     parser.add_argument("--screenshot", type=Path)
     parser.add_argument("--interactive", action="store_true")
@@ -227,9 +227,9 @@ def main():
         parser.error(
             "--screenshot requires a positive --duration; previews are captured after completion"
         )
-    dist = ROOT / "frontends/plotly/dist"
+    dist = ROOT / f"frontends/{args.frontend}/dist"
     if not (dist / "index.html").exists():
-        raise RuntimeError("Plotly production build missing; run ./scripts/setup plotly")
+        raise RuntimeError(f"{args.frontend} build missing; run ./scripts/setup {args.frontend}")
     os.environ.setdefault("PLAYWRIGHT_BROWSERS_PATH", str(ROOT / ".cache/playwright"))
     server = ThreadingHTTPServer(
         ("127.0.0.1", 5173 if args.interactive else 0),

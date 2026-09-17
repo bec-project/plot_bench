@@ -266,6 +266,56 @@ are functional smoke results, not rankings.
   at 30 Hz were sustained by every adapter except Iced and Plotly. These are the
   documented per-plot update costs of each library, visible in the reports.
 
+## Fyne WebAssembly integration validation
+
+The separate `fyne-wasm` frontend was checked on macOS arm64 with Go 1.27,
+Fyne 2.8.1 and visible Chromium 151. The browser used hardware-backed WebGL through
+ANGLE/Metal, a 1100×820 logical viewport and a 2× device pixel ratio. The built-in
+display reported 120 Hz; this is recorded context, not a presentation measurement.
+
+All **16 combinations** in `scenarios/fyne-wasm-smoke.json` completed with valid
+telemetry: Python and Rust sources, streaming and replay, combined scalar,
+combined append/RGB with two three-curve waveforms and three images, and both
+single-view workloads. A separate Rust streaming run completed five seconds of
+warmup and thirty seconds of measurement for a 10,000-point waveform plus a
+512×512 scalar image at 30 Hz. It recorded stable plot geometry, no reconnects and
+no lost telemetry. This single local experiment is not a baseline campaign.
+
+Post-completion visual QA caught and corrected long subtitles overflowing the
+browser viewport; a layout regression now checks that the multi-plot grid fits.
+Native Go tests still pass. WASM tests under Node exercise the browser WebSocket
+callbacks, decode-before-ACK ordering, malformed-frame rejection, latest-frame
+delivery and cancellation cleanup. Core, source-conformance, documentation and
+web-UI checks passed. CI also includes a headless browser lifecycle check, which
+establishes function only.
+
+Firefox, Safari and native Wayland browser runs remain **unqualified**. The
+frontend is intentionally outside the official baseline pending broader
+qualification. The timed stage covers CPU rasterization, RGBA conversion and
+refresh submission; WebGL upload, draw completion and presentation remain
+unobserved.
+
+The image-conversion update was also checked after adopting `data-area-v2`:
+24 visible runs covered Fyne, Fyne WebAssembly and Plotly with the Rust source,
+stream/replay and the same four workload categories above. All completed with
+valid telemetry and geometry for their actual window sizes, at 1× scaling and
+fixed 60 Hz. Post-completion screenshots showed that native Fyne's two multi-plot
+windows expanded to 1283×820 while browser windows stayed at 1100×820. These runs
+establish function, not matching geometry across frontends or relative performance.
+After extending subtitle wrapping to the native layout, both native multi-plot
+streaming/replay follow-up runs passed at the intended 1100×820. Their waveform
+data areas were 240×172 and image areas 324×243, matching the browser runs. Each
+recorded 90 measured samples, full update/conversion coverage, no duplicates and
+unchanged source provenance across the run. The original results are retained
+separately from this two-run follow-up.
+
+Default SIMD builds were exercised on ARM64 and WebAssembly; scalar reference
+tests also remain in CI. The x86-64 kernels were cross-compiled and their scalar
+fallback was executed under Rosetta, which exposed no AVX support. Actual AVX
+and AVX-512 execution and performance require suitable x86-64 hardware; advertised
+CPU flags alone do not establish a measured speedup. CI exercises available
+kernels and explicitly disabled-feature fallbacks.
+
 ## Fyne integration validation
 
 The Go/Fyne frontend was checked on macOS arm64 with the native Fyne GLFW/OpenGL
