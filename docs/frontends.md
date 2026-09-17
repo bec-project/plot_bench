@@ -94,9 +94,8 @@ use read-only dependency resolution for builds, and register `.go`, `.mod` and
 `.sum` files in provenance. Fyne provides a reference at `frontends/fyne/`.
 The `fyne-wasm` browser target shares that Go module and renderer while keeping a
 separate frontend ID, build artifacts, browser runtime identity and telemetry.
-It is intentionally outside the official baseline pending broader visible
-acceptance. Shared implementation does not make native and browser results
-interchangeable.
+It is part of the official baseline as its own frontend. Shared implementation
+does not make native and browser results interchangeable.
 
 ## Acceptance
 

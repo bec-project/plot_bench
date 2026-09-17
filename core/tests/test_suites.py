@@ -567,23 +567,22 @@ def test_baseline_flag_refuses_a_copy_of_the_suite_at_another_path(tmp_path):
 
 def test_baseline_flag_allows_narrowing_by_frontend_only():
     plan = plan_from_args(_baseline_args())
-    assert len(plan.jobs) == 189
+    assert len(plan.jobs) == 210
     plan = plan_from_args(_baseline_args(frontends=["pyqtgraph"]))
     assert plan.frontends == ["pyqtgraph"] and len(plan.jobs) == 21
     plan = plan_from_args(
         _baseline_args(output=Path("results/x"), display_context="fixed 120 Hz, 2x")
     )
-    assert len(plan.jobs) == 189 and plan.suite["display_context"] == "fixed 120 Hz, 2x"
+    assert len(plan.jobs) == 210 and plan.suite["display_context"] == "fixed 120 Hz, 2x"
 
 
 def test_baseline_flag_refuses_a_frontend_outside_the_official_baseline():
-    # A frontend in the catalog but excluded from scenarios/baseline.json (e.g.
-    # fyne-wasm) must not be runnable under the official baseline label.
+    # Only frontends listed in scenarios/baseline.json may run under --baseline,
+    # even if the catalog later gains a frontend the baseline does not include.
     baseline = json.loads((ROOT / BASELINE_SUITE).read_text())
-    outside = sorted(set(FRONTENDS) - set(baseline["frontends"]))
-    assert outside, "expected at least one catalog frontend outside the baseline"
+    assert "phantom-frontend" not in baseline["frontends"]
     with pytest.raises(ValueError, match="not part of it"):
-        plan_from_args(_baseline_args(frontends=outside[:1]))
+        plan_from_args(_baseline_args(frontends=["phantom-frontend"]))
 
 
 @pytest.mark.parametrize(
@@ -616,7 +615,7 @@ def test_baseline_cli_selects_the_official_suite_at_parse_time(monkeypatch, caps
     cli.main()
     plan = json.loads(capsys.readouterr().out)
     assert plan["suite"]["name"] == "Plotbench baseline"
-    assert plan["run_count"] == 189
+    assert plan["run_count"] == 210
     assert (plan["warmup_seconds"], plan["measurement_seconds"], plan["cooldown_seconds"]) == (
         5,
         30,

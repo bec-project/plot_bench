@@ -290,9 +290,9 @@ web-UI checks passed. CI also includes a headless browser lifecycle check, which
 establishes function only.
 
 Firefox, Safari and native Wayland browser runs remain **unqualified**. The
-frontend is intentionally outside the official baseline pending broader
-qualification. The timed stage covers CPU rasterization, RGBA conversion and
-refresh submission; WebGL upload, draw completion and presentation remain
+frontend is part of the official baseline, measured through the qualified
+Chromium runtime only. The timed stage covers CPU rasterization, RGBA conversion
+and refresh submission; WebGL upload, draw completion and presentation remain
 unobserved.
 
 The image-conversion update was also checked after adopting `data-area-v2`:
