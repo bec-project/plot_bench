@@ -84,6 +84,26 @@ func TestBrowserDecodeOfferThenAckAndClose(t *testing.T) {
 	}
 }
 
+func TestBrowserNonBinaryFrameReconnects(t *testing.T) {
+	s := newSource("http://localhost", "stream")
+	defer s.cancel()
+	ws, done := fakeBrowserSocket(t, s)
+	// A non-binary (text) frame is a protocol violation that must drop the
+	// connection and reconnect, matching the native reader, not fail the run.
+	ws.Call("emit", "message", js.ValueOf("not-binary"))
+	select {
+	case result := <-done:
+		if result.fatal || result.err == nil {
+			t.Fatal("non-binary frame should be a non-fatal reconnect")
+		}
+	case <-time.After(time.Second):
+		t.Fatal("non-binary frame was not rejected")
+	}
+	if ws.Get("sent").Length() != 0 || s.latest != nil {
+		t.Fatal("non-binary frame was offered or acknowledged")
+	}
+}
+
 func TestBrowserMalformedFrameDoesNotAck(t *testing.T) {
 	s := newSource("http://localhost", "stream")
 	defer s.cancel()

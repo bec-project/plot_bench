@@ -15,11 +15,24 @@ const frontendName = "fyne-wasm"
 const frontendTitle = "Fyne WebAssembly"
 const graphicsAPI = "WebGL via Fyne"
 
+// callJS runs a syscall/js call that may throw in the browser, turning a JS
+// exception into an error instead of a Go panic that would crash the wasm
+// instance mid-run and skip the clean lifecycle emission.
+func callJS(run func()) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("browser call failed: %v", r)
+		}
+	}()
+	run()
+	return nil
+}
+
 func notifyLifecycle(event string, state lifecycleState) {
 	data, _ := json.Marshal(map[string]any{"event": event, "state": state})
 	notify := js.Global().Get("__plotbenchNotify")
 	if notify.Type() == js.TypeFunction {
-		notify.Invoke(js.Global().Get("JSON").Call("parse", string(data)))
+		_ = callJS(func() { notify.Invoke(js.Global().Get("JSON").Call("parse", string(data))) })
 	}
 }
 
@@ -31,7 +44,11 @@ func platformMetadata() map[string]any {
 		return nil
 	}
 	var result map[string]any
-	_ = json.Unmarshal([]byte(js.Global().Get("JSON").Call("stringify", probe.Invoke()).String()), &result)
+	if callJS(func() {
+		_ = json.Unmarshal([]byte(js.Global().Get("JSON").Call("stringify", probe.Invoke()).String()), &result)
+	}) != nil {
+		return nil
+	}
 	return result
 }
 

@@ -62,13 +62,16 @@ func (s *Source) browserStream(address string, connected *bool) browserSocketRes
 	})
 	message := js.FuncOf(func(_ js.Value, args []js.Value) any {
 		data := args[0].Get("data")
+		// A malformed frame type or over-limit packet drops the connection and
+		// reconnects, matching the native reader (which breaks the read loop on
+		// the same violations). Only an undecodable frame is fatal, as there too.
 		if !data.InstanceOf(js.Global().Get("ArrayBuffer")) {
-			finish(fmt.Errorf("expected binary source frame"), true)
+			finish(fmt.Errorf("expected binary source frame"), false)
 			return nil
 		}
 		size := data.Get("byteLength").Int()
 		if size > maxPacket {
-			finish(fmt.Errorf("source frame exceeds %d bytes", maxPacket), true)
+			finish(fmt.Errorf("source frame exceeds %d bytes", maxPacket), false)
 			return nil
 		}
 		packet := make([]byte, size)
