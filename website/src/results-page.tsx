@@ -3,7 +3,7 @@ import { groupObservations, inDateRange, type ResultGroup } from './aggregation'
 import { GROUP_ORDERS, ORDER_NOTES, compareGroups, compareRuns, groupOrder } from './ordering';
 import { SECTIONS, sectionBySlug, sectionOf, type Section } from './baseline';
 import { GroupedResults } from './grouped-results';
-import { sourceLimited, type Observation, type Submission } from './model';
+import { sourceLimited, frontendLimited, type Observation, type Submission } from './model';
 import { Pill, date, format } from './presentation';
 import {
   DateRange,
@@ -295,7 +295,8 @@ function RunTable({ runs, select }: { runs: Observation[]; select: (o: Observati
                     </Pill>
                     <Pill>{scaleLabel(r.context.pixel_ratio)}</Pill>
                     {!valid && <Pill tone="danger">{r.status}</Pill>}
-                    {sourceLimited(r) && <Pill tone="amber">Source limits</Pill>}
+                    {sourceLimited(r) && <Pill tone="amber">Source-limited</Pill>}
+                    {frontendLimited(r) && <Pill tone="info">Frontend-limited</Pill>}
                   </div>
                   <span className="cell-sub">
                     repetition {r.repetition} · {date(c.recorded_at)}

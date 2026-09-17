@@ -48,11 +48,13 @@ test('failed runs never enter medians even when they contain a numeric rate; zer
   const c = campaign('failed-numeric', [10, 20, 999, 0]);
   c.runs[2].status = 'failed';
   c.runs[2].metrics.source_deadline_misses = 1;
+  c.runs[3].metrics.source_mailbox_drops = 5;
   const [g] = groupObservations(observations([c]));
   assert.equal(g.rates.median, 10);
   assert.equal(g.successful, 3);
   assert.equal(g.attempted, 4);
-  assert.equal(g.limited, 1);
+  assert.equal(g.sourceLimited, 1);
+  assert.equal(g.frontendLimited, 1);
   assert.equal(g.campaigns[0].observations.length, 4);
   assert.equal(g.rates.q1, null);
   assert.equal(g.rates.q3, null);

@@ -397,7 +397,8 @@ test('failed-only and incomplete groups are excluded; valid zero and source flag
   const g = result.boards[0].records[0].groups[0];
   assert.equal(g.attempted, 2);
   assert.equal(g.successful, 1);
-  assert.equal(g.limited, 1);
+  assert.equal(g.sourceLimited, 1);
+  assert.equal(g.frontendLimited, 0);
   assert.deepEqual(collectWinners([]), { boards: [], excludedGroups: 0, excludedBySection: {} });
 });
 

@@ -79,8 +79,10 @@ export function OverallPage({
                       <span className="cell-sub">
                         {entry.hosts.length} host{entry.hosts.length === 1 ? '' : 's'} ·{' '}
                         {entry.revisions} revision{entry.revisions === 1 ? '' : 's'}
-                        {entry.limitedGroups > 0 &&
-                          ` · ${entry.limitedGroups} source-limited group${entry.limitedGroups === 1 ? '' : 's'}`}
+                        {entry.sourceLimitedGroups > 0 &&
+                          ` · ${entry.sourceLimitedGroups} source-limited group${entry.sourceLimitedGroups === 1 ? '' : 's'}`}
+                        {entry.frontendLimitedGroups > 0 &&
+                          ` · ${entry.frontendLimitedGroups} frontend-limited group${entry.frontendLimitedGroups === 1 ? '' : 's'}`}
                       </span>
                     </td>
                     <td className="overall-total">{entry.total}</td>

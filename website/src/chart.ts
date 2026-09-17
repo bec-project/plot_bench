@@ -14,8 +14,10 @@ export interface ChartBar {
   high: number | null;
   valid: number;
   attempted: number;
-  /** Source-limited repetitions among the record's groups. */
-  limited: number;
+  /** Repetitions the data source could not feed at target among the record's groups. */
+  sourceLimited: number;
+  /** Repetitions the frontend could not consume at target among the record's groups. */
+  frontendLimited: number;
   winner: boolean;
 }
 export interface BoardChartData {
@@ -50,7 +52,8 @@ export function boardChart(board: WinnerBoard): BoardChartData {
       high: rates.length ? Math.max(...rates) : null,
       valid: record.groups.reduce((n, g) => n + g.successful, 0),
       attempted: record.groups.reduce((n, g) => n + g.attempted, 0),
-      limited: record.groups.reduce((n, g) => n + g.limited, 0),
+      sourceLimited: record.groups.reduce((n, g) => n + g.sourceLimited, 0),
+      frontendLimited: record.groups.reduce((n, g) => n + g.frontendLimited, 0),
       winner: record.rank === 1,
     };
   });

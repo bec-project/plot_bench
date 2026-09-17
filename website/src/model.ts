@@ -115,10 +115,15 @@ export function workloadLabel(c: Workload): string {
   }
   return `${parts.join(' / ')} · ${c.hz} Hz`;
 }
+// The producer could not generate frames at the target cadence, so the rate the
+// frontend was offered was capped by the data source rather than by the renderer.
 export function sourceLimited(run: Run): boolean {
-  return (
-    (run.metrics.source_deadline_misses ?? 0) > 0 || (run.metrics.source_mailbox_drops ?? 0) > 0
-  );
+  return (run.metrics.source_deadline_misses ?? 0) > 0;
+}
+// The frontend could not receive and acknowledge frames fast enough, so the source
+// mailbox replaced undelivered frames. The renderer, not the source, capped the rate.
+export function frontendLimited(run: Run): boolean {
+  return (run.metrics.source_mailbox_drops ?? 0) > 0;
 }
 export function classify(runs: Run[]): Submission['classification'] {
   if (

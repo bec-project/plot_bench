@@ -1,4 +1,10 @@
-import { workloadKey, sourceLimited, type Observation, type Submission } from './model';
+import {
+  workloadKey,
+  sourceLimited,
+  frontendLimited,
+  type Observation,
+  type Submission,
+} from './model';
 
 export interface RateSummary {
   median: number | null;
@@ -12,7 +18,8 @@ export interface CampaignGroup {
   campaign: Submission;
   observations: Observation[];
   rates: RateSummary;
-  limited: number;
+  sourceLimited: number;
+  frontendLimited: number;
 }
 export interface ResultGroup {
   key: string;
@@ -21,7 +28,8 @@ export interface ResultGroup {
   rates: RateSummary;
   attempted: number;
   successful: number;
-  limited: number;
+  sourceLimited: number;
+  frontendLimited: number;
   first: string;
   last: string;
   incompleteContext: boolean;
@@ -121,7 +129,8 @@ export function groupObservations(observations: readonly Observation[]): ResultG
               o.run.metrics.submitted_hz === null ? [] : [o.run.metrics.submitted_hz],
             ),
         ),
-        limited: runs.filter((o) => sourceLimited(o.run)).length,
+        sourceLimited: runs.filter((o) => sourceLimited(o.run)).length,
+        frontendLimited: runs.filter((o) => frontendLimited(o.run)).length,
       }))
       .sort(
         (a, b) =>
@@ -138,7 +147,8 @@ export function groupObservations(observations: readonly Observation[]): ResultG
       ),
       attempted: campaigns.reduce((sum, c) => sum + c.observations.length, 0),
       successful: campaigns.reduce((sum, c) => sum + c.rates.count, 0),
-      limited: campaigns.reduce((sum, c) => sum + c.limited, 0),
+      sourceLimited: campaigns.reduce((sum, c) => sum + c.sourceLimited, 0),
+      frontendLimited: campaigns.reduce((sum, c) => sum + c.frontendLimited, 0),
       first: campaigns[campaigns.length - 1].campaign.recorded_at,
       last: campaigns[0].campaign.recorded_at,
       incompleteContext: incompleteContext(representative),

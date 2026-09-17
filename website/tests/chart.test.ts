@@ -25,7 +25,8 @@ test('a section chart carries one bar per ranked record with the observed repeti
   assert.equal(matplotlib.high, 5.7);
   assert.equal(matplotlib.valid, 3);
   assert.equal(matplotlib.attempted, 3);
-  assert.equal(matplotlib.limited, 1);
+  assert.equal(matplotlib.sourceLimited, 1);
+  assert.equal(matplotlib.frontendLimited, 1);
   assert.equal(matplotlib.minimum, matplotlib.median);
   assert.ok(chart.max >= 60 && chart.max <= 63.1);
   // The failed multi-image run is counted as attempted but never as a rate.

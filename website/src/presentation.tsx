@@ -17,7 +17,7 @@ export function Pill({
   tone,
 }: {
   children: ReactNode;
-  tone?: 'success' | 'amber' | 'danger';
+  tone?: 'success' | 'amber' | 'danger' | 'info';
 }) {
   return <span className={tone ? `pill pill-${tone}` : 'pill'}>{children}</span>;
 }
