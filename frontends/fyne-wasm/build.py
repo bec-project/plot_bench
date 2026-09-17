@@ -25,12 +25,27 @@ def main():
         CGO_ENABLED="0",
         GOEXPERIMENT=os.environ.get("GOEXPERIMENT", "simd"),
     )
+
+    def run_go(*command, capture=False):
+        # The default GOEXPERIMENT=simd needs Go 1.27+; turn a toolchain/build
+        # failure into a clear message instead of a bare CalledProcessError
+        # traceback. The Go output above already carries the underlying error.
+        try:
+            if capture:
+                return subprocess.check_output(
+                    [go, "-C", str(source), *command], env=environment, text=True
+                )
+            subprocess.run([go, "-C", str(source), *command], env=environment, check=True)
+            return None
+        except subprocess.CalledProcessError as exc:
+            raise SystemExit(
+                "Fyne WebAssembly build failed (see the Go output above). It needs "
+                "Go 1.27+ with the SIMD experiment; build with GOEXPERIMENT=nosimd "
+                "for the scalar reference. See docs/setup.md."
+            ) from exc
+
     # Query inside the module so automatic toolchain selection matches the build.
-    goroot = Path(
-        subprocess.check_output(
-            [go, "-C", str(source), "env", "GOROOT"], env=environment, text=True
-        ).strip()
-    )
+    goroot = Path(run_go("env", "GOROOT", capture=True).strip())
     runtime = next(
         (
             path
@@ -64,22 +79,15 @@ def main():
     with tempfile.TemporaryDirectory(dir=cache) as temporary:
         stage = Path(temporary) / "dist"
         stage.mkdir()
-        subprocess.run(
-            [
-                go,
-                "-C",
-                str(source),
-                "build",
-                "-mod=readonly",
-                "-trimpath",
-                "-tags",
-                "release,no_animations",
-                "-o",
-                str(stage / "plotbench-fyne.wasm"),
-                ".",
-            ],
-            env=environment,
-            check=True,
+        run_go(
+            "build",
+            "-mod=readonly",
+            "-trimpath",
+            "-tags",
+            "release,no_animations",
+            "-o",
+            str(stage / "plotbench-fyne.wasm"),
+            ".",
         )
         shutil.copy2(runtime, stage / "wasm_exec.js")
         shutil.copy2(go_license, stage / "LICENSE-go.txt")
