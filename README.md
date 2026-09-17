@@ -171,7 +171,7 @@ CLI filters and timing overrides remain available. See the
 | [Qt Graphs C++](frontends/qtgraphs-cpp/README.md) | Native C++ waveform submission and custom Qt Quick image provider |
 | [JFreeChart](frontends/jfreechart/README.md) | Java/Swing; synchronous JFreeChart Java2D waveform/axes and custom image annotation (macOS or Linux XWayland) |
 | [Fyne](frontends/fyne/README.md) | Go/Fyne OpenGL canvas images with custom CPU waveform rasterization |
-| [Fyne WebAssembly](frontends/fyne-wasm/README.md) | The Go/Fyne raster renderer compiled to WebAssembly and displayed with browser WebGL; separate experimental benchmark |
+| [Fyne WebAssembly](frontends/fyne-wasm/README.md) | The Go/Fyne raster renderer compiled to WebAssembly and displayed with browser WebGL; separate baseline frontend |
 | [Iced](frontends/iced/README.md) | Rust/wgpu with a custom waveform Canvas and image widget |
 | [Plotly/React](frontends/plotly/README.md) | Production TypeScript bundle; scattergl and precolored image traces |
 

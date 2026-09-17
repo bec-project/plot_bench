@@ -7,9 +7,9 @@ with the native `fyne` frontend. The benchmark ID, build and runtime metadata ar
 separate because Go's browser execution and rendering costs differ from its
 native GLFW/OpenGL path.
 
-This experimental frontend is available for local suites and is **not included
-in the official baseline**. Its smoke scenario is a functional acceptance aid;
-adding the scenario does not establish that all of its combinations are validated.
+This frontend is **part of the official baseline** as its own frontend, measured
+through the qualified Chromium runtime. Its smoke scenario is a functional
+acceptance aid; it does not establish that all of its combinations are validated.
 See [recorded platform validation](../../docs/validation.md) for actual coverage.
 
 ![Fyne WebAssembly with two three-curve waveforms and three RGB images](screenshots/multi-plot.png)

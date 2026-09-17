@@ -184,7 +184,7 @@ the `scenario` of every published run, so the names are never renamed:
 Fixed conditions for every section: 60 Hz target rate, the Rust source, streaming
 delivery, waveform `replace` mode, `append_count` 1000, seed 42, 5 s warmup, 30 s
 measurement, 3 repetitions, 2 s cooldown and `order_seed` 42. The suite lists all
-nine frontends explicitly. Windows keep the frontends' default 1100 × 820 logical
+ten frontends explicitly. Windows keep the frontends' default 1100 × 820 logical
 size — that is not a suite field, so the plot areas recorded in each run's
 metadata are the evidence of what was actually rendered.
 
@@ -202,7 +202,7 @@ frontends:
   --display-context "internal display, 120 Hz fixed, 2x scale, window centered"
 ```
 
-The full suite expands to 189 runs (7 sections × 9 frontends × 3 repetitions);
+The full suite expands to 210 runs (7 sections × 10 frontends × 3 repetitions);
 `--dry-run` prints the schedule and nominal time for the frontends you chose.
 Opening the same file with `--suite scenarios/baseline.json` keeps every override
 available for local experiments, but such campaigns, like edited copies saved from

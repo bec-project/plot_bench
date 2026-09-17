@@ -8,7 +8,7 @@
   "order_seed": 42,
   "backends": ["rust"],
   "modes": ["stream"],
-  "frontends": ["pyqtgraph", "pyqtgraph-gl", "matplotlib", "qtgraphs", "qtgraphs-cpp", "iced", "fyne", "jfreechart", "plotly"],
+  "frontends": ["pyqtgraph", "pyqtgraph-gl", "matplotlib", "qtgraphs", "qtgraphs-cpp", "iced", "fyne", "fyne-wasm", "jfreechart", "plotly"],
   "cases": [
     {"name": "waveform", "config": {"view": "waveform", "hz": 60, "points": 10000, "append_count": 1000, "waveform_mode": "replace", "curves": 1, "waveform_plots": 1, "width": 512, "height": 512, "image_mode": "scalar", "image_plots": 1, "seed": 42}},
     {"name": "multi-curve", "config": {"view": "waveform", "hz": 60, "points": 10000, "append_count": 1000, "waveform_mode": "replace", "curves": 10, "waveform_plots": 1, "width": 512, "height": 512, "image_mode": "scalar", "image_plots": 1, "seed": 42}},
