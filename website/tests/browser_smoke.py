@@ -498,17 +498,18 @@ def test_grouped_campaign_weights_drilldown_dates_pagination_winners_and_overall
             await page.locator(".campaign-group > summary").first.click()
             assert await page.evaluate(NO_OVERFLOW), await page.evaluate(OVERFLOWING)
             await page.set_viewport_size({"width": 1440, "height": 1080})
-            # Every baseline frontend at once still paginates by group: 9 x 7 = 63.
+            # Every baseline frontend at once still paginates by groups of 25.
             fixtures[:] = [
                 campaign(f"all-{i}", frontend, [30 - i] * 3, "17")
                 for i, frontend in enumerate(FRONTENDS)
             ]
+            total_groups = len(FRONTENDS) * 7  # one group per frontend and section
             await page.reload()
             await expect(groups).to_have_count(25)
             await page.get_by_role("button", name="Next", exact=True).click()
             await expect(groups).to_have_count(25)
             await page.get_by_role("button", name="Next", exact=True).click()
-            await expect(groups).to_have_count(13)
+            await expect(groups).to_have_count(total_groups - 50)
             await page.get_by_label("Acquired through (UTC)").fill("2026-09-16")
             await expect(
                 page.get_by_role("heading", name="No matching runs")
@@ -522,9 +523,11 @@ def test_grouped_campaign_weights_drilldown_dates_pagination_winners_and_overall
             await expect(board).to_have_count(1)
             await expect(board.locator(".frontend-record")).to_have_count(1)
             await board.locator(".other-records > summary").click()
-            await expect(board.locator(".frontend-record")).to_have_count(9)
+            await expect(board.locator(".frontend-record")).to_have_count(len(FRONTENDS))
             # One row per frontend in the throughput chart; memory and CPU repeat it.
-            await expect(board.locator(".chart-throughput .chart-row")).to_have_count(9)
+            await expect(
+                board.locator(".chart-throughput .chart-row")
+            ).to_have_count(len(FRONTENDS))
             await expect(board.locator(".chart-resource")).to_have_count(2)
             await expect(
                 board.locator(".chart-throughput .chart-row-winner")
