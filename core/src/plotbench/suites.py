@@ -327,6 +327,15 @@ def check_baseline_overrides(args):
                 f"--baseline runs the official suite unmodified; remove --{name} "
                 "(only --frontends may narrow it)"
             )
+    requested = getattr(args, "frontends", None)
+    if requested:
+        published = load_suite(ROOT / BASELINE_SUITE).get("frontends", list(FRONTENDS))
+        extra = [name for name in requested if name not in published]
+        if extra:
+            raise ValueError(
+                "--baseline --frontends may only narrow to the official baseline; "
+                f"{', '.join(extra)} is not part of it"
+            )
 
 
 def plan_from_args(args, *, kind="run"):
