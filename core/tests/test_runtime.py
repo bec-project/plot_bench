@@ -8,6 +8,38 @@ import pytest
 from plotbench import runtime
 
 
+@pytest.mark.parametrize("frontend", runtime.BROWSER_FRONTENDS)
+def test_browser_doctor_verifies_selected_build_without_native_execution(
+    monkeypatch, tmp_path, frontend
+):
+    monkeypatch.setattr(runtime.platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(runtime, "ROOT", tmp_path)
+    (tmp_path / ".python-version").write_text(runtime.platform.python_version())
+    (tmp_path / ".node-version").write_text("24.0.0")
+    dist = tmp_path / "frontends" / frontend / "dist"
+    dist.mkdir(parents=True)
+    (dist / "index.html").write_text("browser entrypoint")
+    browser = tmp_path / "chromium"
+    browser.touch(mode=0o755)
+    verified = []
+    commands = []
+    monkeypatch.setattr(
+        runtime, "require_current_artifact", lambda name, root: verified.append(name)
+    )
+
+    def query(command, **kwargs):
+        commands.append(command)
+        return "browser/tool version"
+
+    monkeypatch.setattr(runtime, "_run_check", query)
+    assert runtime.component_installed(frontend)
+    result = runtime.preflight(frontends=[frontend], browser_executable=browser, headless=True)
+    assert result["ok"], result["checks"]
+    assert verified == [frontend]
+    assert commands[0] == [str(browser), "--version"]
+    assert not any("--runtime-info" in command for command in commands)
+
+
 @pytest.mark.parametrize("frontend", runtime.PYTHON_FRONTENDS)
 def test_cold_frontend_import_gets_longer_timeout(monkeypatch, tmp_path, frontend):
     monkeypatch.setattr(runtime.platform, "system", lambda: "Darwin")

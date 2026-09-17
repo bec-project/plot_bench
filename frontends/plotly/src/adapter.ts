@@ -7,6 +7,7 @@ import {
   curveColor, gridTemplateColumns, imageSubtitle, plotCounts, plotTitle, visiblePlotCount, waveformSubtitle,
 } from './plot-grid';
 import { submitUpdates, type AdapterTiming } from './update-timing';
+import { createPalette, ImageRasterCache } from './image-raster';
 
 /** One grid cell: heading owned by this adapter, plot element owned by Plotly. */
 interface PlotCell {
@@ -14,6 +15,7 @@ interface PlotCell {
   title: HTMLHeadingElement;
   subtitle: HTMLSpanElement;
   plot: HTMLDivElement;
+  raster?: ImageRasterCache;
 }
 
 /**
@@ -26,33 +28,26 @@ export class PlotAdapter {
   private cells: Record<PlotKind, PlotCell[]> = { waveform: [], image: [] };
   private current: Configuration | null = null;
   private signature = '';
-  private colorscale: [number, string][];
+  private palette: Uint32Array;
 
   constructor(private waveform: HTMLElement, private image: HTMLElement, colors: number[][]) {
-    if (colors.length !== 256 || colors.some((rgb) => rgb.length !== 3 ||
-        rgb.some((channel) => !Number.isInteger(channel) || channel < 0 || channel > 255))) {
-      throw new Error('Source colormap must have 256 RGB entries');
-    }
-    // Repeated boundaries make Plotly match the shared floor(value * 255) lookup table.
-    this.colorscale = colors.flatMap(([r, g, b], index): [number, string][] => {
-      const color = `rgb(${r},${g},${b})`;
-      return index < 255 ? [[index / 255, color], [(index + 1) / 255, color]] : [[1, color]];
-    });
+    this.palette = createPalette(colors);
   }
 
   static metadata() {
     return {
       render_contract: 'data-area-v2',
       waveform_antialias: 'renderer-default (scattergl has no public disable switch)',
-      renderer: 'Plotly scattergl (WebGL) + heatmap/image (Plotly raster traces)',
+      renderer: 'Plotly scattergl (WebGL) + precolored image.source (PNG raster traces)',
       versions: { plotly: (Plotly as typeof Plotly & { version: string }).version },
       update_strategy: 'One Plotly.react per plot widget per frame (waveform_plots + image_plots calls); every curve is a separate scattergl trace of the same plot; full authoritative array replacement for both replace and append modes; no decimation',
-      measurement_stage: 'update_ms: elapsed conversion plus synchronous Plotly.react calls for every plot. draw_ms: synchronous Plotly.react calls, already included in update_ms. update_complete_ms: elapsed adapter call through settlement of all per-plot Plotly Promises, including deferred work and wait. Calls are serialized until settlement; none of these timings measures GPU completion or screen presentation.',
+      measurement_stage: 'update_ms: elapsed conversion, full-resolution RGBA mapping and PNG encoding plus synchronous Plotly.react calls for every plot. draw_ms: synchronous Plotly.react calls, already included in update_ms. update_complete_ms: elapsed adapter call through settlement of all per-plot Plotly Promises, including image loading, deferred work and wait. Calls are serialized until settlement; none of these timings measures GPU completion or screen presentation.',
       image_interpolation: 'nearest neighbor (zsmooth: false)',
       image_levels: [0, 1],
       waveform_range: [-1.5, 1.5],
       waveform_stroke_physical_px: 1,
       scalar_colormap: '256 entries from central /api/colormap, fixed [0,1], discrete floor(value*255) lookup',
+      image_conversion: 'Cached packed 256-color RGBA palette; reusable canvas and ImageData per image plot and dimensions. Every adopted scalar/RGB frame converts all source pixels and encodes a fresh full-resolution PNG for image.source; no rendered-frame cache or decimation.',
       curve_colors: 'shared CURVE_COLORS[c % 8] palette; curve 0 keeps the accent colour',
       plot_layout: 'columns = ceil(sqrt(visible plots)), row-major, waveform plots before image plots, equal cells',
     };
@@ -91,6 +86,7 @@ export class PlotAdapter {
     while (cells.length > count) {
       const cell = cells.pop()!;
       Plotly.purge(cell.plot);
+      cell.raster?.clear();
       cell.article.remove();
     }
     while (cells.length < count) {
@@ -107,7 +103,8 @@ export class PlotAdapter {
       plot.className = 'plot';
       article.append(heading, plot);
       container.append(article);
-      cells.push({ article, title, subtitle, plot });
+      cells.push({ article, title, subtitle, plot,
+        ...(kind === 'image' ? { raster: new ImageRasterCache(this.palette) } : {}) });
     }
   }
 
@@ -135,37 +132,13 @@ export class PlotAdapter {
       const pixels = frame.image;
       const { width, height } = config;
       this.cells.image.forEach((cell, plot) => {
-        let trace: Data;
-        if (config.image_mode === 'scalar') {
-          const base = plot * height * width;
-          const z: Float32Array[] = [];
-          for (let row = 0; row < height; row += 1) {
-            z.push((pixels as Float32Array).subarray(base + row * width, base + (row + 1) * width));
-          }
-          trace = {
-            type: 'heatmap', z, zmin: 0, zmax: 1, zauto: false,
-            colorscale: this.colorscale, zsmooth: false, showscale: false,
-            hoverinfo: 'skip', x0: 0, dx: 1, y0: 0, dy: 1,
-          // DefinitelyTyped does not describe Plotly's supported typed-array rows.
-          } as unknown as Data;
-        } else {
-          // The image trace's z input uses RGB triples. This adapter measures that conversion;
-          // a separately optimized source/data-URI adapter would have different preparation work.
-          const base = plot * height * width * 3;
-          const z: number[][][] = new Array(height);
-          for (let row = 0; row < height; row += 1) {
-            const output: number[][] = new Array(width);
-            for (let column = 0; column < width; column += 1) {
-              const index = base + (row * width + column) * 3;
-              output[column] = [pixels[index], pixels[index + 1], pixels[index + 2]];
-            }
-            z[row] = output;
-          }
-          trace = {
-            type: 'image', z, colormodel: 'rgb', zsmooth: false, hoverinfo: 'skip',
-            x0: 0, dx: 1, y0: 0, dy: 1,
-          } as Data;
-        }
+        // Plotly's source API consumes an encoded image. Mapping and PNG encoding stay
+        // inside conversion timing; only the palette and scratch buffers are reused.
+        const source = cell.raster!.encode(pixels, width, height, config.image_mode, plot);
+        const trace: Data = {
+          type: 'image', source, zsmooth: false, hoverinfo: 'skip',
+          x0: 0, dx: 1, y0: 0, dy: 1,
+        } as Data;
         jobs.push({ element: cell.plot, traces: [trace], layout: this.layout(cell.plot, frame, true) });
       });
     }

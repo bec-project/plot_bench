@@ -12,12 +12,17 @@ ROOT = Path(__file__).resolve().parents[3]
 ARTIFACTS = {
     "jfreechart": "frontends/jfreechart/build",
     "fyne": "frontends/fyne/build/plotbench-fyne",
+    "fyne-wasm": "frontends/fyne-wasm/dist",
     "rust": "backends/rust/target/release/plotbench-source-rust",
     "iced": "frontends/iced/target/release/plotbench-iced",
     "plotly": "frontends/plotly/dist",
     "qtgraphs-cpp": "frontends/qtgraphs-cpp/build/plotbench-qtgraphs-cpp",
 }
-DIRECTORY_ENTRYPOINTS = {"plotly": "index.html", "jfreechart": "plotbench-jfreechart.jar"}
+DIRECTORY_ENTRYPOINTS = {
+    "plotly": "index.html",
+    "fyne-wasm": "index.html",
+    "jfreechart": "plotbench-jfreechart.jar",
+}
 _EXCLUDED_DIRECTORIES = {
     ".git",
     ".idea",
@@ -181,6 +186,16 @@ def capture_provenance(root=ROOT):
 
 def component_source_hash(component, root=ROOT):
     """Hash component sources, excluding dependencies and generated build outputs."""
+    if component == "fyne-wasm":
+        # The browser build compiles the native adapter's locked Go module and
+        # packages a separate launcher. Either source tree can invalidate it.
+        digest = hashlib.sha256()
+        for shared in ("fyne", "fyne-wasm"):
+            directory = Path(root) / "frontends" / shared
+            if not directory.is_dir():
+                raise FileNotFoundError(directory)
+            digest.update(shared.encode() + b"\0" + source_hash(directory).encode() + b"\0")
+        return digest.hexdigest()
     relative = "backends/rust" if component == "rust" else f"frontends/{component}"
     directory = Path(root) / relative
     if not directory.is_dir():
@@ -270,6 +285,6 @@ def record_build(component, root=ROOT):
 if __name__ == "__main__":
     if len(sys.argv) != 2 or sys.argv[1] not in ARTIFACTS:
         raise SystemExit(
-            "Usage: python -m plotbench.provenance rust|iced|fyne|jfreechart|plotly|qtgraphs-cpp (after building)"
+            "Usage: python -m plotbench.provenance rust|iced|fyne|fyne-wasm|jfreechart|plotly|qtgraphs-cpp (after building)"
         )
     record_build(sys.argv[1])

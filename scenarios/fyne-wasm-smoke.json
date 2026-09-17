@@ -1,0 +1,60 @@
+{
+  "name": "Fyne WebAssembly functional validation",
+  "description": "Small scalar, RGB, single-view and multi-plot cases for the browser Fyne adapter, with both sources and delivery modes. This custom suite is outside the official baseline.",
+  "warmup_seconds": 1,
+  "measurement_seconds": 3,
+  "repetitions": 1,
+  "cooldown_seconds": 0.5,
+  "order_seed": 42,
+  "frontends": ["fyne-wasm"],
+  "modes": ["stream", "replay"],
+  "backends": ["python", "rust"],
+  "cases": [
+    {
+      "name": "replace-scalar-30hz",
+      "config": {
+        "view": "both",
+        "hz": 30,
+        "points": 2000,
+        "append_count": 200,
+        "width": 128,
+        "height": 96,
+        "waveform_mode": "replace",
+        "image_mode": "scalar"
+      }
+    },
+    {
+      "name": "append-rgb-multi-plot-30hz",
+      "config": {
+        "view": "both",
+        "hz": 30,
+        "points": 2000,
+        "append_count": 200,
+        "curves": 3,
+        "waveform_plots": 2,
+        "image_plots": 3,
+        "width": 128,
+        "height": 96,
+        "waveform_mode": "append",
+        "image_mode": "rgb"
+      }
+    },
+    {
+      "name": "waveform-only",
+      "config": {
+        "view": "waveform",
+        "hz": 30,
+        "points": 1000
+      }
+    },
+    {
+      "name": "image-only",
+      "config": {
+        "view": "image",
+        "hz": 30,
+        "width": 128,
+        "height": 96
+      }
+    }
+  ]
+}

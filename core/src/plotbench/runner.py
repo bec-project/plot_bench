@@ -19,12 +19,12 @@ from .campaign import finalize_campaign_manifest, write_campaign_manifest
 from .client import request
 from .config import Config
 from .provenance import capture_provenance, require_current_artifact
-from .runtime import frontend_environment, java_executable, require_preflight
+from .runtime import BROWSER_FRONTENDS, frontend_environment, java_executable, require_preflight
 from .suites import FRONTENDS as FRONTENDS
 from .suites import expand_cases as expand_cases
 from .suites import plan_from_args, print_plan
 
-BUILT_COMPONENTS = ("rust", "iced", "fyne", "plotly", "qtgraphs-cpp", "jfreechart")
+BUILT_COMPONENTS = ("rust", "iced", "fyne", "fyne-wasm", "plotly", "qtgraphs-cpp", "jfreechart")
 ROOT = Path(__file__).resolve().parents[3]
 
 
@@ -48,8 +48,8 @@ def frontend_command(
         executable = ROOT / "frontends/fyne/build/plotbench-fyne"
     elif name == "qtgraphs-cpp":
         executable = ROOT / "frontends/qtgraphs-cpp/build/plotbench-qtgraphs-cpp"
-    elif name == "plotly":
-        command = [sys.executable, "-m", "plotbench.browser_worker", *args]
+    elif name in BROWSER_FRONTENDS:
+        command = [sys.executable, "-m", "plotbench.browser_worker", "--frontend", name, *args]
         if headless:
             command.append("--headless")
         if screenshot:
@@ -406,7 +406,7 @@ def launch_demo(args):
             "demo",
             browser_executable=getattr(args, "browser_executable", None),
         )
-        if args.frontend == "plotly":
+        if args.frontend in BROWSER_FRONTENDS:
             command.append("--interactive")
         process = subprocess.Popen(command, start_new_session=True, env=environment)
         try:

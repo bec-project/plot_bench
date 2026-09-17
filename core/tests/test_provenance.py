@@ -28,10 +28,14 @@ def create_component(root, component):
     write(root, entrypoint.relative_to(root), "compiled artifact")
     if component == "plotly":
         write(root, f"{directory}/dist/assets/main.js", "compiled JavaScript")
+    elif component == "fyne-wasm":
+        write(root, "frontends/fyne/main.go", "shared Go source")
+        write(root, f"{directory}/dist/plotbench-fyne.wasm", "compiled WebAssembly")
+        write(root, f"{directory}/dist/wasm_exec.js", "matching Go browser runtime")
     return source, artifact, entrypoint
 
 
-@pytest.mark.parametrize("component", ["rust", "iced", "plotly", "jfreechart"])
+@pytest.mark.parametrize("component", ["rust", "iced", "plotly", "jfreechart", "fyne-wasm"])
 def test_recorded_build_matches_sources_and_actual_artifact_bytes(tmp_path, component):
     source, artifact, entrypoint = create_component(tmp_path, component)
     provenance.record_build(component, tmp_path)
@@ -56,7 +60,7 @@ def test_recorded_build_matches_sources_and_actual_artifact_bytes(tmp_path, comp
         provenance.require_current_artifact(component, tmp_path)
 
 
-@pytest.mark.parametrize("component", ["rust", "iced", "plotly"])
+@pytest.mark.parametrize("component", ["rust", "iced", "plotly", "fyne-wasm"])
 def test_source_edits_invalidate_build_even_when_artifact_is_unchanged(tmp_path, component):
     source, artifact, entrypoint = create_component(tmp_path, component)
     provenance.record_build(component, tmp_path)
@@ -323,6 +327,39 @@ def test_fyne_go_sources_and_dependencies_invalidate_native_build(tmp_path, file
     source.write_text("after")
     with pytest.raises(RuntimeError, match="unverified"):
         provenance.require_current_artifact("fyne", tmp_path)
+
+
+@pytest.mark.parametrize(
+    "relative",
+    [
+        "fyne/main.go",
+        "fyne/go.mod",
+        "fyne/go.sum",
+        "fyne-wasm/build.py",
+        "fyne-wasm/index.html",
+        "fyne-wasm/src/main.js",
+        "fyne-wasm/src/style.css",
+    ],
+)
+def test_fyne_wasm_shared_sources_and_browser_wrapper_invalidate_build(tmp_path, relative):
+    create_component(tmp_path, "fyne-wasm")
+    changed = write(tmp_path, f"frontends/{relative}", "before")
+    provenance.record_build("fyne-wasm", tmp_path)
+    provenance.require_current_artifact("fyne-wasm", tmp_path)
+    changed.write_text("after")
+    identity = provenance.artifact_identity("fyne-wasm", tmp_path)
+    assert identity["matches_artifact"] is True
+    assert identity["matches_sources"] is False
+    with pytest.raises(RuntimeError, match="./scripts/setup fyne-wasm"):
+        provenance.require_current_artifact("fyne-wasm", tmp_path)
+
+
+def test_fyne_wasm_build_ignores_shared_native_build_outputs(tmp_path):
+    create_component(tmp_path, "fyne-wasm")
+    provenance.record_build("fyne-wasm", tmp_path)
+    write(tmp_path, "frontends/fyne/build/plotbench-fyne", "rebuilt native executable")
+    write(tmp_path, "frontends/fyne/build/plotbench-build.json", "native provenance")
+    assert provenance.require_current_artifact("fyne-wasm", tmp_path)["matches_sources"] is True
 
 
 @pytest.mark.parametrize(

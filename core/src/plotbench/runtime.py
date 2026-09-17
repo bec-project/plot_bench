@@ -18,6 +18,7 @@ from .suites import FRONTENDS
 ROOT = Path(__file__).resolve().parents[3]
 PYTHON_FRONTENDS = ("pyqtgraph", "matplotlib", "qtgraphs")
 QT_FRONTENDS = (*PYTHON_FRONTENDS, "pyqtgraph-gl", "qtgraphs-cpp")
+BROWSER_FRONTENDS = ("plotly", "fyne-wasm")
 # Cold imports can discover system fonts and initialize native libraries.
 # This work happens before measurements and needs more time than version queries.
 FRONTEND_IMPORT_TIMEOUT_SECONDS = 120
@@ -154,8 +155,8 @@ def component_installed(component):
     """
     if component == "python":
         return True
-    if component == "plotly":
-        return (ROOT / "frontends/plotly/dist/index.html").is_file()
+    if component in BROWSER_FRONTENDS:
+        return (ROOT / f"frontends/{component}/dist/index.html").is_file()
     try:
         executable = _executable(component)
     except KeyError:
@@ -231,12 +232,12 @@ def preflight(*, frontends=(), backends=(), browser_executable=None, headless=Fa
             lambda: frontend_environment(frontends=frontends)
             and "Native desktop session available",
         )
-    if headless and set(frontends) - {"plotly"}:
+    if headless and set(frontends) - set(BROWSER_FRONTENDS):
         checks.append(
             {
                 "name": "headless",
                 "status": "error",
-                "detail": "--headless is a Plotly diagnostic only; select --frontends plotly.",
+                "detail": "--headless is a browser diagnostic only; select plotly or fyne-wasm.",
             }
         )
     for backend in backends:
@@ -248,7 +249,7 @@ def preflight(*, frontends=(), backends=(), browser_executable=None, headless=Fa
     components = set(frontends) & set(FRONTENDS)
     if "rust" in backends:
         components.add("rust")
-    for component in sorted(components - {"plotly"}):
+    for component in sorted(components - set(BROWSER_FRONTENDS)):
         executable = _executable(component)
 
         def installed(executable=executable, component=component):
@@ -322,14 +323,14 @@ def preflight(*, frontends=(), backends=(), browser_executable=None, headless=Fa
             return str(executable.relative_to(ROOT))
 
         check(component, installed)
-    if "plotly" in components:
+    for component in sorted(components.intersection(BROWSER_FRONTENDS)):
 
-        def browser_available():
-            if not (ROOT / "frontends/plotly/dist/index.html").is_file():
-                raise ValueError("Plotly build missing; run ./scripts/setup plotly")
-            require_current_artifact("plotly", ROOT)
+        def browser_available(component=component):
+            if not (ROOT / f"frontends/{component}/dist/index.html").is_file():
+                raise ValueError(f"{component} build missing; run ./scripts/setup {component}")
+            require_current_artifact(component, ROOT)
             if importlib.util.find_spec("playwright") is None:
-                raise ValueError("Playwright missing; run ./scripts/setup plotly")
+                raise ValueError(f"Playwright missing; run ./scripts/setup {component}")
             executable = browser_executable_path(browser_executable)
             if not executable:
                 environment = os.environ.copy()
@@ -355,7 +356,7 @@ def preflight(*, frontends=(), backends=(), browser_executable=None, headless=Fa
             }
             return executable
 
-        check("plotly", browser_available)
+        check(component, browser_available)
     toolchains = {}
     if "plotly" in components:
         toolchains["node"] = {
@@ -370,7 +371,7 @@ def preflight(*, frontends=(), backends=(), browser_executable=None, headless=Fa
             "expected": rust_version,
             "command": ["rustup", "run", rust_version, "rustc", "--version"],
         }
-    if "fyne" in components:
+    if components & {"fyne", "fyne-wasm"}:
         toolchains["go"] = {"command": ["go", "version"]}
     if "qtgraphs-cpp" in components:
         toolchains["cmake"] = {"command": ["cmake", "--version"]}

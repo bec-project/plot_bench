@@ -49,7 +49,7 @@ func waveformSubtitle(c Config) string {
 	if c.Curves > 1 {
 		curves = fmt.Sprintf(" · %d curves", c.Curves)
 	}
-	return fmt.Sprintf("%d points · %s%s     x: 0 … %d     y: −1.5 … 1.5", c.Points, c.WaveformMode, curves, c.Points-1)
+	return fmt.Sprintf("%d points · %s%s     x: 0 … %d     y: -1.5 … 1.5", c.Points, c.WaveformMode, curves, c.Points-1)
 }
 
 func imageSubtitle(c Config) string {

@@ -103,8 +103,9 @@ def test_completion_grace_scales_with_duration_and_latency_is_recorded():
 @pytest.mark.parametrize("page_error", [None, "rasterization failed"])
 @pytest.mark.parametrize("headless", [False, True])
 @pytest.mark.parametrize("custom_executable", [None, "/custom/chromium"])
+@pytest.mark.parametrize("frontend", ["plotly", "fyne-wasm"])
 def test_browser_worker_only_captures_after_completion_and_always_exports_metadata(
-    monkeypatch, tmp_path, page_error, headless, custom_executable
+    monkeypatch, tmp_path, page_error, headless, custom_executable, frontend
 ):
     # An in-process Playwright substitute: no browser, page, HTTP server or network is started.
     import playwright.async_api
@@ -113,65 +114,11 @@ def test_browser_worker_only_captures_after_completion_and_always_exports_metada
     batches = []
     hashed_paths = []
 
-    class FakePage:
-        def __init__(self):
-            self.handlers = {}
-            self.binding = None
-
-        async def evaluate(self, expression):
-            assert expression == "window.devicePixelRatio", "no status evaluation/polling"
-            return 2
-
-        async def close(self):
-            if callback := self.handlers.get("close"):
-                callback(self)
-
-        async def expose_binding(self, name, callback):
-            assert name == "__plotbenchLifecycle"
-            self.binding = callback
-
-        def on(self, name, callback):
-            self.handlers[name] = callback
-
-        async def goto(self, url):
-            events.append("navigation")
-            self.binding({"page": self}, notification("started"))
-            if page_error:
-                self.handlers["pageerror"](page_error)
-            else:
-                events.append("frontend_flushed")
-                self.binding({"page": self}, notification("stopped"))
-
-        async def screenshot(self, *, path):
-            assert events[-1] == "frontend_flushed"
-            assert path == str(tmp_path / "preview.png")
-            events.append("screenshot")
-
-    class FakeBrowser:
-        version = "test-browser"
-
-        def __init__(self):
-            self.handlers = {}
-
-        async def new_page(self, **_kwargs):
-            return FakePage()
-
-        def on(self, name, callback):
-            self.handlers[name] = callback
-
-        async def close(self):
-            events.append("browser_closed")
-            self.handlers["disconnected"](self)
-
     class FakeChromium:
         executable_path = "/test/chromium"
 
-        async def launch(self, **options):
-            assert options == {
-                "headless": headless,
-                "executable_path": custom_executable or self.executable_path,
-            }
-            return FakeBrowser()
+        async def launch(self, **_options):
+            pytest.fail("Both frontends must use the controller with network monitoring disabled")
 
     class FakePlaywright:
         async def __aenter__(self):
@@ -180,6 +127,46 @@ def test_browser_worker_only_captures_after_completion_and_always_exports_metada
         async def __aexit__(self, *_args):
             pass
 
+    class FakeController:
+        def __init__(self, completion, metadata):
+            self.completion = completion
+            self.metadata = metadata
+
+        @classmethod
+        async def launch(cls, completion, metadata):
+            return cls(completion, metadata)
+
+        async def send(self, command, **payload):
+            assert command == "start"
+            assert payload["options"] == {
+                "headless": headless,
+                "executablePath": custom_executable or "/test/chromium",
+            }
+            assert (payload["width"], payload["height"]) == (1100, 820)
+            self.metadata.update(
+                browser_version="test-browser",
+                browser_device_scale_factor=2,
+                browser_network_instrumentation="disabled",
+            )
+            events.append("navigation")
+            self.completion.notify(notification("started"))
+            if page_error:
+                self.completion.fail(page_error)
+            else:
+                events.append("frontend_flushed")
+                self.completion.notify(notification("stopped"))
+
+        async def call(self, command, **payload):
+            assert command == "screenshot"
+            assert payload["path"] == str(tmp_path / "preview.png")
+            assert self.completion.finished.is_set()
+            assert events[-1] == "frontend_flushed"
+            events.append("screenshot")
+
+        async def close(self):
+            events.append("browser_closed")
+
+    monkeypatch.setattr("plotbench.browser_worker.BrowserController", FakeController)
     monkeypatch.setattr(playwright.async_api, "async_playwright", FakePlaywright)
     monkeypatch.setattr(
         "plotbench.browser_worker.browser_launch_options",
@@ -194,6 +181,7 @@ def test_browser_worker_only_captures_after_completion_and_always_exports_metada
     )
     monkeypatch.setattr("plotbench.browser_worker.request", lambda _url, data: batches.append(data))
     args = SimpleNamespace(
+        frontend=frontend,
         headless=headless,
         browser_executable=custom_executable,
         width=1100,
@@ -212,6 +200,7 @@ def test_browser_worker_only_captures_after_completion_and_always_exports_metada
         asyncio.run(run_browser(args, "http://localhost/frontend"))
         assert events == ["navigation", "frontend_flushed", "screenshot", "browser_closed"]
     assert len(batches) == 1
+    assert batches[0]["frontend"] == frontend
     metadata = batches[0]["metadata"]
     assert batches[0]["samples"] == []
     assert metadata["termination_reason"] == ("error" if page_error else "duration")
@@ -219,6 +208,7 @@ def test_browser_worker_only_captures_after_completion_and_always_exports_metada
     assert metadata["completion_grace_seconds"] == 75
     if not page_error:
         assert isinstance(metadata["completion_latency_seconds"], float)
+    assert metadata["browser_network_instrumentation"] == "disabled"
     assert metadata["browser_version"] == "test-browser"
     assert metadata["browser_device_scale_factor"] == 2
     assert metadata["browser_selection"] == ("custom" if custom_executable else "bundled")

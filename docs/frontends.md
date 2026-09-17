@@ -17,6 +17,9 @@ Start the duration clock after the first successful submission, excluding replay
 preload. Support waveform-only, image-only and combined views, both waveform modes,
 and scalar/RGB images. Match fixed axes, color limits, LUT, nearest-neighbor image
 sampling and full-data rendering. Describe any unsupported behavior explicitly.
+Scalar color mapping may differ by one adjacent LUT entry because of numeric
+rounding, as described in the [protocol](protocol.md); exact RGB equality between
+adapters is not required. Apply the same tolerance to scalar and SIMD implementations.
 
 Support multi-plot workloads: create `waveform_plots` waveform widgets, each
 drawing `curves` curves, and `image_plots` image widgets from the current config,
@@ -31,13 +34,24 @@ plot of a kind) and colour curve `c` with the shared `CURVE_COLORS[c % 8]`
 palette; see [presentation](presentation.md). One update submission per frame
 covers all plots: `update_ms` times the whole frame and `conversion_ms` all image
 conversions in it. Record `plot_counts` and `curves` in metadata, and keep
-`plot_viewports` as the data area of the first plot of each kind.
+`plot_viewports` as the data area of the first plot of each kind. Follow the
+versioned [data-area contract](presentation.md#data-area-contract-data-area-v2),
+record `render_contract` and report independently measured `plot_viewports_all`
+for every visible plot. Reports reject mismatched geometry.
 
 Python adapters can reuse `FrameSource`, `MetricsSink` and `frontend_parser` from
 `plotbench.client`. Other languages implement the documented transport directly.
 Preserve bounded mailboxes, ACKs, authoritative append windows, reconnect behavior,
 and bounded CPU replay. Do not generate data, silently downsample, or preload every
 replay frame into GPU resources.
+
+Palette tables, reusable output storage, static decorations and equivalent SIMD
+conversion are valid optimizations for any adapter. Dynamic source data must still
+be adopted and rendered for each counted update. Cache invalidation must cover
+changed values, dimensions, plot counts and source generations; repeating replay
+input does not permit caching fully converted frames. Keep the selected renderer
+and required full-data work explicit, and report conversion kernels and renderer
+overrides so different execution modes remain separate in comparisons.
 
 ## Define telemetry
 
@@ -78,6 +92,11 @@ custom waveform/image/axis rendering in both the UI and README.
 Go adapters use an independent `go.mod` / `go.sum`; keep module/build caches local,
 use read-only dependency resolution for builds, and register `.go`, `.mod` and
 `.sum` files in provenance. Fyne provides a reference at `frontends/fyne/`.
+The `fyne-wasm` browser target shares that Go module and renderer while keeping a
+separate frontend ID, build artifacts, browser runtime identity and telemetry.
+It is intentionally outside the official baseline pending broader visible
+acceptance. Shared implementation does not make native and browser results
+interchangeable.
 
 ## Acceptance
 

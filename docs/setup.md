@@ -30,7 +30,8 @@ builds the plotting adapter, not the matrix editor or source controls.
 | `pyqtgraph`, `pyqtgraph-gl`, `matplotlib`, `qtgraphs` | Graphical desktop and Qt runtime system libraries |
 | `rust` | Rust/Cargo and a native linker/compiler |
 | `jfreechart` | JDK 17+ (`java`, `javac`, `jar`); macOS or Linux Wayland desktop with XWayland and `xdpyinfo` |
-| `fyne` | Go 1.26+, native C compiler, OpenGL; native Wayland development libraries on Linux |
+| `fyne` | Go 1.27+, native C compiler, OpenGL; native Wayland development libraries on Linux |
+| `fyne-wasm` | Go 1.27+; Chromium with WebGL and WebAssembly SIMD or an explicitly selected installed browser |
 | `iced` | Rust/Cargo, native linker/compiler, graphics drivers and Wayland libraries on Linux |
 | `plotly` | npm to bootstrap local Node; Chromium or an explicitly selected installed browser |
 | `qtgraphs-cpp` | CMake 3.21+, C++20 compiler, Qt SDK with Graphs, Quick, QuickControls2, Network, WebSockets and Test; WaylandClient on Linux |
@@ -209,7 +210,7 @@ desktop API. Never infer physical refresh or absolute placement from missing dat
 
 ## Go / Fyne frontend
 
-Install Go 1.26 or newer, then run `./scripts/setup rust fyne`. Fyne uses the
+Install Go 1.27 or newer, then run `./scripts/setup rust fyne`. Fyne uses the
 platform C compiler and OpenGL. On macOS install Xcode command-line tools. On
 Ubuntu the additional build packages are `libgl1-mesa-dev`, `libegl1-mesa-dev`,
 `libwayland-dev`, `libxkbcommon-dev` and `wayland-protocols`; on RHEL-compatible
@@ -221,6 +222,36 @@ Go modules/build caches live in `.cache/go` and `.cache/go-build`; the executabl
 and provenance live in `frontends/fyne/build`. Dependencies are built with
 `-mod=readonly` to preserve `go.mod`/`go.sum`. See the
 [Fyne adapter](../frontends/fyne/README.md) for rendering and validation limits.
+
+Fyne setup enables `GOEXPERIMENT=simd` by default for scalar-image conversion on
+ARM64, WebAssembly and AVX-capable x86-64. On x86-64, runtime CPU and OS checks
+select 512-bit AVX-512 when available, then 128-bit AVX. Native CPUs without a supported SIMD
+path use the scalar fallback. Explicit `GOEXPERIMENT` settings are preserved;
+use `GOEXPERIMENT=nosimd ./scripts/setup fyne` for a scalar reference build.
+The selected kernel and Go build settings are recorded in results. Go's SIMD API
+is still experimental; the reference path remains available for comparisons.
+
+### Fyne WebAssembly
+
+`fyne-wasm` is a separate browser benchmark using the shared Fyne Go module and
+CPU renderer. Install Go 1.27 or newer, then run:
+
+```sh
+./scripts/setup rust fyne-wasm
+./scripts/plotbench doctor --frontends fyne-wasm --backends rust
+./scripts/plotbench demo fyne-wasm
+```
+
+Setup cross-compiles with `GOOS=js GOARCH=wasm`, keeps the module/build caches
+local and installs the controlled browser runtime. This target does not need the
+native Fyne C compiler or OpenGL development libraries. It does need working WebGL
+in the selected browser. Browser installation and explicit
+`--browser-executable` selection follow the Plotly browser workflow above;
+`--browser system` skips the managed Chromium download. Keep browser and native
+Fyne results separate. See the [adapter README](../frontends/fyne-wasm/README.md)
+for the rendering boundary and current validation scope.
+The browser build also defaults to SIMD; use
+`GOEXPERIMENT=nosimd ./scripts/setup fyne-wasm` to build the scalar reference.
 
 ## Java / JFreeChart frontend
 

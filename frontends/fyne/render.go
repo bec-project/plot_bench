@@ -26,24 +26,31 @@ var curveColors = [8]color.RGBA{
 func curveColor(c int) color.RGBA { return curveColors[c%len(curveColors)] }
 
 // colorImage expands ONE image plot (its contiguous source block) to RGBA once per
-// adopted update, before canvas submission.
-func colorImage(data []byte, c Config, palette [256]color.RGBA) *image.RGBA {
-	out := image.NewRGBA(image.Rect(0, 0, c.Width, c.Height))
-	dst := out.Pix
+// adopted update. The caller must exclusively own dst while it is rewritten; this
+// function does not synchronize with a renderer that may still be reading it.
+func colorImage(dst *image.RGBA, data []byte, c Config, palette *[256]color.RGBA) *image.RGBA {
+	bounds := image.Rect(0, 0, c.Width, c.Height)
+	count := c.Width * c.Height
+	if dst == nil || dst.Rect != bounds || dst.Stride != c.Width*4 || len(dst.Pix) < count*4 {
+		dst = image.NewRGBA(bounds)
+	}
+	pixels := dst.Pix[:count*4]
 	// Select the input representation once per image, not once per pixel.
 	if c.ImageMode == "rgb" {
-		for i, j := 0, 0; j < len(dst); i, j = i+3, j+4 {
+		for i, j := 0, 0; j < len(pixels); i, j = i+3, j+4 {
 			rgb := data[i : i+3]
-			binary.LittleEndian.PutUint32(dst[j:j+4], uint32(rgb[0])|uint32(rgb[1])<<8|uint32(rgb[2])<<16|0xff000000)
+			binary.LittleEndian.PutUint32(pixels[j:j+4], uint32(rgb[0])|uint32(rgb[1])<<8|uint32(rgb[2])<<16|0xff000000)
 		}
-		return out
+		return dst
 	}
-	// Prepack opaque colours so each pixel is written with a single 32-bit store.
-	// Encoding/binary keeps the byte layout portable without unsafe alignment casts.
-	var packed [256]uint32
-	for i, p := range palette {
-		packed[i] = uint32(p.R) | uint32(p.G)<<8 | uint32(p.B)<<16 | 0xff000000
-	}
+	colorImageScalar(pixels, data, palette)
+	return dst
+}
+
+// colorScalarFloat64 preserves upstream's packed writes and exact float64 LUT
+// arithmetic. It is also the reference kernel for SIMD comparisons.
+func colorScalarFloat64(dst []byte, data []byte, palette *[256]color.RGBA) {
+	packed := packedImagePalette(palette)
 	for j := 0; j < len(dst); j += 4 {
 		v := float64(math.Float32frombits(binary.LittleEndian.Uint32(data[j : j+4])))
 		index := 0
@@ -57,7 +64,6 @@ func colorImage(data []byte, c Config, palette [256]color.RGBA) *image.RGBA {
 		// existing LUT boundaries for float32 source values.
 		binary.LittleEndian.PutUint32(dst[j:j+4], packed[index])
 	}
-	return out
 }
 
 // rasterWaveform draws every curve of ONE waveform plot into a physical-pixel RGBA

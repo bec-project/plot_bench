@@ -51,6 +51,7 @@ INSTALLABLE = [
     "qtgraphs-cpp",
     "iced",
     "fyne",
+    "fyne-wasm",
     "jfreechart",
     "plotly",
 ]
@@ -507,7 +508,7 @@ class PlotbenchTUI(App):
         if "plotbench-source-rust" in cmdline:
             return "rust source"
         if "plotbench.browser_worker" in cmdline:
-            return "plotly frontend"
+            return "fyne-wasm frontend" if "--frontend fyne-wasm" in cmdline else "plotly frontend"
         if "plotbench.cli" in cmdline:
             tail = cmdline.split("plotbench.cli", 1)[1].split()
             return " ".join(tail[:2]) or "plotbench"

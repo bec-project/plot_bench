@@ -23,8 +23,10 @@ func BenchmarkColorImage4MP(b *testing.B) {
 	}
 	b.SetBytes(int64(len(data)))
 	b.ReportAllocs()
+	out := colorImage(nil, data, c, &palette)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		convertedImage = colorImage(data, c, palette)
+		out = colorImage(out, data, c, &palette)
 	}
+	convertedImage = out
 }

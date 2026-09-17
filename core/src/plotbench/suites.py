@@ -19,6 +19,7 @@ FRONTENDS = (
     "qtgraphs-cpp",
     "iced",
     "fyne",
+    "fyne-wasm",
     "jfreechart",
     "plotly",
 )

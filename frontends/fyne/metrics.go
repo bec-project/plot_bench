@@ -85,7 +85,7 @@ func (m *Metrics) flush(final bool) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	err := post(ctx, m.base, "/api/metrics", map[string]any{"frontend": "fyne", "mode": m.mode, "run_id": m.runID, "samples": samples, "metadata": meta})
+	err := post(ctx, m.base, "/api/metrics", map[string]any{"frontend": frontendName, "mode": m.mode, "run_id": m.runID, "samples": samples, "metadata": meta})
 	if err != nil {
 		m.mu.Lock()
 		m.lost += len(samples)

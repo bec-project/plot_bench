@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/binary"
+	"image"
 	"image/color"
 	"math"
 	"math/rand"
@@ -28,7 +29,13 @@ func TestScalarConversionPreservesLUTBoundaries(t *testing.T) {
 	for i, v := range values {
 		binary.LittleEndian.PutUint32(data[i*4:], math.Float32bits(v))
 	}
-	got := colorImage(data, Config{Width: len(values), Height: 1, ImageMode: "scalar"}, palette)
+	got := colorImage(nil, data, Config{Width: len(values), Height: 1, ImageMode: "scalar"}, &palette)
+	exact := image.NewRGBA(got.Bounds())
+	colorScalarFloat64(exact.Pix, data, &palette)
+	tolerance := 0
+	if imageConversionKernel() != "scalar-float64" {
+		tolerance = 1
+	}
 	for i, v := range values {
 		value := float64(v)
 		if math.IsNaN(value) {
@@ -37,8 +44,14 @@ func TestScalarConversionPreservesLUTBoundaries(t *testing.T) {
 		index := int(math.Floor(math.Max(0, math.Min(1, value)) * 255))
 		want := palette[index]
 		want.A = 255
-		if got.RGBAAt(i, 0) != want {
-			t.Fatalf("value %g bits %08x: got %v want %v", v, math.Float32bits(v), got.RGBAAt(i, 0), want)
+		if exact.RGBAAt(i, 0) != want {
+			t.Fatalf("exact scalar value %g bits %08x: got %v want %v", v, math.Float32bits(v), exact.RGBAAt(i, 0), want)
+		}
+		actual := got.RGBAAt(i, 0)
+		entry := palette[actual.R]
+		entry.A = 255
+		if abs(int(actual.R)-index) > tolerance || actual != entry {
+			t.Fatalf("%s value %g bits %08x: got %v want %v (LUT tolerance %d)", imageConversionKernel(), v, math.Float32bits(v), actual, want, tolerance)
 		}
 	}
 }
@@ -47,7 +60,7 @@ func TestRGBConversionPreservesBytesAndOwnership(t *testing.T) {
 	const width, height = 65, 33
 	data := make([]byte, width*height*3)
 	rand.New(rand.NewSource(42)).Read(data)
-	got := colorImage(data, Config{Width: width, Height: height, ImageMode: "rgb"}, [256]color.RGBA{})
+	got := colorImage(nil, data, Config{Width: width, Height: height, ImageMode: "rgb"}, nil)
 	for i := 0; i < width*height; i++ {
 		want := color.RGBA{data[3*i], data[3*i+1], data[3*i+2], 255}
 		if got.RGBAAt(i%width, i/width) != want {
@@ -58,7 +71,9 @@ func TestRGBConversionPreservesBytesAndOwnership(t *testing.T) {
 	for i := range data {
 		data[i] = 0
 	}
-	next := colorImage(data, Config{Width: width, Height: height, ImageMode: "rgb"}, [256]color.RGBA{})
+	// A nil destination requests independent ownership; intentional destination
+	// reuse is covered separately by TestColorImageReusesStorageAndRewritesEveryFrame.
+	next := colorImage(nil, data, Config{Width: width, Height: height, ImageMode: "rgb"}, nil)
 	if got.RGBAAt(0, 0) != first || next.RGBAAt(0, 0) != (color.RGBA{0, 0, 0, 255}) {
 		t.Fatal("frames share mutable storage")
 	}
