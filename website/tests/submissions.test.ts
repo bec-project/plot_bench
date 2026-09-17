@@ -88,6 +88,22 @@ function rawSummary() {
 }
 type RawSummary = ReturnType<typeof rawSummary>;
 
+function rawBrowserSummary() {
+  const raw: any = rawSummary();
+  raw.runs = raw.runs.filter((r: any) => r.frontend === 'pyqtgraph');
+  raw.campaign.frontends = ['fyne-wasm'];
+  raw.campaign.runs_planned = raw.runs.length;
+  for (const run of raw.runs) {
+    run.frontend = 'fyne-wasm';
+    delete run.metadata.qt_platform_plugin;
+    run.metadata.display_protocol = 'browser';
+    run.metadata.display_protocol_requested = 'native';
+    run.metadata.display_session = { display_protocol: 'native' };
+    run.provenance.preflight = { runtime: { display: { display_protocol: 'native' } } };
+  }
+  return raw;
+}
+
 test('real seed validates; workload identity ignores JSON property order', () => {
   assert.equal(parseSubmission(sample()).runs.length, 42);
   const c = sample().runs[0].config;
@@ -323,6 +339,61 @@ test('export keeps acquisition metadata, omits private fields and does not mutat
   assert.deepEqual(Object.keys(result.runs[0].config).length, 12);
   assert.doesNotMatch(JSON.stringify(result), /PRIVATE_|2030-01-01|generation/);
   assert.deepEqual(result.links, { report: null, extended_report: null, raw_data: null });
+});
+
+test('Fyne WASM baseline export resolves the browser marker from recorded desktop context', async () => {
+  for (const source of ['session', 'session-only', 'preflight']) {
+    for (const protocol of ['native', 'wayland']) {
+      const raw = rawBrowserSummary();
+      for (const run of raw.runs) {
+        if (source !== 'preflight') {
+          run.metadata.display_session.display_protocol = protocol;
+          if (source === 'session-only') delete run.provenance.preflight;
+        } else {
+          delete run.metadata.display_session;
+          run.provenance.preflight.runtime.display.display_protocol = protocol;
+        }
+      }
+      const before = structuredClone(raw);
+      const exported = await exportSummary(raw, options);
+      assert.equal(exported.classification, 'benchmark', `${source}: ${protocol}`);
+      assert.equal(exported.runs.length, 21);
+      assert.ok(exported.runs.every((r) => r.context.display_protocol === protocol));
+      assert.deepEqual(raw, before);
+    }
+  }
+});
+
+test('browser export preserves diagnostic display evidence and requires recorded context', async () => {
+  const mutations: ((run: any) => void)[] = [
+    (run) => (run.metadata.headless = true),
+    (run) => {
+      delete run.metadata.display_session;
+      delete run.provenance.preflight;
+    },
+    ...['x11', 'xwayland', 'offscreen', 'headless', 'unknown'].flatMap((protocol) => [
+      (run: any) => (run.metadata.display_session.display_protocol = protocol),
+      (run: any) => (run.metadata.display_protocol = protocol),
+      (run: any) => {
+        delete run.metadata.display_session;
+        run.provenance.preflight.runtime.display.display_protocol = protocol;
+      },
+    ]),
+  ];
+  for (const mutate of mutations) {
+    const raw = rawBrowserSummary();
+    // One diagnostic run is enough to reject the entire campaign, even when the
+    // requested protocol and the other observations say native desktop.
+    mutate(raw.runs[0]);
+    await assert.rejects(exportSummary(raw, options), /classification is diagnostic/);
+  }
+});
+
+test('submission notes keep browser and native runs on the same recorded desktop together', () => {
+  const raw = rawBrowserSummary();
+  raw.runs.push(...rawSummary().runs);
+  assert.match(suggestSubmission(raw).notes, /Native desktop display at 120 Hz and 2× scaling\./);
+  assert.doesNotMatch(suggestSubmission(raw).notes, /more than one display context/);
 });
 
 test('report regeneration and per-run timestamps do not create different acquisitions or contexts', async () => {
