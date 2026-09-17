@@ -16,6 +16,7 @@ import {
   type Observation,
   type Submission,
 } from './model';
+import { validObservations } from './invalidations';
 import './style.css';
 
 const VIEWS = [
@@ -120,7 +121,9 @@ function App() {
       });
     return () => abort.abort();
   }, []);
-  const all = useMemo(() => observations(campaigns), [campaigns]);
+  // Drop runs superseded by a frontend's implementation change before any page
+  // ranks or averages them; the raw campaign files still contain them.
+  const all = useMemo(() => validObservations(observations(campaigns)), [campaigns]);
   const hosts = useMemo(() => distinct(campaigns.map((c) => c.host.id)), [campaigns]);
   // Filters stay on the page that set them; other pages send them to the results.
   function filter(key: string, value: string) {
