@@ -400,7 +400,10 @@ function Record({
               {marked && (
                 <Pill tone="amber">{scaleLabel(r.context.pixel_ratio)} display scale</Pill>
               )}
-              {g.limited > 0 && <Pill tone="amber">{g.limited} source-limited</Pill>}
+              {g.sourceLimited > 0 && <Pill tone="amber">{g.sourceLimited} source-limited</Pill>}
+              {g.frontendLimited > 0 && (
+                <Pill tone="info">{g.frontendLimited} frontend-limited</Pill>
+              )}
               {g.successful < g.attempted && (
                 <Pill tone="danger">{g.attempted - g.successful} without valid rate</Pill>
               )}

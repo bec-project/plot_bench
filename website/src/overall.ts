@@ -26,7 +26,8 @@ export interface OverallEntry {
   placements: SectionPlacement[];
   hosts: string[];
   revisions: number;
-  limitedGroups: number;
+  sourceLimitedGroups: number;
+  frontendLimitedGroups: number;
 }
 export interface IncompleteFrontend {
   frontend: string;
@@ -91,7 +92,8 @@ export function collectOverall(
       placements,
       hosts: [...new Set(groups.map((g) => g.representative.campaign.host.id))].sort(),
       revisions: new Set(groups.map((g) => g.representative.run.context.commit)).size,
-      limitedGroups: groups.filter((g) => g.limited > 0).length,
+      sourceLimitedGroups: groups.filter((g) => g.sourceLimited > 0).length,
+      frontendLimitedGroups: groups.filter((g) => g.frontendLimited > 0).length,
     });
   }
   entries.sort(

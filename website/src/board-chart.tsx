@@ -81,7 +81,8 @@ export function BoardChart({ board, hovered = null, onHover }: { board: WinnerBo
                 <span className="muted">
                   {' '}
                   {bar.valid}/{bar.attempted} valid
-                  {bar.limited > 0 ? ` · ${bar.limited} source-limited` : ''}
+                  {bar.sourceLimited > 0 ? ` · ${bar.sourceLimited} source-limited` : ''}
+                  {bar.frontendLimited > 0 ? ` · ${bar.frontendLimited} frontend-limited` : ''}
                 </span>
               </td>
             </tr>

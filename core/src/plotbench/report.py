@@ -201,6 +201,8 @@ def summarize_run(folder):
         source_generation_p95_ms=None,
         source_mailbox_drops=None,
         source_deadline_misses=None,
+        source_shortfall_percent=None,
+        delivery_drop_percent=None,
         delivery_ack_hz=None,
         provenance=manifest.get("provenance"),
         observed_display_contexts=[],
@@ -320,6 +322,13 @@ def summarize_run(folder):
         row["source_mailbox_drops"] = sum(sample.get("mailbox_drops", 0) for sample in source)
         row["source_deadline_misses"] = deadline_counter_increase(source)
         row["delivery_ack_hz"] = delivery_ack_rate(source)
+        # How far the producer fell below target (source limiting) and how many of the
+        # frames it did produce were replaced awaiting ACK (frontend/delivery limiting).
+        if row["mode"] == "stream" and row["target_hz"]:
+            row["source_shortfall_percent"] = max(
+                0.0, 100 * (row["target_hz"] - row["source_hz"]) / row["target_hz"]
+            )
+        row["delivery_drop_percent"] = 100 * row["source_mailbox_drops"] / len(source)
     # A short startup smoke is deliberately not evidence of a sustained production rate.
     row["sustained_candidate"] = (
         row["status"] == "ok"
@@ -665,7 +674,9 @@ def run_row_html(row, label_prefix=""):
         f"<tr><td>{escape(row['frontend'])}<small>{run_id}</small></td><td>{escape(row['backend'])}</td>"
         f"<td>{label}</td><td>{escape(row['status'])}</td><td>{fmt(row['submitted_hz'])}</td>"
         f"<td>{fmt(row['source_hz'])}</td><td>{fmt(row['delivery_ack_hz'])}</td>"
-        f"<td>{fmt(row['source_deadline_misses'], 0)}</td><td>{fmt(row['gap_percent'])}</td>"
+        f"<td>{fmt(row['source_deadline_misses'], 0)}</td>"
+        f"<td>{fmt(row['source_shortfall_percent'], 1)}</td><td>{fmt(row['delivery_drop_percent'], 1)}</td>"
+        f"<td>{fmt(row['gap_percent'])}</td>"
         f"<td>{fmt(row['cpu_mean_percent'], 1)}</td><td>{fmt(row['rss_peak_mib'], 1)}</td></tr>"
     )
 
@@ -680,6 +691,8 @@ def run_details_html(row, label_prefix=""):
         source_generation_p95_ms=row["source_generation_p95_ms"],
         source_mailbox_drops=row["source_mailbox_drops"],
         source_deadline_misses=row["source_deadline_misses"],
+        source_shortfall_percent=row["source_shortfall_percent"],
+        delivery_drop_percent=row["delivery_drop_percent"],
         delivery_ack_hz=row["delivery_ack_hz"],
         provenance=row["provenance"],
         observed_display_contexts=row["observed_display_contexts"],
@@ -697,7 +710,8 @@ def run_details_html(row, label_prefix=""):
 
 RUN_TABLE_HEAD = (
     "<thead><tr><th>Frontend</th><th>Backend</th><th>Scenario</th><th>Status</th><th>Updates/s</th>"
-    "<th>Source Hz</th><th>Delivery ACK Hz</th><th>Observed source misses</th><th>Gaps %</th>"
+    "<th>Source Hz</th><th>Delivery ACK Hz</th><th>Observed source misses</th>"
+    "<th>Source shortfall %</th><th>Delivery drop %</th><th>Gaps %</th>"
     "<th>CPU %</th><th>RSS MiB</th></tr></thead>"
 )
 
@@ -907,14 +921,18 @@ def campaign_html(campaign, hardware, rows, missing, generated_at, extensions=()
         matrix_rows = []
         for case in scenarios:
             subset = [row for row in rows if row["scenario"] == case["name"]]
+            worst_shortfall = max(
+                (row.get("source_shortfall_percent") or 0 for row in subset), default=0.0
+            )
             matrix_rows.append(
                 f"<tr><td>{escape(case['name'])}</td><td>{escape(workload_label(case.get('config')))}</td>"
                 f"<td>{len(subset)}</td><td>{sum(r['status'] == 'ok' for r in subset)}</td>"
-                f"<td>{sum(bool(r.get('source_limited')) for r in subset)}</td></tr>"
+                f"<td>{sum(bool(r.get('source_limited')) for r in subset)}</td>"
+                f"<td>{fmt(worst_shortfall, 1)}</td></tr>"
             )
         matrix = (
             f"<h3>Scenario matrix ({len(scenarios)} scenarios)</h3>"
-            '<div class="scroll"><table><thead><tr><th>Scenario</th><th>Workload</th><th>Recorded runs</th><th>Valid runs</th><th>Source-limited runs</th></tr></thead>'
+            '<div class="scroll"><table><thead><tr><th>Scenario</th><th>Workload</th><th>Recorded runs</th><th>Valid runs</th><th>Source-limited runs</th><th>Worst source shortfall %</th></tr></thead>'
             f'<tbody>{"".join(matrix_rows)}</tbody></table></div>'
         )
     else:
@@ -1187,6 +1205,8 @@ def build_report(path):
             source_generation_p95_ms="p95 generation/packing/enqueue duration; consult backend implementation",
             source_mailbox_drops="produced frames replaced in the server mailbox while delivery awaited ACK",
             source_deadline_misses="increase in cumulative missed-deadline counter between first and last source sample in the measured window; boundary misses may be unobserved",
+            source_shortfall_percent="stream only: how far the source generation rate fell below target, 100·(target − source Hz)/target, clamped at 0; the magnitude of source limiting, independent of the renderer",
+            delivery_drop_percent="produced frames replaced in the mailbox awaiting ACK as a percentage of frames produced in the window; the magnitude of frontend/delivery limiting, where the renderer could not consume at the offered rate",
             submissions_per_bin="stability diagnostics: submitted samples per one-second bin after warmup, zero bins included; not displayed FPS",
             rss_mib="stability diagnostics: resident memory of the frontend process tree per resource observation inside the measured window; missing observations remain missing",
         ),

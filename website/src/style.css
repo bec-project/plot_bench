@@ -427,6 +427,10 @@ pre {
   background: rgba(230, 163, 74, 0.12);
   color: #e6b877;
 }
+.pill-info {
+  background: rgba(100, 170, 230, 0.14);
+  color: #8fc3ee;
+}
 .pill-danger {
   background: var(--danger-bg);
   color: var(--danger);

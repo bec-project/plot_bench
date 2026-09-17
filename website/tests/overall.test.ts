@@ -16,8 +16,10 @@ interface Shape {
   /** Sections to record; every listed section gets repetitions 1..3. */
   sections?: readonly string[];
   commit?: string;
-  /** Section slugs whose first repetition is flagged as source-limited. */
+  /** Section slugs whose first repetition is flagged as source-limited (deadline misses). */
   limited?: readonly string[];
+  /** Section slugs whose first repetition is flagged as frontend-limited (mailbox drops). */
+  frontendLimited?: readonly string[];
 }
 // A campaign built from the suite itself: one run per section and repetition, all sharing
 // the fixture's complete display context so every group is eligible for a board.
@@ -41,6 +43,8 @@ function campaign(id: string, frontend: string, host: string, shape: Shape): Sub
       r.metrics.rss_peak_mib = shape.memory === undefined ? 200 : shape.memory;
       r.metrics.cpu_mean_percent = shape.cpu === undefined ? 20 : shape.cpu;
       r.metrics.source_deadline_misses = i === 0 && shape.limited?.includes(section.slug) ? 1 : 0;
+      r.metrics.source_mailbox_drops =
+        i === 0 && shape.frontendLimited?.includes(section.slug) ? 1 : 0;
       r.status = rate === null ? 'failed' : 'ok';
       r.samples = rate === null ? 0 : 100;
       if (shape.commit) r.context.commit = shape.commit;
@@ -178,21 +182,31 @@ test('empty input and a single entrant produce empty structures and rank 1', () 
   assert.deepEqual(ranks(single), [['alpha', 1, 7, 7]]);
   assert.equal(single.entries[0].placements.length, 7);
   assert.equal(single.entries[0].revisions, 1);
-  assert.equal(single.entries[0].limitedGroups, 0);
+  assert.equal(single.entries[0].sourceLimitedGroups, 0);
+  assert.equal(single.entries[0].frontendLimitedGroups, 0);
 });
 
-test('source-limited groups are counted per entry without changing placements', () => {
+test('source- and frontend-limited groups are counted per entry without changing placements', () => {
   const overall = collectOverall(
     observations([
-      campaign('a', 'alpha', 'host-a', { rate: 60, limited: ['multi-plot', 'rgb-image'] }),
+      campaign('a', 'alpha', 'host-a', {
+        rate: 60,
+        limited: ['multi-plot', 'rgb-image'],
+        frontendLimited: ['large-image'],
+      }),
       campaign('b', 'beta', 'host-b', { rate: 50 }),
     ]),
   );
   assert.deepEqual(
-    overall.entries.map((e) => [e.frontend, e.rank, e.limitedGroups]),
+    overall.entries.map((e) => [
+      e.frontend,
+      e.rank,
+      e.sourceLimitedGroups,
+      e.frontendLimitedGroups,
+    ]),
     [
-      ['alpha', 1, 2],
-      ['beta', 2, 0],
+      ['alpha', 1, 2, 1],
+      ['beta', 2, 0, 0],
     ],
   );
 });

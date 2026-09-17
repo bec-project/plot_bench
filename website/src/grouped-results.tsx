@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { type ResultGroup, type CampaignGroup } from './aggregation';
 import { sectionOf, type Section } from './baseline';
-import { type Observation, sourceLimited, workloadLabel } from './model';
+import { type Observation, sourceLimited, frontendLimited, workloadLabel } from './model';
 import { Pill, date, format } from './presentation';
 import { contextLine } from './section-rail';
 
@@ -49,7 +49,8 @@ function Group({
             {section ? ` · ${section.title}` : named ? '' : ` · ${workloadLabel(r.config)}`}
           </small>
           <div className="pills">
-            {g.limited > 0 && <Pill tone="amber">{g.limited} source-limited</Pill>}
+            {g.sourceLimited > 0 && <Pill tone="amber">{g.sourceLimited} source-limited</Pill>}
+            {g.frontendLimited > 0 && <Pill tone="info">{g.frontendLimited} frontend-limited</Pill>}
             {g.successful < g.attempted && (
               <Pill tone="danger">{g.attempted - g.successful} without valid rate</Pill>
             )}
@@ -163,7 +164,8 @@ function Campaign({
                         <Pill tone={o.run.status === 'ok' ? 'success' : 'danger'}>
                           {o.run.status}
                         </Pill>
-                        {sourceLimited(o.run) && <Pill tone="amber">Source limits</Pill>}
+                        {sourceLimited(o.run) && <Pill tone="amber">Source-limited</Pill>}
+                        {frontendLimited(o.run) && <Pill tone="info">Frontend-limited</Pill>}
                       </div>
                     </td>
                     <td>
