@@ -1253,6 +1253,10 @@ pre {
   padding-left: 10px !important;
   white-space: nowrap;
 }
+/* The rate never splits; the limit annotations may wrap on narrow screens. */
+.chart-rate {
+  white-space: nowrap;
+}
 /* Each stacked chart names its metric; the axis row already labels the scale. */
 .chart-caption {
   caption-side: top;
@@ -1784,6 +1788,9 @@ footer {
     padding: 0 10px 12px;
   }
   .pill {
+    white-space: normal;
+  }
+  .chart-value {
     white-space: normal;
   }
   .winner-heading {

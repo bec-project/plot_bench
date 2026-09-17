@@ -77,7 +77,7 @@ export function BoardChart({ board, hovered = null, onHover }: { board: WinnerBo
                 </span>
               </td>
               <td className="chart-value">
-                {rateRange(bar.minimum, bar.median)}
+                <span className="chart-rate">{rateRange(bar.minimum, bar.median)}</span>
                 <span className="muted">
                   {' '}
                   {bar.valid}/{bar.attempted} valid
