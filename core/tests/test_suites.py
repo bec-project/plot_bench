@@ -576,6 +576,16 @@ def test_baseline_flag_allows_narrowing_by_frontend_only():
     assert len(plan.jobs) == 189 and plan.suite["display_context"] == "fixed 120 Hz, 2x"
 
 
+def test_baseline_flag_refuses_a_frontend_outside_the_official_baseline():
+    # A frontend in the catalog but excluded from scenarios/baseline.json (e.g.
+    # fyne-wasm) must not be runnable under the official baseline label.
+    baseline = json.loads((ROOT / BASELINE_SUITE).read_text())
+    outside = sorted(set(FRONTENDS) - set(baseline["frontends"]))
+    assert outside, "expected at least one catalog frontend outside the baseline"
+    with pytest.raises(ValueError, match="not part of it"):
+        plan_from_args(_baseline_args(frontends=outside[:1]))
+
+
 @pytest.mark.parametrize(
     "argument,value",
     [
