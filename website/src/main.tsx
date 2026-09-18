@@ -634,9 +634,9 @@ function Contribute() {
               Download {result.id}.json
             </button>
             <p className="muted small">
-              Add it to <code>website/results/</code> under exactly that name. If your browser
-              appends a number because the file already exists, rename it before opening the pull
-              request.
+              Add it to <code>website/results/</code>. Browser-added filename suffixes are accepted.
+              Each separate campaign needs a unique Campaign ID inside the JSON; renaming the file
+              alone does not change it. Submit only one export of each campaign.
             </p>
           </section>
         )}

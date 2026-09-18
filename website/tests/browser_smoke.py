@@ -375,6 +375,10 @@ def test_results_filters_details_submission_and_mobile():
             await expect(page.locator(".submission-preview")).to_contain_text(
                 "7 of 7 sections · 2 frontends · 3 repetitions each"
             )
+            if screenshots:
+                await page.locator(".submission-preview").screenshot(
+                    path=str(Path(screenshots) / "contribute-preview.png")
+                )
             download = page.get_by_role(
                 "button", name="Download qa-campaign.json", exact=True
             )

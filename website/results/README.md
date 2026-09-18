@@ -4,7 +4,7 @@ This directory is the reviewed public collection. It holds complete campaigns of
 the official baseline suite, [`scenarios/baseline.json`](../../scenarios/baseline.json),
 and nothing else: seven sections at 60 Hz from the Rust source in streaming mode,
 three 30-second repetitions after a 5-second warmup, for any subset of the nine
-frontends. Add one `<campaign-id>.json` file through a pull request; never copy an
+frontends. Add one JSON file per campaign through a pull request; never copy an
 entire raw `results/` directory here. The website and its command-line exporter
 produce the same version 1 format, defined by
 [`submission.schema.json`](../submission.schema.json).
@@ -26,15 +26,16 @@ produce the same version 1 format, defined by
    ```
    Review the proposed campaign ID and public host alias, or replace them. The
    proposed ID is `<cpu>-<os>-<yyyymmdd>-plotbench-baseline`; a second campaign
-   on the same host and day needs a suffix, because IDs and file names must be
-   unique.
+   on the same host and day needs a suffix on its campaign ID, such as `-2`.
+   Changing a filename does not change the ID inside the JSON.
 3. Inspect every public field. The exporter omits raw logs, command lines, local
    paths, hostnames, display names and environment values. Free-text fields such
    as notes, hardware labels, renderer descriptions and version strings still
    require review. Use a friendly alias, not a hostname, username or serial number.
-4. Add the JSON here as `<campaign-id>.json` (rename it if your browser appended a
-   number), run validation and open a pull request describing the hardware,
-   operating conditions and retained evidence. Include failures and source-limited
+4. Add the JSON here (the suggested name is `<campaign-id>.json`; browser-added
+   suffixes such as `-2`, `(1)` or ` (1)` are accepted), run validation and open a
+   pull request describing the hardware, operating conditions and retained evidence.
+   Include failures and source-limited
    sections; do not cherry-pick the fastest runs.
    ```sh
    npm --prefix website ci
@@ -98,10 +99,13 @@ reason maintainer review remains part of publication.
   the sections it covers; each run retains its acquisition snapshot. Aliases are
   contributor supplied, not authenticated machine identities; maintainers should
   resolve collisions.
-- Give each acquisition a new **campaign ID**, using lowercase letters, digits
-  and hyphens, at most 80 characters. The filename must match. The input fingerprint
-  detects accidental resubmission under another name; it is not an authenticity
-  guarantee. Do not change measurements to bypass duplicate checks.
+- Give each acquisition a new **campaign ID** inside its JSON, using lowercase
+  letters, digits and hyphens, at most 80 characters. Filenames may differ from
+  this ID. If two separate acquisitions share an ID, add a suffix such as `-2`
+  to the later acquisition's JSON `id`. Submit only one export of each acquisition;
+  the input fingerprint detects accidental resubmission under another name. It is
+  not an authenticity guarantee. Do not change measurements to bypass duplicate
+  checks.
 - The exporter reads acquisition provenance, not the later report-generation
   provenance. It hashes build/runtime/display context so private metadata need not
   be published. A context hash is a separation key, not a certification of equality

@@ -494,7 +494,47 @@ test('the exporter refuses every campaign that is not the unmodified baseline su
   }
 });
 
-test('catalogue loader checks filenames, refuses symlinks and explains rejections', async () => {
+test('catalogue uses JSON campaign IDs regardless of download filenames', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'plotbench-catalog-'));
+  try {
+    const c = sample();
+    for (const name of [
+      `${c.id}.json`,
+      `${c.id}(1).json`,
+      `${c.id} (1).json`,
+      `${c.id}-2.json`,
+      'custom-name.json',
+    ]) {
+      const path = join(directory, name);
+      await writeFile(path, JSON.stringify(c));
+      assert.deepEqual((await loadCatalog(directory)).campaigns, [c], name);
+      await rm(path);
+    }
+    await writeFile(join(directory, `${c.id}.json`), JSON.stringify(c));
+    const secondPath = join(directory, `${c.id}(1).json`);
+    await writeFile(secondPath, JSON.stringify(c));
+    await assert.rejects(loadCatalog(directory), /Duplicate campaign ID/);
+
+    const second = sample();
+    second.input_sha256 = 'f'.repeat(64);
+    await writeFile(secondPath, JSON.stringify(second));
+    await assert.rejects(
+      loadCatalog(directory),
+      /Duplicate campaign ID: .*unique "id" inside its JSON.*renaming the file alone/,
+    );
+    second.id += '-2';
+    await writeFile(secondPath, JSON.stringify(second));
+    assert.deepEqual((await loadCatalog(directory)).campaigns, [c, second]);
+
+    second.input_sha256 = c.input_sha256;
+    await writeFile(secondPath, JSON.stringify(second));
+    await assert.rejects(loadCatalog(directory), /Campaign already submitted/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('catalogue loader refuses symlinks and explains invalid submissions', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'plotbench-catalog-'));
   try {
     await writeFile(join(directory, 'README.md'), 'Not a submission');
@@ -503,9 +543,6 @@ test('catalogue loader checks filenames, refuses symlinks and explains rejection
       path = join(directory, c.id + '.json');
     await writeFile(path, JSON.stringify(c));
     assert.equal((await loadCatalog(directory)).campaigns.length, 1);
-    await writeFile(join(directory, c.id + '-2.json'), JSON.stringify(c));
-    await assert.rejects(loadCatalog(directory), new RegExp(`rename it to ${c.id}\\.json`));
-    await rm(join(directory, c.id + '-2.json'));
     const stale: any = sample();
     stale.id = 'stale-export';
     for (const run of stale.runs) {

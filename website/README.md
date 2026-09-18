@@ -242,6 +242,10 @@ pull request adding it to `website/results/`. Contributors need GitHub access
 only for that final step. CI validates the submission; maintainers review it
 before merge.
 
+Browser-added download suffixes such as `(1)` or `-2` are accepted. Campaigns are
+identified by the `id` inside the JSON, so a separate acquisition needs a unique
+Campaign ID even if its filename differs. Submit only one export per acquisition.
+
 The exporter first refuses a campaign whose summary is not structurally the
 official baseline (cooldown, repetition count, mode and backend lists, case list,
 completion status, sections, repetitions, timings, frontends or run counts) with a
