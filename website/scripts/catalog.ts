@@ -1,6 +1,6 @@
 import { readdir, readFile, mkdir, writeFile, lstat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { resolve, basename } from 'node:path';
+import { resolve } from 'node:path';
 import { parseSubmissionText, validateCatalog } from '../src/validation';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const PLOT_COUNTS = ['waveform_plots', 'curves', 'image_plots'];
@@ -29,10 +29,7 @@ export async function loadCatalog(directory: string) {
           : '';
       throw new Error(`${name}: ${summary}.${hint}`);
     }
-    if (basename(name, '.json') !== submission.id)
-      throw new Error(
-        `${name}: the file name must be the campaign ID, so rename it to ${submission.id}.json. Browsers append a number such as "-2" or " (1)" when a download with that name already exists.`,
-      );
+    // Downloads may acquire a filename suffix; the validated JSON carries identity.
     inputs.push(submission);
   }
   return { schema_version: 1 as const, campaigns: validateCatalog(inputs) };

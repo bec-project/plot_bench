@@ -70,7 +70,10 @@ export function validateCatalog(inputs: unknown[]): Submission[] {
   const ids = new Set<string>(),
     origins = new Set<string>();
   for (const c of campaigns) {
-    if (ids.has(c.id)) throw new Error(`Duplicate campaign ID: ${c.id}`);
+    if (ids.has(c.id))
+      throw new Error(
+        `Duplicate campaign ID: ${c.id}. Each acquisition needs a unique "id" inside its JSON (for example, add "-2"); renaming the file alone does not change the ID. For another export of the same acquisition, keep only one submission.`,
+      );
     if (origins.has(c.input_sha256)) throw new Error(`Campaign already submitted: ${c.id}`);
     ids.add(c.id);
     origins.add(c.input_sha256);
