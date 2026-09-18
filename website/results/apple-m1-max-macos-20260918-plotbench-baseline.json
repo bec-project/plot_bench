@@ -1,0 +1,5403 @@
+{
+  "schema_version": 1,
+  "id": "apple-m1-max-macos-20260918-plotbench-baseline",
+  "title": "Plotbench baseline",
+  "recorded_at": "2026-09-18T12:01:53+02:00",
+  "input_sha256": "1034cb7a88b46434869f76c2129caf80e849dd49d86a6ec4be059ca80c59b970",
+  "host": {
+    "id": "apple-m1-max-macos",
+    "label": "Apple M1 Max · macOS",
+    "cpu": "Apple M1 Max",
+    "gpu": "Apple M1 Max",
+    "memory_gib": 32,
+    "os": "macOS 26.6.2 (25G83)",
+    "architecture": "arm64"
+  },
+  "notes": "Official Plotbench baseline suite, 7 sections. 3 repetitions per case, 5 s warmup and 30 s measurement per run. Native desktop display at 60 Hz and 1× scaling.",
+  "classification": "benchmark",
+  "completion_status": "completed",
+  "planned_runs": 84,
+  "runs": [
+    {
+      "id": "run-0001",
+      "scenario": "multi-image",
+      "frontend": "fyne-wasm",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 4
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "05c2fc07f981de19b9d16363a381558a15ce5ffad67bce2b38d08e93de9aa369",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            276,
+            276
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 1.50016,
+        "update_p95_ms": 1.700096,
+        "cpu_mean_percent": 89.37117117117118,
+        "rss_peak_mib": 1040.65625,
+        "gap_percent": 0,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0002",
+      "scenario": "rgb-image",
+      "frontend": "fyne-wasm",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "rgb",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "95960a8a0e49df64215595754f996d2f1d83e4491880b7e9782138ea92c5ecfe",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 0.800256,
+        "update_p95_ms": 0.999936,
+        "cpu_mean_percent": 42.32162162162163,
+        "rss_peak_mib": 970.640625,
+        "gap_percent": 0,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0003",
+      "scenario": "scalar-image",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1766,
+      "context": {
+        "fingerprint": "7d3754a75b3c35140e2638b1b37220e25cf6726e0eada836792cc34711c4c520",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            499.9999999999999,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 60,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 58.86666666666667,
+        "update_p50_ms": 16.48468751227483,
+        "update_p95_ms": 17.026208253810182,
+        "cpu_mean_percent": 110.53603603603604,
+        "rss_peak_mib": 265.5,
+        "gap_percent": 1.285634432643935,
+        "source_hz": 59.6,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0004",
+      "scenario": "multi-plot",
+      "frontend": "plotly",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 2,
+        "curves": 5,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1708,
+      "context": {
+        "fingerprint": "5568194933ea8e230e19e3401adc777364a8efa1d8545b965aa3d16a4c7f29d8",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Plotly scattergl (WebGL) + precolored image.source (PNG raster traces)",
+        "measurement_stage": "update_ms: elapsed conversion, full-resolution RGBA mapping and PNG encoding plus synchronous Plotly.react calls for every plot. draw_ms: synchronous Plotly.react calls, already included in update_ms. update_complete_ms: elapsed adapter call through settlement of all per-plot Plotly Promises, including image loading, deferred work and wait. Calls are serialized until settlement; none of these timings measures GPU completion or screen presentation.",
+        "versions": {
+          "plotly": "4.0.0",
+          "react": "19.2.8"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": null,
+        "plot_viewports": {
+          "waveform": [
+            418,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 56.93333333333333,
+        "update_p50_ms": 15.399999976158142,
+        "update_p95_ms": 17.700000047683716,
+        "cpu_mean_percent": 146.98288288288288,
+        "rss_peak_mib": 1151.421875,
+        "gap_percent": 5.111111111111111,
+        "source_hz": 59.9,
+        "source_deadline_misses": 3,
+        "source_mailbox_drops": 89
+      }
+    },
+    {
+      "id": "run-0005",
+      "scenario": "rgb-image",
+      "frontend": "fyne",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "rgb",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "5ff05fb8af6f1032d5ab52a667454caf7d9a48cbd6483636aff864476321c4d8",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 0.37916649999999996,
+        "update_p95_ms": 0.45350830000000003,
+        "cpu_mean_percent": 19.29909090909091,
+        "rss_peak_mib": 225.515625,
+        "gap_percent": 0,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0006",
+      "scenario": "multi-image",
+      "frontend": "fyne-wasm",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 4
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1798,
+      "context": {
+        "fingerprint": "05c2fc07f981de19b9d16363a381558a15ce5ffad67bce2b38d08e93de9aa369",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            276,
+            276
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.93333333333333,
+        "update_p50_ms": 1.50016,
+        "update_p95_ms": 1.69984,
+        "cpu_mean_percent": 89.24594594594593,
+        "rss_peak_mib": 1151.53125,
+        "gap_percent": 0.1111111111111111,
+        "source_hz": 59.9,
+        "source_deadline_misses": 2,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0007",
+      "scenario": "large-image",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 2048,
+        "height": 2048,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 239,
+      "context": {
+        "fingerprint": "7d3754a75b3c35140e2638b1b37220e25cf6726e0eada836792cc34711c4c520",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            499.9999999999999,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 60,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 7.966666666666667,
+        "update_p50_ms": 124.24608296714725,
+        "update_p95_ms": 135.7664247159846,
+        "cpu_mean_percent": 166.36818181818188,
+        "rss_peak_mib": 1447.4375,
+        "gap_percent": 86.71484157865481,
+        "source_hz": 59.56666666666667,
+        "source_deadline_misses": 13,
+        "source_mailbox_drops": 17
+      }
+    },
+    {
+      "id": "run-0008",
+      "scenario": "multi-curve",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 10,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1648,
+      "context": {
+        "fingerprint": "6da9f6b1afa30a811ab7c395580e59270c34d93f699dd6d965d69d063387592b",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            952,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 60,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 54.93333333333333,
+        "update_p50_ms": 17.576936981640756,
+        "update_p95_ms": 18.57064832001924,
+        "cpu_mean_percent": 104,
+        "rss_peak_mib": 227.671875,
+        "gap_percent": 8.444444444444445,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 2
+      }
+    },
+    {
+      "id": "run-0009",
+      "scenario": "multi-image",
+      "frontend": "plotly",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 4
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 555,
+      "context": {
+        "fingerprint": "749761d4687ca784266adcb00628741fe7b046615fb11a1405e9ec64249b9312",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Plotly scattergl (WebGL) + precolored image.source (PNG raster traces)",
+        "measurement_stage": "update_ms: elapsed conversion, full-resolution RGBA mapping and PNG encoding plus synchronous Plotly.react calls for every plot. draw_ms: synchronous Plotly.react calls, already included in update_ms. update_complete_ms: elapsed adapter call through settlement of all per-plot Plotly Promises, including image loading, deferred work and wait. Calls are serialized until settlement; none of these timings measures GPU completion or screen presentation.",
+        "versions": {
+          "plotly": "4.0.0",
+          "react": "19.2.8"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": null,
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            276,
+            276
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 18.5,
+        "update_p50_ms": 39.40000003576279,
+        "update_p95_ms": 42.69000002741812,
+        "cpu_mean_percent": 133.92727272727274,
+        "rss_peak_mib": 1628.609375,
+        "gap_percent": 69.1151919866444,
+        "source_hz": 59.96666666666667,
+        "source_deadline_misses": 1,
+        "source_mailbox_drops": 1243
+      }
+    },
+    {
+      "id": "run-0010",
+      "scenario": "multi-plot",
+      "frontend": "plotly",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 2,
+        "curves": 5,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1704,
+      "context": {
+        "fingerprint": "5568194933ea8e230e19e3401adc777364a8efa1d8545b965aa3d16a4c7f29d8",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Plotly scattergl (WebGL) + precolored image.source (PNG raster traces)",
+        "measurement_stage": "update_ms: elapsed conversion, full-resolution RGBA mapping and PNG encoding plus synchronous Plotly.react calls for every plot. draw_ms: synchronous Plotly.react calls, already included in update_ms. update_complete_ms: elapsed adapter call through settlement of all per-plot Plotly Promises, including image loading, deferred work and wait. Calls are serialized until settlement; none of these timings measures GPU completion or screen presentation.",
+        "versions": {
+          "plotly": "4.0.0",
+          "react": "19.2.8"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": null,
+        "plot_viewports": {
+          "waveform": [
+            418,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 56.8,
+        "update_p50_ms": 15.399999976158142,
+        "update_p95_ms": 17.78499996662139,
+        "cpu_mean_percent": 148.34181818181818,
+        "rss_peak_mib": 1152.234375,
+        "gap_percent": 5.333333333333333,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 96
+      }
+    },
+    {
+      "id": "run-0011",
+      "scenario": "large-image",
+      "frontend": "fyne",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 2048,
+        "height": 2048,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1781,
+      "context": {
+        "fingerprint": "5ff05fb8af6f1032d5ab52a667454caf7d9a48cbd6483636aff864476321c4d8",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.36666666666667,
+        "update_p50_ms": 3.004583,
+        "update_p95_ms": 3.276042,
+        "cpu_mean_percent": 111.59375,
+        "rss_peak_mib": 278.21875,
+        "gap_percent": 1.0555555555555556,
+        "source_hz": 59.63333333333333,
+        "source_deadline_misses": 11,
+        "source_mailbox_drops": 8
+      }
+    },
+    {
+      "id": "run-0012",
+      "scenario": "large-image",
+      "frontend": "fyne-wasm",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 2048,
+        "height": 2048,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1181,
+      "context": {
+        "fingerprint": "95960a8a0e49df64215595754f996d2f1d83e4491880b7e9782138ea92c5ecfe",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 39.36666666666667,
+        "update_p50_ms": 5.400064,
+        "update_p95_ms": 5.6,
+        "cpu_mean_percent": 147.68727272727273,
+        "rss_peak_mib": 1227.578125,
+        "gap_percent": 34.35241801000556,
+        "source_hz": 59.63333333333333,
+        "source_deadline_misses": 11,
+        "source_mailbox_drops": 608
+      }
+    },
+    {
+      "id": "run-0013",
+      "scenario": "multi-curve",
+      "frontend": "fyne",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 10,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1797,
+      "context": {
+        "fingerprint": "0daaaf75f042259a9aa0bba49f01cf2b676758fbafc918d4014237abe00256b2",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            952,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.9,
+        "update_p50_ms": 3.060583,
+        "update_p95_ms": 3.4454001999999995,
+        "cpu_mean_percent": 34.336036036036035,
+        "rss_peak_mib": 175.203125,
+        "gap_percent": 0.16666666666666666,
+        "source_hz": 59.93333333333333,
+        "source_deadline_misses": 2,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0014",
+      "scenario": "rgb-image",
+      "frontend": "plotly",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "rgb",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1799,
+      "context": {
+        "fingerprint": "49f8d030e6108de403f40a1aed2ba3514079db32cd01fc203a028bf5afcfaf6f",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Plotly scattergl (WebGL) + precolored image.source (PNG raster traces)",
+        "measurement_stage": "update_ms: elapsed conversion, full-resolution RGBA mapping and PNG encoding plus synchronous Plotly.react calls for every plot. draw_ms: synchronous Plotly.react calls, already included in update_ms. update_complete_ms: elapsed adapter call through settlement of all per-plot Plotly Promises, including image loading, deferred work and wait. Calls are serialized until settlement; none of these timings measures GPU completion or screen presentation.",
+        "versions": {
+          "plotly": "4.0.0",
+          "react": "19.2.8"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": null,
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.96666666666667,
+        "update_p50_ms": 8.100000023841858,
+        "update_p95_ms": 9.300000011920927,
+        "cpu_mean_percent": 108.82,
+        "rss_peak_mib": 1484.453125,
+        "gap_percent": 0,
+        "source_hz": 59.96666666666667,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0015",
+      "scenario": "multi-curve",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 10,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1630,
+      "context": {
+        "fingerprint": "6da9f6b1afa30a811ab7c395580e59270c34d93f699dd6d965d69d063387592b",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            952,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 60,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 54.333333333333336,
+        "update_p50_ms": 17.476395500125363,
+        "update_p95_ms": 19.61607242410537,
+        "cpu_mean_percent": 102.8609090909091,
+        "rss_peak_mib": 222.046875,
+        "gap_percent": 9.444444444444445,
+        "source_hz": 59.56666666666667,
+        "source_deadline_misses": 13,
+        "source_mailbox_drops": 16
+      }
+    },
+    {
+      "id": "run-0016",
+      "scenario": "multi-plot",
+      "frontend": "fyne-wasm",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 2,
+        "curves": 5,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1799,
+      "context": {
+        "fingerprint": "30d7b07e5ef2e1f3bcf921c1e066d1587fc83e13e1c15068f4fe43338295c839",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            418,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.96666666666667,
+        "update_p50_ms": 8.399872,
+        "update_p95_ms": 8.89984,
+        "cpu_mean_percent": 83.32410714285713,
+        "rss_peak_mib": 1129.65625,
+        "gap_percent": 0.05555555555555555,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0017",
+      "scenario": "multi-image",
+      "frontend": "plotly",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 4
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 555,
+      "context": {
+        "fingerprint": "749761d4687ca784266adcb00628741fe7b046615fb11a1405e9ec64249b9312",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Plotly scattergl (WebGL) + precolored image.source (PNG raster traces)",
+        "measurement_stage": "update_ms: elapsed conversion, full-resolution RGBA mapping and PNG encoding plus synchronous Plotly.react calls for every plot. draw_ms: synchronous Plotly.react calls, already included in update_ms. update_complete_ms: elapsed adapter call through settlement of all per-plot Plotly Promises, including image loading, deferred work and wait. Calls are serialized until settlement; none of these timings measures GPU completion or screen presentation.",
+        "versions": {
+          "plotly": "4.0.0",
+          "react": "19.2.8"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": null,
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            276,
+            276
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 18.5,
+        "update_p50_ms": 39.40000003576279,
+        "update_p95_ms": 42.590000003576264,
+        "cpu_mean_percent": 133.97567567567566,
+        "rss_peak_mib": 1629.515625,
+        "gap_percent": 69.1151919866444,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 1245
+      }
+    },
+    {
+      "id": "run-0018",
+      "scenario": "large-image",
+      "frontend": "plotly",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 2048,
+        "height": 2048,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 224,
+      "context": {
+        "fingerprint": "49f8d030e6108de403f40a1aed2ba3514079db32cd01fc203a028bf5afcfaf6f",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Plotly scattergl (WebGL) + precolored image.source (PNG raster traces)",
+        "measurement_stage": "update_ms: elapsed conversion, full-resolution RGBA mapping and PNG encoding plus synchronous Plotly.react calls for every plot. draw_ms: synchronous Plotly.react calls, already included in update_ms. update_complete_ms: elapsed adapter call through settlement of all per-plot Plotly Promises, including image loading, deferred work and wait. Calls are serialized until settlement; none of these timings measures GPU completion or screen presentation.",
+        "versions": {
+          "plotly": "4.0.0",
+          "react": "19.2.8"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": null,
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 7.466666666666667,
+        "update_p50_ms": 78.25,
+        "update_p95_ms": 82.95000002384185,
+        "cpu_mean_percent": 128.05945945945945,
+        "rss_peak_mib": 1915.203125,
+        "gap_percent": 87.52783964365256,
+        "source_hz": 59.93333333333333,
+        "source_deadline_misses": 2,
+        "source_mailbox_drops": 1574
+      }
+    },
+    {
+      "id": "run-0019",
+      "scenario": "waveform",
+      "frontend": "fyne",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "0daaaf75f042259a9aa0bba49f01cf2b676758fbafc918d4014237abe00256b2",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            952,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 1.001188,
+        "update_p95_ms": 1.3039774,
+        "cpu_mean_percent": 22.762385321100915,
+        "rss_peak_mib": 175.5625,
+        "gap_percent": 0,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0020",
+      "scenario": "multi-curve",
+      "frontend": "fyne",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 10,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "0daaaf75f042259a9aa0bba49f01cf2b676758fbafc918d4014237abe00256b2",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            952,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 3.036459,
+        "update_p95_ms": 3.3893086500000003,
+        "cpu_mean_percent": 33.82053571428572,
+        "rss_peak_mib": 175.671875,
+        "gap_percent": 0,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0021",
+      "scenario": "multi-image",
+      "frontend": "plotly",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 4
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 556,
+      "context": {
+        "fingerprint": "749761d4687ca784266adcb00628741fe7b046615fb11a1405e9ec64249b9312",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Plotly scattergl (WebGL) + precolored image.source (PNG raster traces)",
+        "measurement_stage": "update_ms: elapsed conversion, full-resolution RGBA mapping and PNG encoding plus synchronous Plotly.react calls for every plot. draw_ms: synchronous Plotly.react calls, already included in update_ms. update_complete_ms: elapsed adapter call through settlement of all per-plot Plotly Promises, including image loading, deferred work and wait. Calls are serialized until settlement; none of these timings measures GPU completion or screen presentation.",
+        "versions": {
+          "plotly": "4.0.0",
+          "react": "19.2.8"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": null,
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            276,
+            276
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 18.533333333333335,
+        "update_p50_ms": 39.30000001192093,
+        "update_p95_ms": 42.74999998509884,
+        "cpu_mean_percent": 134.00446428571428,
+        "rss_peak_mib": 1620.515625,
+        "gap_percent": 69.07675194660735,
+        "source_hz": 59.93333333333333,
+        "source_deadline_misses": 2,
+        "source_mailbox_drops": 1242
+      }
+    },
+    {
+      "id": "run-0022",
+      "scenario": "scalar-image",
+      "frontend": "fyne",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "5ff05fb8af6f1032d5ab52a667454caf7d9a48cbd6483636aff864476321c4d8",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 0.23583349999999997,
+        "update_p95_ms": 0.273083,
+        "cpu_mean_percent": 20.91261261261261,
+        "rss_peak_mib": 173.234375,
+        "gap_percent": 0,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0023",
+      "scenario": "rgb-image",
+      "frontend": "fyne",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "rgb",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "5ff05fb8af6f1032d5ab52a667454caf7d9a48cbd6483636aff864476321c4d8",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 0.338625,
+        "update_p95_ms": 0.37555239999999995,
+        "cpu_mean_percent": 19.46909090909091,
+        "rss_peak_mib": 172.578125,
+        "gap_percent": 0,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0024",
+      "scenario": "rgb-image",
+      "frontend": "fyne-wasm",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "rgb",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "95960a8a0e49df64215595754f996d2f1d83e4491880b7e9782138ea92c5ecfe",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 0.89984,
+        "update_p95_ms": 0.999936,
+        "cpu_mean_percent": 38.763302752293576,
+        "rss_peak_mib": 1082.484375,
+        "gap_percent": 0,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0025",
+      "scenario": "large-image",
+      "frontend": "fyne",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 2048,
+        "height": 2048,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1790,
+      "context": {
+        "fingerprint": "5ff05fb8af6f1032d5ab52a667454caf7d9a48cbd6483636aff864476321c4d8",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.666666666666664,
+        "update_p50_ms": 3.008604,
+        "update_p95_ms": 3.26073355,
+        "cpu_mean_percent": 109.575,
+        "rss_peak_mib": 282.40625,
+        "gap_percent": 0.500277932184547,
+        "source_hz": 59.833333333333336,
+        "source_deadline_misses": 5,
+        "source_mailbox_drops": 3
+      }
+    },
+    {
+      "id": "run-0026",
+      "scenario": "scalar-image",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1763,
+      "context": {
+        "fingerprint": "7d3754a75b3c35140e2638b1b37220e25cf6726e0eada836792cc34711c4c520",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            499.9999999999999,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 60,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 58.766666666666666,
+        "update_p50_ms": 16.496125026606023,
+        "update_p95_ms": 17.451008403440934,
+        "cpu_mean_percent": 110.30636363636366,
+        "rss_peak_mib": 267.078125,
+        "gap_percent": 2.109938922820655,
+        "source_hz": 60,
+        "source_deadline_misses": 1,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0027",
+      "scenario": "waveform",
+      "frontend": "fyne-wasm",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "ce49d8a6e109a09464a474e1a7f2c0741e4262469a30df79a3cf052a8e423295",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            952,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 4.199936,
+        "update_p95_ms": 4.900096,
+        "cpu_mean_percent": 51.92999999999999,
+        "rss_peak_mib": 1106.75,
+        "gap_percent": 0,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0028",
+      "scenario": "scalar-image",
+      "frontend": "fyne",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1799,
+      "context": {
+        "fingerprint": "5ff05fb8af6f1032d5ab52a667454caf7d9a48cbd6483636aff864476321c4d8",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.96666666666667,
+        "update_p50_ms": 0.279167,
+        "update_p95_ms": 0.3327081,
+        "cpu_mean_percent": 22.230275229357794,
+        "rss_peak_mib": 173.375,
+        "gap_percent": 0,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0029",
+      "scenario": "scalar-image",
+      "frontend": "fyne-wasm",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "95960a8a0e49df64215595754f996d2f1d83e4491880b7e9782138ea92c5ecfe",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 0.499968,
+        "update_p95_ms": 0.599808,
+        "cpu_mean_percent": 40.05688073394495,
+        "rss_peak_mib": 1098.171875,
+        "gap_percent": 0.0555247084952804,
+        "source_hz": 60,
+        "source_deadline_misses": 1,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0030",
+      "scenario": "scalar-image",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1765,
+      "context": {
+        "fingerprint": "7d3754a75b3c35140e2638b1b37220e25cf6726e0eada836792cc34711c4c520",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            499.9999999999999,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 60,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 58.833333333333336,
+        "update_p50_ms": 16.403499990701675,
+        "update_p95_ms": 17.020682827569544,
+        "cpu_mean_percent": 109.61284403669723,
+        "rss_peak_mib": 267.984375,
+        "gap_percent": 0.8983717012914093,
+        "source_hz": 59.36666666666667,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0031",
+      "scenario": "multi-plot",
+      "frontend": "fyne",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 2,
+        "curves": 5,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "a042cff3ffa8b25152477857b4c152bc17ea73c30b2e85ab2384b304fb6bf766",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            418,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 3.0517295,
+        "update_p95_ms": 3.4365375,
+        "cpu_mean_percent": 32.81531531531532,
+        "rss_peak_mib": 143.359375,
+        "gap_percent": 0,
+        "source_hz": 60.03333333333333,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0032",
+      "scenario": "multi-curve",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 10,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1299,
+      "context": {
+        "fingerprint": "6da9f6b1afa30a811ab7c395580e59270c34d93f699dd6d965d69d063387592b",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            952,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 60,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 43.3,
+        "update_p50_ms": 19.897333986591548,
+        "update_p95_ms": 25.345621519954875,
+        "cpu_mean_percent": 91.00192307692306,
+        "rss_peak_mib": 221.65625,
+        "gap_percent": 27.104377104377104,
+        "source_hz": 55.46666666666667,
+        "source_deadline_misses": 120,
+        "source_mailbox_drops": 247
+      }
+    },
+    {
+      "id": "run-0033",
+      "scenario": "multi-curve",
+      "frontend": "plotly",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 10,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "bdc8e935ea70e35f757ec3ce1af40e113231bf61e2a9016f6208c7e1779cb72e",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Plotly scattergl (WebGL) + precolored image.source (PNG raster traces)",
+        "measurement_stage": "update_ms: elapsed conversion, full-resolution RGBA mapping and PNG encoding plus synchronous Plotly.react calls for every plot. draw_ms: synchronous Plotly.react calls, already included in update_ms. update_complete_ms: elapsed adapter call through settlement of all per-plot Plotly Promises, including image loading, deferred work and wait. Calls are serialized until settlement; none of these timings measures GPU completion or screen presentation.",
+        "versions": {
+          "plotly": "4.0.0",
+          "react": "19.2.8"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": null,
+        "plot_viewports": {
+          "waveform": [
+            952,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 12.900000035762789,
+        "update_p95_ms": 15,
+        "cpu_mean_percent": 132.90550458715597,
+        "rss_peak_mib": 1130.65625,
+        "gap_percent": 0,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0034",
+      "scenario": "scalar-image",
+      "frontend": "fyne-wasm",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1799,
+      "context": {
+        "fingerprint": "95960a8a0e49df64215595754f996d2f1d83e4491880b7e9782138ea92c5ecfe",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.96666666666667,
+        "update_p50_ms": 0.499968,
+        "update_p95_ms": 0.599808,
+        "cpu_mean_percent": 39.085185185185175,
+        "rss_peak_mib": 996.421875,
+        "gap_percent": 0.05555555555555555,
+        "source_hz": 59.96666666666667,
+        "source_deadline_misses": 1,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0035",
+      "scenario": "multi-image",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 4
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 728,
+      "context": {
+        "fingerprint": "bf9752f11fe499c265ba14aa2c19d0507d12d5190fd7f4ee57127c78fa51e8b6",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            276.0000000000001,
+            276
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 60,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 24.266666666666666,
+        "update_p50_ms": 40.112458023941144,
+        "update_p95_ms": 41.979891996015795,
+        "cpu_mean_percent": 123.50454545454545,
+        "rss_peak_mib": 487.453125,
+        "gap_percent": 59.306875349357185,
+        "source_hz": 59,
+        "source_deadline_misses": 18,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0036",
+      "scenario": "waveform",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1799,
+      "context": {
+        "fingerprint": "6da9f6b1afa30a811ab7c395580e59270c34d93f699dd6d965d69d063387592b",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            952,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 60,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.96666666666667,
+        "update_p50_ms": 3.230416972655803,
+        "update_p95_ms": 3.691100259311497,
+        "cpu_mean_percent": 27.915596330275232,
+        "rss_peak_mib": 216.484375,
+        "gap_percent": 0.05555555555555555,
+        "source_hz": 59.96666666666667,
+        "source_deadline_misses": 1,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0037",
+      "scenario": "multi-plot",
+      "frontend": "plotly",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 2,
+        "curves": 5,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1699,
+      "context": {
+        "fingerprint": "5568194933ea8e230e19e3401adc777364a8efa1d8545b965aa3d16a4c7f29d8",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Plotly scattergl (WebGL) + precolored image.source (PNG raster traces)",
+        "measurement_stage": "update_ms: elapsed conversion, full-resolution RGBA mapping and PNG encoding plus synchronous Plotly.react calls for every plot. draw_ms: synchronous Plotly.react calls, already included in update_ms. update_complete_ms: elapsed adapter call through settlement of all per-plot Plotly Promises, including image loading, deferred work and wait. Calls are serialized until settlement; none of these timings measures GPU completion or screen presentation.",
+        "versions": {
+          "plotly": "4.0.0",
+          "react": "19.2.8"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": null,
+        "plot_viewports": {
+          "waveform": [
+            418,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 56.63333333333333,
+        "update_p50_ms": 15.400000035762789,
+        "update_p95_ms": 17.80000001192093,
+        "cpu_mean_percent": 147.7118181818182,
+        "rss_peak_mib": 1121.46875,
+        "gap_percent": 5.558643690939411,
+        "source_hz": 59.9,
+        "source_deadline_misses": 3,
+        "source_mailbox_drops": 97
+      }
+    },
+    {
+      "id": "run-0038",
+      "scenario": "multi-image",
+      "frontend": "fyne",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 4
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "61c8419ff3f7ccc6c5111213c525d6dd8bada5ce21468a254a5003867b88fbd6",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            276,
+            276
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 0.8369795,
+        "update_p95_ms": 0.9848526999999999,
+        "cpu_mean_percent": 54.89909909909909,
+        "rss_peak_mib": 230.21875,
+        "gap_percent": 0,
+        "source_hz": 60.03333333333333,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0039",
+      "scenario": "waveform",
+      "frontend": "plotly",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "bdc8e935ea70e35f757ec3ce1af40e113231bf61e2a9016f6208c7e1779cb72e",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Plotly scattergl (WebGL) + precolored image.source (PNG raster traces)",
+        "measurement_stage": "update_ms: elapsed conversion, full-resolution RGBA mapping and PNG encoding plus synchronous Plotly.react calls for every plot. draw_ms: synchronous Plotly.react calls, already included in update_ms. update_complete_ms: elapsed adapter call through settlement of all per-plot Plotly Promises, including image loading, deferred work and wait. Calls are serialized until settlement; none of these timings measures GPU completion or screen presentation.",
+        "versions": {
+          "plotly": "4.0.0",
+          "react": "19.2.8"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": null,
+        "plot_viewports": {
+          "waveform": [
+            952,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 5,
+        "update_p95_ms": 5.699999988079071,
+        "cpu_mean_percent": 65.45229357798165,
+        "rss_peak_mib": 1037.28125,
+        "gap_percent": 0,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0040",
+      "scenario": "multi-curve",
+      "frontend": "fyne",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 10,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1801,
+      "context": {
+        "fingerprint": "0daaaf75f042259a9aa0bba49f01cf2b676758fbafc918d4014237abe00256b2",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            952,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60.03333333333333,
+        "update_p50_ms": 3.303583,
+        "update_p95_ms": 3.66275,
+        "cpu_mean_percent": 34.906363636363636,
+        "rss_peak_mib": 227.09375,
+        "gap_percent": 0,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0041",
+      "scenario": "scalar-image",
+      "frontend": "plotly",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "49f8d030e6108de403f40a1aed2ba3514079db32cd01fc203a028bf5afcfaf6f",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Plotly scattergl (WebGL) + precolored image.source (PNG raster traces)",
+        "measurement_stage": "update_ms: elapsed conversion, full-resolution RGBA mapping and PNG encoding plus synchronous Plotly.react calls for every plot. draw_ms: synchronous Plotly.react calls, already included in update_ms. update_complete_ms: elapsed adapter call through settlement of all per-plot Plotly Promises, including image loading, deferred work and wait. Calls are serialized until settlement; none of these timings measures GPU completion or screen presentation.",
+        "versions": {
+          "plotly": "4.0.0",
+          "react": "19.2.8"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": null,
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 11.200000047683716,
+        "update_p95_ms": 12.300000011920927,
+        "cpu_mean_percent": 135.43363636363637,
+        "rss_peak_mib": 1616.34375,
+        "gap_percent": 0,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0042",
+      "scenario": "scalar-image",
+      "frontend": "plotly",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "49f8d030e6108de403f40a1aed2ba3514079db32cd01fc203a028bf5afcfaf6f",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Plotly scattergl (WebGL) + precolored image.source (PNG raster traces)",
+        "measurement_stage": "update_ms: elapsed conversion, full-resolution RGBA mapping and PNG encoding plus synchronous Plotly.react calls for every plot. draw_ms: synchronous Plotly.react calls, already included in update_ms. update_complete_ms: elapsed adapter call through settlement of all per-plot Plotly Promises, including image loading, deferred work and wait. Calls are serialized until settlement; none of these timings measures GPU completion or screen presentation.",
+        "versions": {
+          "plotly": "4.0.0",
+          "react": "19.2.8"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": null,
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 11.100000023841858,
+        "update_p95_ms": 12.300000011920927,
+        "cpu_mean_percent": 135.9572727272727,
+        "rss_peak_mib": 1576.25,
+        "gap_percent": 0,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0043",
+      "scenario": "multi-curve",
+      "frontend": "plotly",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 10,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1797,
+      "context": {
+        "fingerprint": "bdc8e935ea70e35f757ec3ce1af40e113231bf61e2a9016f6208c7e1779cb72e",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Plotly scattergl (WebGL) + precolored image.source (PNG raster traces)",
+        "measurement_stage": "update_ms: elapsed conversion, full-resolution RGBA mapping and PNG encoding plus synchronous Plotly.react calls for every plot. draw_ms: synchronous Plotly.react calls, already included in update_ms. update_complete_ms: elapsed adapter call through settlement of all per-plot Plotly Promises, including image loading, deferred work and wait. Calls are serialized until settlement; none of these timings measures GPU completion or screen presentation.",
+        "versions": {
+          "plotly": "4.0.0",
+          "react": "19.2.8"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": null,
+        "plot_viewports": {
+          "waveform": [
+            952,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.9,
+        "update_p50_ms": 12.800000011920927,
+        "update_p95_ms": 15,
+        "cpu_mean_percent": 130.81100917431195,
+        "rss_peak_mib": 1269.90625,
+        "gap_percent": 0.16666666666666666,
+        "source_hz": 59.93333333333333,
+        "source_deadline_misses": 2,
+        "source_mailbox_drops": 1
+      }
+    },
+    {
+      "id": "run-0044",
+      "scenario": "scalar-image",
+      "frontend": "plotly",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1795,
+      "context": {
+        "fingerprint": "49f8d030e6108de403f40a1aed2ba3514079db32cd01fc203a028bf5afcfaf6f",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Plotly scattergl (WebGL) + precolored image.source (PNG raster traces)",
+        "measurement_stage": "update_ms: elapsed conversion, full-resolution RGBA mapping and PNG encoding plus synchronous Plotly.react calls for every plot. draw_ms: synchronous Plotly.react calls, already included in update_ms. update_complete_ms: elapsed adapter call through settlement of all per-plot Plotly Promises, including image loading, deferred work and wait. Calls are serialized until settlement; none of these timings measures GPU completion or screen presentation.",
+        "versions": {
+          "plotly": "4.0.0",
+          "react": "19.2.8"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": null,
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.833333333333336,
+        "update_p50_ms": 11.200000047683716,
+        "update_p95_ms": 12.5,
+        "cpu_mean_percent": 135.66422018348624,
+        "rss_peak_mib": 1628.234375,
+        "gap_percent": 0.2777777777777778,
+        "source_hz": 59.9,
+        "source_deadline_misses": 3,
+        "source_mailbox_drops": 2
+      }
+    },
+    {
+      "id": "run-0045",
+      "scenario": "multi-plot",
+      "frontend": "fyne",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 2,
+        "curves": 5,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "a042cff3ffa8b25152477857b4c152bc17ea73c30b2e85ab2384b304fb6bf766",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            418,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 2.930437,
+        "update_p95_ms": 3.3533306,
+        "cpu_mean_percent": 34.40272727272727,
+        "rss_peak_mib": 174.90625,
+        "gap_percent": 0,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0046",
+      "scenario": "waveform",
+      "frontend": "fyne-wasm",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1799,
+      "context": {
+        "fingerprint": "ce49d8a6e109a09464a474e1a7f2c0741e4262469a30df79a3cf052a8e423295",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            952,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.96666666666667,
+        "update_p50_ms": 4.100096,
+        "update_p95_ms": 4.8,
+        "cpu_mean_percent": 50.75727272727272,
+        "rss_peak_mib": 956.546875,
+        "gap_percent": 0.05555555555555555,
+        "source_hz": 59.96666666666667,
+        "source_deadline_misses": 1,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0047",
+      "scenario": "waveform",
+      "frontend": "plotly",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "bdc8e935ea70e35f757ec3ce1af40e113231bf61e2a9016f6208c7e1779cb72e",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Plotly scattergl (WebGL) + precolored image.source (PNG raster traces)",
+        "measurement_stage": "update_ms: elapsed conversion, full-resolution RGBA mapping and PNG encoding plus synchronous Plotly.react calls for every plot. draw_ms: synchronous Plotly.react calls, already included in update_ms. update_complete_ms: elapsed adapter call through settlement of all per-plot Plotly Promises, including image loading, deferred work and wait. Calls are serialized until settlement; none of these timings measures GPU completion or screen presentation.",
+        "versions": {
+          "plotly": "4.0.0",
+          "react": "19.2.8"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": null,
+        "plot_viewports": {
+          "waveform": [
+            952,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 5,
+        "update_p95_ms": 5.600000023841858,
+        "cpu_mean_percent": 65.3209090909091,
+        "rss_peak_mib": 1036.015625,
+        "gap_percent": 0,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0048",
+      "scenario": "rgb-image",
+      "frontend": "plotly",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "rgb",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1799,
+      "context": {
+        "fingerprint": "49f8d030e6108de403f40a1aed2ba3514079db32cd01fc203a028bf5afcfaf6f",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Plotly scattergl (WebGL) + precolored image.source (PNG raster traces)",
+        "measurement_stage": "update_ms: elapsed conversion, full-resolution RGBA mapping and PNG encoding plus synchronous Plotly.react calls for every plot. draw_ms: synchronous Plotly.react calls, already included in update_ms. update_complete_ms: elapsed adapter call through settlement of all per-plot Plotly Promises, including image loading, deferred work and wait. Calls are serialized until settlement; none of these timings measures GPU completion or screen presentation.",
+        "versions": {
+          "plotly": "4.0.0",
+          "react": "19.2.8"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": null,
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.96666666666667,
+        "update_p50_ms": 8,
+        "update_p95_ms": 8.799999952316284,
+        "cpu_mean_percent": 109.05636363636364,
+        "rss_peak_mib": 1478.75,
+        "gap_percent": 0.05555555555555555,
+        "source_hz": 59.96666666666667,
+        "source_deadline_misses": 1,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0049",
+      "scenario": "large-image",
+      "frontend": "fyne",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 2048,
+        "height": 2048,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1778,
+      "context": {
+        "fingerprint": "5ff05fb8af6f1032d5ab52a667454caf7d9a48cbd6483636aff864476321c4d8",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.266666666666666,
+        "update_p50_ms": 3.07325,
+        "update_p95_ms": 3.3289125,
+        "cpu_mean_percent": 112.22792792792792,
+        "rss_peak_mib": 293.96875,
+        "gap_percent": 1.2222222222222223,
+        "source_hz": 59.46666666666667,
+        "source_deadline_misses": 16,
+        "source_mailbox_drops": 6
+      }
+    },
+    {
+      "id": "run-0050",
+      "scenario": "waveform",
+      "frontend": "fyne-wasm",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1799,
+      "context": {
+        "fingerprint": "ce49d8a6e109a09464a474e1a7f2c0741e4262469a30df79a3cf052a8e423295",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            952,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.96666666666667,
+        "update_p50_ms": 4.100096,
+        "update_p95_ms": 4.8,
+        "cpu_mean_percent": 53.09449541284404,
+        "rss_peak_mib": 965.0625,
+        "gap_percent": 0.05555555555555555,
+        "source_hz": 59.96666666666667,
+        "source_deadline_misses": 1,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0051",
+      "scenario": "multi-image",
+      "frontend": "fyne",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 4
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1791,
+      "context": {
+        "fingerprint": "61c8419ff3f7ccc6c5111213c525d6dd8bada5ce21468a254a5003867b88fbd6",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            276,
+            276
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.7,
+        "update_p50_ms": 0.835208,
+        "update_p95_ms": 0.989479,
+        "cpu_mean_percent": 53.552252252252245,
+        "rss_peak_mib": 229.390625,
+        "gap_percent": 0.5,
+        "source_hz": 59.86666666666667,
+        "source_deadline_misses": 4,
+        "source_mailbox_drops": 2
+      }
+    },
+    {
+      "id": "run-0052",
+      "scenario": "multi-curve",
+      "frontend": "fyne-wasm",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 10,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1799,
+      "context": {
+        "fingerprint": "ce49d8a6e109a09464a474e1a7f2c0741e4262469a30df79a3cf052a8e423295",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            952,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.96666666666667,
+        "update_p50_ms": 8.999936,
+        "update_p95_ms": 9.700096,
+        "cpu_mean_percent": 90.04128440366974,
+        "rss_peak_mib": 979.328125,
+        "gap_percent": 0.05555555555555555,
+        "source_hz": 59.96666666666667,
+        "source_deadline_misses": 1,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0053",
+      "scenario": "large-image",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 2048,
+        "height": 2048,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 234,
+      "context": {
+        "fingerprint": "7d3754a75b3c35140e2638b1b37220e25cf6726e0eada836792cc34711c4c520",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            499.9999999999999,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 60,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 7.8,
+        "update_p50_ms": 126.29537499742582,
+        "update_p95_ms": 134.83244386443403,
+        "cpu_mean_percent": 169.0018348623853,
+        "rss_peak_mib": 895.40625,
+        "gap_percent": 86.92737430167598,
+        "source_hz": 59.3,
+        "source_deadline_misses": 21,
+        "source_mailbox_drops": 41
+      }
+    },
+    {
+      "id": "run-0054",
+      "scenario": "scalar-image",
+      "frontend": "fyne",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "5ff05fb8af6f1032d5ab52a667454caf7d9a48cbd6483636aff864476321c4d8",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 0.269792,
+        "update_p95_ms": 0.316875,
+        "cpu_mean_percent": 22.304629629629634,
+        "rss_peak_mib": 172.359375,
+        "gap_percent": 0,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0055",
+      "scenario": "waveform",
+      "frontend": "plotly",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "bdc8e935ea70e35f757ec3ce1af40e113231bf61e2a9016f6208c7e1779cb72e",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Plotly scattergl (WebGL) + precolored image.source (PNG raster traces)",
+        "measurement_stage": "update_ms: elapsed conversion, full-resolution RGBA mapping and PNG encoding plus synchronous Plotly.react calls for every plot. draw_ms: synchronous Plotly.react calls, already included in update_ms. update_complete_ms: elapsed adapter call through settlement of all per-plot Plotly Promises, including image loading, deferred work and wait. Calls are serialized until settlement; none of these timings measures GPU completion or screen presentation.",
+        "versions": {
+          "plotly": "4.0.0",
+          "react": "19.2.8"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": null,
+        "plot_viewports": {
+          "waveform": [
+            952,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 5,
+        "update_p95_ms": 5.699999988079071,
+        "cpu_mean_percent": 63.38715596330275,
+        "rss_peak_mib": 1039.3125,
+        "gap_percent": 0,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0056",
+      "scenario": "rgb-image",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "rgb",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1631,
+      "context": {
+        "fingerprint": "7d3754a75b3c35140e2638b1b37220e25cf6726e0eada836792cc34711c4c520",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            499.9999999999999,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 60,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 54.36666666666667,
+        "update_p50_ms": 17.806667019613087,
+        "update_p95_ms": 18.58499998343177,
+        "cpu_mean_percent": 107.75818181818181,
+        "rss_peak_mib": 258.609375,
+        "gap_percent": 8.831749580771382,
+        "source_hz": 59.53333333333333,
+        "source_deadline_misses": 3,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0057",
+      "scenario": "rgb-image",
+      "frontend": "fyne",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "rgb",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "5ff05fb8af6f1032d5ab52a667454caf7d9a48cbd6483636aff864476321c4d8",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 0.3380835,
+        "update_p95_ms": 0.37309230000000004,
+        "cpu_mean_percent": 19.309174311926608,
+        "rss_peak_mib": 174.4375,
+        "gap_percent": 0,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0058",
+      "scenario": "waveform",
+      "frontend": "fyne",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1797,
+      "context": {
+        "fingerprint": "0daaaf75f042259a9aa0bba49f01cf2b676758fbafc918d4014237abe00256b2",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            952,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.9,
+        "update_p50_ms": 0.918,
+        "update_p95_ms": 1.2107917999999998,
+        "cpu_mean_percent": 22.758333333333333,
+        "rss_peak_mib": 174.84375,
+        "gap_percent": 0.16666666666666666,
+        "source_hz": 59.9,
+        "source_deadline_misses": 3,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0059",
+      "scenario": "rgb-image",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "rgb",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1633,
+      "context": {
+        "fingerprint": "7d3754a75b3c35140e2638b1b37220e25cf6726e0eada836792cc34711c4c520",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            499.9999999999999,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 60,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 54.43333333333333,
+        "update_p50_ms": 17.92762498371303,
+        "update_p95_ms": 18.525608000345528,
+        "cpu_mean_percent": 108.64909090909092,
+        "rss_peak_mib": 258.375,
+        "gap_percent": 9.227348526959421,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0060",
+      "scenario": "rgb-image",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "rgb",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1624,
+      "context": {
+        "fingerprint": "7d3754a75b3c35140e2638b1b37220e25cf6726e0eada836792cc34711c4c520",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            499.9999999999999,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 60,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 54.13333333333333,
+        "update_p50_ms": 17.952624999452382,
+        "update_p95_ms": 18.8377106183907,
+        "cpu_mean_percent": 108.35454545454546,
+        "rss_peak_mib": 226.6875,
+        "gap_percent": 9.777777777777779,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0061",
+      "scenario": "large-image",
+      "frontend": "fyne-wasm",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 2048,
+        "height": 2048,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1150,
+      "context": {
+        "fingerprint": "95960a8a0e49df64215595754f996d2f1d83e4491880b7e9782138ea92c5ecfe",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 38.333333333333336,
+        "update_p50_ms": 5.400064,
+        "update_p95_ms": 5.600256,
+        "cpu_mean_percent": 146.51192660550458,
+        "rss_peak_mib": 1255.78125,
+        "gap_percent": 36.111111111111114,
+        "source_hz": 58.93333333333333,
+        "source_deadline_misses": 32,
+        "source_mailbox_drops": 618
+      }
+    },
+    {
+      "id": "run-0062",
+      "scenario": "scalar-image",
+      "frontend": "fyne-wasm",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "95960a8a0e49df64215595754f996d2f1d83e4491880b7e9782138ea92c5ecfe",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 0.499968,
+        "update_p95_ms": 0.599808,
+        "cpu_mean_percent": 40.377064220183485,
+        "rss_peak_mib": 1110.421875,
+        "gap_percent": 0,
+        "source_hz": 59.96666666666667,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0063",
+      "scenario": "multi-image",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 4
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 726,
+      "context": {
+        "fingerprint": "bf9752f11fe499c265ba14aa2c19d0507d12d5190fd7f4ee57127c78fa51e8b6",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            276.0000000000001,
+            276
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 60,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 24.2,
+        "update_p50_ms": 39.98012549709529,
+        "update_p95_ms": 42.311885525123216,
+        "cpu_mean_percent": 122.8037037037037,
+        "rss_peak_mib": 469.703125,
+        "gap_percent": 59.098591549295776,
+        "source_hz": 59.06666666666667,
+        "source_deadline_misses": 4,
+        "source_mailbox_drops": 5
+      }
+    },
+    {
+      "id": "run-0064",
+      "scenario": "large-image",
+      "frontend": "plotly",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 2048,
+        "height": 2048,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 222,
+      "context": {
+        "fingerprint": "49f8d030e6108de403f40a1aed2ba3514079db32cd01fc203a028bf5afcfaf6f",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Plotly scattergl (WebGL) + precolored image.source (PNG raster traces)",
+        "measurement_stage": "update_ms: elapsed conversion, full-resolution RGBA mapping and PNG encoding plus synchronous Plotly.react calls for every plot. draw_ms: synchronous Plotly.react calls, already included in update_ms. update_complete_ms: elapsed adapter call through settlement of all per-plot Plotly Promises, including image loading, deferred work and wait. Calls are serialized until settlement; none of these timings measures GPU completion or screen presentation.",
+        "versions": {
+          "plotly": "4.0.0",
+          "react": "19.2.8"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": null,
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 7.4,
+        "update_p50_ms": 77.89999997615814,
+        "update_p95_ms": 86.33999997675417,
+        "cpu_mean_percent": 127.29636363636364,
+        "rss_peak_mib": 1889.828125,
+        "gap_percent": 87.62541806020067,
+        "source_hz": 59.833333333333336,
+        "source_deadline_misses": 5,
+        "source_mailbox_drops": 1573
+      }
+    },
+    {
+      "id": "run-0065",
+      "scenario": "rgb-image",
+      "frontend": "fyne-wasm",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "rgb",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1799,
+      "context": {
+        "fingerprint": "95960a8a0e49df64215595754f996d2f1d83e4491880b7e9782138ea92c5ecfe",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.96666666666667,
+        "update_p50_ms": 0.89984,
+        "update_p95_ms": 0.999936,
+        "cpu_mean_percent": 40.4302752293578,
+        "rss_peak_mib": 1244.640625,
+        "gap_percent": 0.05555555555555555,
+        "source_hz": 60,
+        "source_deadline_misses": 1,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0066",
+      "scenario": "multi-plot",
+      "frontend": "fyne-wasm",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 2,
+        "curves": 5,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "30d7b07e5ef2e1f3bcf921c1e066d1587fc83e13e1c15068f4fe43338295c839",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            418,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 8.300032,
+        "update_p95_ms": 8.8,
+        "cpu_mean_percent": 83.41818181818182,
+        "rss_peak_mib": 1036.3125,
+        "gap_percent": 0,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0067",
+      "scenario": "multi-image",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 4
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 709,
+      "context": {
+        "fingerprint": "bf9752f11fe499c265ba14aa2c19d0507d12d5190fd7f4ee57127c78fa51e8b6",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            276.0000000000001,
+            276
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 60,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 23.633333333333333,
+        "update_p50_ms": 41.71312501421198,
+        "update_p95_ms": 44.284516386687756,
+        "cpu_mean_percent": 124.53181818181817,
+        "rss_peak_mib": 461.984375,
+        "gap_percent": 60.56729699666296,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0068",
+      "scenario": "multi-image",
+      "frontend": "fyne",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 4
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1778,
+      "context": {
+        "fingerprint": "61c8419ff3f7ccc6c5111213c525d6dd8bada5ce21468a254a5003867b88fbd6",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            276,
+            276
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.266666666666666,
+        "update_p50_ms": 0.832854,
+        "update_p95_ms": 0.9677624499999999,
+        "cpu_mean_percent": 50.53603603603603,
+        "rss_peak_mib": 192.125,
+        "gap_percent": 1.2222222222222223,
+        "source_hz": 59.96666666666667,
+        "source_deadline_misses": 1,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0069",
+      "scenario": "multi-plot",
+      "frontend": "fyne-wasm",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 2,
+        "curves": 5,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1798,
+      "context": {
+        "fingerprint": "30d7b07e5ef2e1f3bcf921c1e066d1587fc83e13e1c15068f4fe43338295c839",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            418,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.93333333333333,
+        "update_p50_ms": 8.400128,
+        "update_p95_ms": 8.900134399999999,
+        "cpu_mean_percent": 86.46272727272729,
+        "rss_peak_mib": 1037.421875,
+        "gap_percent": 0.1111111111111111,
+        "source_hz": 59.93333333333333,
+        "source_deadline_misses": 2,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0070",
+      "scenario": "multi-plot",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 2,
+        "curves": 5,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1759,
+      "context": {
+        "fingerprint": "f33d05b209295ffae060b4dc7cc32ae1d659b6fbee36010701d0cc365f7de7b5",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            418,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 60,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 58.63333333333333,
+        "update_p50_ms": 15.996666974388065,
+        "update_p95_ms": 17.009591427631676,
+        "cpu_mean_percent": 102.63119266055048,
+        "rss_peak_mib": 226.296875,
+        "gap_percent": 0.9572072072072072,
+        "source_hz": 59.166666666666664,
+        "source_deadline_misses": 1,
+        "source_mailbox_drops": 1
+      }
+    },
+    {
+      "id": "run-0071",
+      "scenario": "large-image",
+      "frontend": "plotly",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 2048,
+        "height": 2048,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 224,
+      "context": {
+        "fingerprint": "49f8d030e6108de403f40a1aed2ba3514079db32cd01fc203a028bf5afcfaf6f",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Plotly scattergl (WebGL) + precolored image.source (PNG raster traces)",
+        "measurement_stage": "update_ms: elapsed conversion, full-resolution RGBA mapping and PNG encoding plus synchronous Plotly.react calls for every plot. draw_ms: synchronous Plotly.react calls, already included in update_ms. update_complete_ms: elapsed adapter call through settlement of all per-plot Plotly Promises, including image loading, deferred work and wait. Calls are serialized until settlement; none of these timings measures GPU completion or screen presentation.",
+        "versions": {
+          "plotly": "4.0.0",
+          "react": "19.2.8"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": null,
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 7.466666666666667,
+        "update_p50_ms": 77.70000004768372,
+        "update_p95_ms": 84.49500002562999,
+        "cpu_mean_percent": 128.4284403669725,
+        "rss_peak_mib": 1938.796875,
+        "gap_percent": 87.52089136490251,
+        "source_hz": 59.96666666666667,
+        "source_deadline_misses": 1,
+        "source_mailbox_drops": 1575
+      }
+    },
+    {
+      "id": "run-0072",
+      "scenario": "large-image",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 2048,
+        "height": 2048,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 229,
+      "context": {
+        "fingerprint": "7d3754a75b3c35140e2638b1b37220e25cf6726e0eada836792cc34711c4c520",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            499.9999999999999,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": 60,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 7.633333333333334,
+        "update_p50_ms": 127.59504100540651,
+        "update_p95_ms": 139.83104143990204,
+        "cpu_mean_percent": 170.3954128440367,
+        "rss_peak_mib": 859.5625,
+        "gap_percent": 87.12035995500563,
+        "source_hz": 58.833333333333336,
+        "source_deadline_misses": 17,
+        "source_mailbox_drops": 83
+      }
+    },
+    {
+      "id": "run-0073",
+      "scenario": "waveform",
+      "frontend": "fyne",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "0daaaf75f042259a9aa0bba49f01cf2b676758fbafc918d4014237abe00256b2",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            952,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 0.915354,
+        "update_p95_ms": 1.30443365,
+        "cpu_mean_percent": 21.12660550458716,
+        "rss_peak_mib": 175.34375,
+        "gap_percent": 0,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0074",
+      "scenario": "rgb-image",
+      "frontend": "plotly",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "rgb",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "49f8d030e6108de403f40a1aed2ba3514079db32cd01fc203a028bf5afcfaf6f",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Plotly scattergl (WebGL) + precolored image.source (PNG raster traces)",
+        "measurement_stage": "update_ms: elapsed conversion, full-resolution RGBA mapping and PNG encoding plus synchronous Plotly.react calls for every plot. draw_ms: synchronous Plotly.react calls, already included in update_ms. update_complete_ms: elapsed adapter call through settlement of all per-plot Plotly Promises, including image loading, deferred work and wait. Calls are serialized until settlement; none of these timings measures GPU completion or screen presentation.",
+        "versions": {
+          "plotly": "4.0.0",
+          "react": "19.2.8"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": null,
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 8.100000023841858,
+        "update_p95_ms": 9,
+        "cpu_mean_percent": 107.86818181818182,
+        "rss_peak_mib": 1483.203125,
+        "gap_percent": 0,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0075",
+      "scenario": "waveform",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1778,
+      "context": {
+        "fingerprint": "6da9f6b1afa30a811ab7c395580e59270c34d93f699dd6d965d69d063387592b",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            952,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 60,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.266666666666666,
+        "update_p50_ms": 3.117542015388608,
+        "update_p95_ms": 3.5869017126969993,
+        "cpu_mean_percent": 26.836697247706425,
+        "rss_peak_mib": 216.546875,
+        "gap_percent": 0,
+        "source_hz": 59.266666666666666,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0076",
+      "scenario": "multi-image",
+      "frontend": "fyne-wasm",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 4
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1790,
+      "context": {
+        "fingerprint": "05c2fc07f981de19b9d16363a381558a15ce5ffad67bce2b38d08e93de9aa369",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            276,
+            276
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.666666666666664,
+        "update_p50_ms": 1.50016,
+        "update_p95_ms": 1.700096,
+        "cpu_mean_percent": 88.41727272727272,
+        "rss_peak_mib": 1177.59375,
+        "gap_percent": 0.5555555555555556,
+        "source_hz": 59.666666666666664,
+        "source_deadline_misses": 10,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0077",
+      "scenario": "multi-curve",
+      "frontend": "fyne-wasm",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 10,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1799,
+      "context": {
+        "fingerprint": "ce49d8a6e109a09464a474e1a7f2c0741e4262469a30df79a3cf052a8e423295",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            952,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.96666666666667,
+        "update_p50_ms": 8.999936,
+        "update_p95_ms": 9.69984,
+        "cpu_mean_percent": 88.96036036036037,
+        "rss_peak_mib": 1230.453125,
+        "gap_percent": 0,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0078",
+      "scenario": "multi-curve",
+      "frontend": "fyne-wasm",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 10,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "ce49d8a6e109a09464a474e1a7f2c0741e4262469a30df79a3cf052a8e423295",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            952,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 8.999936,
+        "update_p95_ms": 9.6,
+        "cpu_mean_percent": 89.20900900900898,
+        "rss_peak_mib": 1078.734375,
+        "gap_percent": 0,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0079",
+      "scenario": "multi-plot",
+      "frontend": "fyne",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 2,
+        "curves": 5,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1786,
+      "context": {
+        "fingerprint": "a042cff3ffa8b25152477857b4c152bc17ea73c30b2e85ab2384b304fb6bf766",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            418,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.53333333333333,
+        "update_p50_ms": 2.77575,
+        "update_p95_ms": 3.1369375,
+        "cpu_mean_percent": 31.110714285714288,
+        "rss_peak_mib": 226.375,
+        "gap_percent": 0.7777777777777778,
+        "source_hz": 59.96666666666667,
+        "source_deadline_misses": 1,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0080",
+      "scenario": "multi-plot",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 2,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 2,
+        "curves": 5,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1760,
+      "context": {
+        "fingerprint": "f33d05b209295ffae060b4dc7cc32ae1d659b6fbee36010701d0cc365f7de7b5",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            418,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 60,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 58.666666666666664,
+        "update_p50_ms": 15.959791518980635,
+        "update_p95_ms": 17.104341008234766,
+        "cpu_mean_percent": 102.3118181818182,
+        "rss_peak_mib": 222.296875,
+        "gap_percent": 1.1791128579449748,
+        "source_hz": 59.3,
+        "source_deadline_misses": 2,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0081",
+      "scenario": "multi-plot",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 2,
+        "curves": 5,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1779,
+      "context": {
+        "fingerprint": "f33d05b209295ffae060b4dc7cc32ae1d659b6fbee36010701d0cc365f7de7b5",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            418,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 60,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.3,
+        "update_p50_ms": 15.92591602820903,
+        "update_p95_ms": 17.2071500273887,
+        "cpu_mean_percent": 102.37657657657658,
+        "rss_peak_mib": 187.625,
+        "gap_percent": 1.2215435868961688,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 1
+      }
+    },
+    {
+      "id": "run-0082",
+      "scenario": "waveform",
+      "frontend": "matplotlib",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1800,
+      "context": {
+        "fingerprint": "6da9f6b1afa30a811ab7c395580e59270c34d93f699dd6d965d69d063387592b",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Matplotlib QtAgg with reusable artists and blitting",
+        "measurement_stage": "scalar-to-uint8 index conversion + set_data + synchronous Agg artist rasterization + QtAgg canvas.blit; compositor/presentation excluded",
+        "versions": {
+          "matplotlib": "3.11.1",
+          "numpy": "2.5.3",
+          "pyside6": "6.11.2",
+          "python": "3.13.15",
+          "qt": "6.11.2"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": [
+            952,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": 60,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 60,
+        "update_p50_ms": 3.2213334925472736,
+        "update_p95_ms": 3.6859892337815836,
+        "cpu_mean_percent": 27.75321100917431,
+        "rss_peak_mib": 216.9375,
+        "gap_percent": 0,
+        "source_hz": 60,
+        "source_deadline_misses": 0,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0083",
+      "scenario": "multi-curve",
+      "frontend": "plotly",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 1,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 512,
+        "height": 512,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "waveform",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 10,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1797,
+      "context": {
+        "fingerprint": "bdc8e935ea70e35f757ec3ce1af40e113231bf61e2a9016f6208c7e1779cb72e",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Plotly scattergl (WebGL) + precolored image.source (PNG raster traces)",
+        "measurement_stage": "update_ms: elapsed conversion, full-resolution RGBA mapping and PNG encoding plus synchronous Plotly.react calls for every plot. draw_ms: synchronous Plotly.react calls, already included in update_ms. update_complete_ms: elapsed adapter call through settlement of all per-plot Plotly Promises, including image loading, deferred work and wait. Calls are serialized until settlement; none of these timings measures GPU completion or screen presentation.",
+        "versions": {
+          "plotly": "4.0.0",
+          "react": "19.2.8"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": null,
+        "plot_viewports": {
+          "waveform": [
+            952,
+            480
+          ],
+          "image": null
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 59.9,
+        "update_p50_ms": 12.899999976158142,
+        "update_p95_ms": 14.900000035762789,
+        "cpu_mean_percent": 130.59545454545452,
+        "rss_peak_mib": 1118.03125,
+        "gap_percent": 0.16666666666666666,
+        "source_hz": 59.9,
+        "source_deadline_misses": 3,
+        "source_mailbox_drops": 0
+      }
+    },
+    {
+      "id": "run-0084",
+      "scenario": "large-image",
+      "frontend": "fyne-wasm",
+      "backend": "rust",
+      "mode": "stream",
+      "repetition": 3,
+      "status": "ok",
+      "config": {
+        "hz": 60,
+        "points": 10000,
+        "append_count": 1000,
+        "width": 2048,
+        "height": 2048,
+        "waveform_mode": "replace",
+        "image_mode": "scalar",
+        "view": "image",
+        "seed": 42,
+        "waveform_plots": 1,
+        "curves": 1,
+        "image_plots": 1
+      },
+      "measurement_seconds": 30,
+      "warmup_seconds": 5,
+      "samples": 1140,
+      "context": {
+        "fingerprint": "95960a8a0e49df64215595754f996d2f1d83e4491880b7e9782138ea92c5ecfe",
+        "source_hash": "4298a94320458b50580e21cd3de4ac257fd134cf3668ff5b8c5441c4d5244ff8",
+        "commit": "817622b50dd6e093e79f8edc059d691a54ced101",
+        "dirty": false,
+        "renderer": "Fyne canvas.Image per plot / custom CPU waveform raster per plot and curve",
+        "measurement_stage": "CPU full-waveform rasterization of every plot and curve, source-image RGBA conversion of every image plot and Fyne canvas refresh submission; excludes deferred texture upload, graphics draw and presentation",
+        "versions": {
+          "fyne": "v2.8.1",
+          "go": "go1.27.0-X:simd"
+        },
+        "pixel_ratio": 1,
+        "viewport_size": [
+          1100,
+          820
+        ],
+        "plot_viewports": {
+          "waveform": null,
+          "image": [
+            500,
+            500
+          ]
+        },
+        "display_protocol": "native",
+        "refresh_hz": null,
+        "headless": false
+      },
+      "metrics": {
+        "submitted_hz": 38,
+        "update_p50_ms": 5.400064,
+        "update_p95_ms": 5.69984,
+        "cpu_mean_percent": 145.36972477064216,
+        "rss_peak_mib": 1180.75,
+        "gap_percent": 36.666666666666664,
+        "source_hz": 58.93333333333333,
+        "source_deadline_misses": 32,
+        "source_mailbox_drops": 628
+      }
+    }
+  ],
+  "links": {
+    "report": null,
+    "extended_report": null,
+    "raw_data": null
+  }
+}
