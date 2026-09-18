@@ -147,7 +147,8 @@ pool different experiments. See [measurement methodology](../../docs/methodology
 
 The [Winners page](../README.md#winners-across-hosts) keeps one board per section
 and selects the best configuration per frontend across hosts, prioritizing
-throughput, then lower memory and CPU for close update rates. It retains the
+throughput bands, then larger triangle area balancing throughput, memory and CPU
+within each band. It retains the
 original host, source commit and display scale behind every record; source
 revisions and scales stay separate groups on the same board. The
 [Overall page](../README.md#overall-placement) adds the seven section placements

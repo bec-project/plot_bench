@@ -3,8 +3,8 @@ import { format } from './presentation';
 import type { WinnerBoard } from './winners';
 
 // Per-frontend "signature" glyph for the winner card: a three-axis radar
-// (throughput / RAM / CPU) normalized so outward = better and the winner fills
-// the triangle. It shows one frontend at a time — the winner by default, or
+// (throughput / RAM / CPU) using the ranking's normalization within each rate
+// band. It shows one frontend at a time — the winner by default, or
 // whichever frontend is hovered anywhere in the card — over a faint best/worst
 // envelope for scale. Output-and-input: hovering a name in its legend drives
 // the shared highlight, and the shared highlight drives the shape.
@@ -46,6 +46,7 @@ export function ProfileRadar({
     data.points.find((p) => p.frontend === hovered) ??
     data.points.find((p) => p.winner) ??
     data.points[0];
+  const worst = data.worstGoodness[active.rateBand];
 
   const axes: AxisSpec[] = [
     {
@@ -53,23 +54,23 @@ export function ProfileRadar({
       angle: -90,
       goodness: (p) => p.gThroughput,
       value: (p) => `${format(p.throughput)}/s`,
-      worst: data.worstGoodness.throughput,
+      worst: worst.throughput,
       anchor: 'middle',
     },
     {
       label: 'RAM',
       angle: 30,
-      goodness: (p) => p.gRss ?? 0,
-      value: (p) => (p.rss === null ? '—' : `${format(p.rss)} MiB`),
-      worst: data.worstGoodness.rss,
+      goodness: (p) => p.gRss,
+      value: (p) => `${format(p.rss)} MiB`,
+      worst: worst.rss,
       anchor: 'start',
     },
     {
       label: 'CPU',
       angle: 150,
-      goodness: (p) => p.gCpu ?? 0,
-      value: (p) => (p.cpu === null ? '—' : `${format(p.cpu)}%`),
-      worst: data.worstGoodness.cpu,
+      goodness: (p) => p.gCpu,
+      value: (p) => `${format(p.cpu)}%`,
+      worst: worst.cpu,
       anchor: 'end',
     },
   ];
@@ -126,8 +127,9 @@ export function ProfileRadar({
             <span className="profile-swatch" style={{ background: tone }} aria-hidden="true" />
             <strong>{active.frontend}</strong>
             <span className="muted"> · #{active.rank}</span>
-            {!active.inBand && <span className="muted"> · below top band</span>}
+            <span className="muted"> · band {active.rateBand + 1}</span>
           </p>
+          <p className="profile-area">Triangle area: {(active.area * 100).toFixed(2)}%</p>
           <p className="profile-values muted">
             {axes.map((ax, i) => (
               <span key={ax.label}>
@@ -153,9 +155,10 @@ export function ProfileRadar({
             ))}
           </ul>
           <p className="profile-note muted">
-            Solid shape: the highlighted frontend. Faint inner shape: the worst value seen on each
-            axis. Throughput is scaled to the {format(data.target)} Hz target; RAM and CPU to the
-            lightest frontend, so a hungrier one reaches proportionally less.
+            Area ranks configurations within the same throughput band; earlier bands rank first.
+            Throughput is scaled to the {format(data.target)} Hz target. RAM and CPU use the lowest
+            values among all eligible configurations in this band. The faint shape marks the worst
+            shown value on each axis in this band. Filters and new results can change these scales.
           </p>
         </div>
       </div>
@@ -168,5 +171,5 @@ function radarSummary(
   axes: AxisSpec[],
 ): string {
   const parts = axes.map((ax) => `${ax.label} ${ax.value(active)}`).join(', ');
-  return `${active.frontend}, rank ${active.rank}: ${parts}.`;
+  return `${active.frontend}, rank ${active.rank}, band ${active.rateBand + 1}, triangle area ${(active.area * 100).toFixed(2)}%: ${parts}.`;
 }

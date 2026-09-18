@@ -46,7 +46,7 @@ const HEADINGS: Record<View, { title: string; lede: string }> = {
   },
   winners: {
     title: 'Best observed records, per section.',
-    lede: 'For each of the seven sections, the best record of every frontend across all hosts: update rate first, then memory and CPU when rates are close.',
+    lede: 'For each of the seven sections, the best record of every frontend across all hosts: throughput bands first, then triangle area balancing update rate, memory and CPU.',
   },
   overall: {
     title: 'Placements across all seven sections.',

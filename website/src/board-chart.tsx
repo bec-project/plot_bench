@@ -126,9 +126,10 @@ export function BoardChart({ board, hovered = null, onHover }: { board: WinnerBo
         Bars: the ranked value of each frontend's record — median submitted updates/s, then median
         peak resident memory and median mean CPU, in rank order. Whiskers: the observed range across
         the record's valid repetitions. Throughput's dashed line is the paced target; CPU's is one
-        logical core (100%). Memory and CPU are the tie-breakers behind the ranking, weighted
-        equally per campaign; "incomplete" marks a record whose repetitions do not all report the
-        metric. Not displayed FPS.
+        logical core (100%). Triangle area balances throughput, memory and CPU within each rate
+        band, with equal campaign weights. For tied configurations, resource bars use the profile's
+        configuration, throughput spans the tied medians, and whiskers span all tied repetitions.
+        Not displayed FPS.
       </figcaption>
     </figure>
   );

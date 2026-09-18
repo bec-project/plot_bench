@@ -36,13 +36,13 @@ export function OverallPage({
         <p>
           <strong>Placements added up, nothing else.</strong> Each frontend's competition rank on
           the seven section boards is summed; the lowest total wins, ties go to the frontend with
-          more section wins, and remaining ties are joint (1, 1, 3). No update rate, memory or CPU
-          value is pooled across sections or hosts. Paced sections, where several frontends hold the
-          60 Hz target, are decided by median peak RSS and then mean CPU within the {tolerance}%
-          tolerance, so the total reflects resource use as much as throughput. The seven records
-          behind one frontend may come from different hosts, source revisions and display scales;
-          this is a summary of best-observed records, not a controlled comparison, and more
-          submissions can change every placement.
+          more section wins, and remaining ties are joint (1, 1, 3). No update rate, memory, CPU or
+          area score is pooled across sections or hosts. Paced sections, where several frontends
+          hold the 60 Hz target, are decided by triangle area within the {tolerance}% tolerance, so
+          the total reflects resource use as much as throughput. The seven records behind one
+          frontend may come from different hosts, source revisions and display scales; this is a
+          summary of best-observed records, not a controlled comparison, and more submissions can
+          change every placement.
         </p>
       </div>
       {ranking.entries.length ? (
@@ -114,7 +114,8 @@ export function OverallPage({
           <p className="muted small">
             Section columns show the competition rank on that board; open a section to see the
             record, its host and evidence. {ranking.excludedGroups} groups are excluded for missing
-            rates, unknown display scale or incomplete context.
+            rates, unknown display scale, incomplete context or incomplete/non-positive resource
+            measurements.
           </p>
         </>
       ) : (
