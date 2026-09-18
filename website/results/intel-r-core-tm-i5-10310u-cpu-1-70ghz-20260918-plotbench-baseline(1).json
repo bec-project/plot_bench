@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "id": "intel-r-core-tm-i5-10310u-cpu-1-70ghz-20260918-plotbench-baseline",
+  "id": "intel-r-core-tm-i5-10310u-cpu-1-70ghz-20260918-plotbench-baseline-2",
   "title": "Plotbench baseline",
   "recorded_at": "2026-09-18T13:58:56+02:00",
   "input_sha256": "38c6a3de311771d7379805c68eb02964c71a22e27b2a511881ce015dc5d00deb",
@@ -55,15 +55,9 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -121,16 +115,10 @@
           "iced": "0.14.0"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -188,16 +176,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -254,15 +236,9 @@
           "iced": "0.14.0"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -318,16 +294,10 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -382,16 +352,10 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -448,15 +412,9 @@
           "qt": "6.10.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -515,16 +473,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500.00000000000006,
-            500
-          ]
+          "image": [500.00000000000006, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -583,16 +535,10 @@
           "jfreechart": "1.5.6"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "xwayland",
         "refresh_hz": 60,
@@ -650,15 +596,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -716,15 +656,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -782,16 +716,10 @@
           "qt": "6.10.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -849,15 +777,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -915,15 +837,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -982,15 +898,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -1048,15 +958,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -1114,15 +1018,9 @@
           "iced": "0.14.0"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -1181,15 +1079,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -1248,10 +1140,7 @@
         "viewport_size": null,
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -1306,15 +1195,9 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -1373,16 +1256,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -1440,16 +1317,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -1507,16 +1378,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276.00000000000006,
-            276
-          ]
+          "image": [276.00000000000006, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -1573,15 +1438,9 @@
           "iced": "0.14.0"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -1639,15 +1498,9 @@
           "iced": "0.14.0"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -1706,16 +1559,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500.00000000000006,
-            500
-          ]
+          "image": [500.00000000000006, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -1773,15 +1620,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -1840,16 +1681,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -1907,15 +1742,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -1974,10 +1803,7 @@
         "viewport_size": null,
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -2034,15 +1860,9 @@
           "qt": "6.10.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -2098,15 +1918,9 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -2164,16 +1978,10 @@
           "qt": "6.10.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -2228,16 +2036,10 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -2294,10 +2096,7 @@
         "pixel_ratio": 1,
         "viewport_size": null,
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -2353,16 +2152,10 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -2419,16 +2212,10 @@
           "iced": "0.14.0"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -2486,16 +2273,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -2552,10 +2333,7 @@
         "pixel_ratio": 1,
         "viewport_size": null,
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -2613,16 +2391,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -2680,15 +2452,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -2746,16 +2512,10 @@
           "iced": "0.14.0"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -2812,10 +2572,7 @@
         "pixel_ratio": 1,
         "viewport_size": null,
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -2874,15 +2631,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -2942,15 +2693,9 @@
           "jfreechart": "1.5.6"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "xwayland",
@@ -3010,16 +2755,10 @@
           "jfreechart": "1.5.6"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "xwayland",
         "refresh_hz": 60,
@@ -3077,15 +2816,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -3141,15 +2874,9 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -3208,16 +2935,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500.00000000000006,
-            500
-          ]
+          "image": [500.00000000000006, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -3276,15 +2997,9 @@
           "jfreechart": "1.5.6"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "xwayland",
@@ -3342,16 +3057,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -3408,10 +3117,7 @@
         "pixel_ratio": 1,
         "viewport_size": null,
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -3470,16 +3176,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -3536,16 +3236,10 @@
           "qt": "6.10.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -3600,15 +3294,9 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -3666,16 +3354,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -3734,16 +3416,10 @@
           "jfreechart": "1.5.6"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "xwayland",
         "refresh_hz": 60,
@@ -3800,15 +3476,9 @@
           "qt": "6.10.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -3867,15 +3537,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -3933,16 +3597,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -4000,15 +3658,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -4067,16 +3719,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -4133,16 +3779,10 @@
           "iced": "0.14.0"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -4197,15 +3837,9 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -4264,16 +3898,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -4328,16 +3956,10 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -4392,15 +4014,9 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -4458,16 +4074,10 @@
           "qt": "6.10.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -4525,15 +4135,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -4592,10 +4196,7 @@
         "viewport_size": null,
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -4653,16 +4254,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500.00000000000006,
-            500
-          ]
+          "image": [500.00000000000006, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -4717,16 +4312,10 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -4785,16 +4374,10 @@
           "jfreechart": "1.5.6"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "xwayland",
         "refresh_hz": 60,
@@ -4849,16 +4432,10 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -4916,10 +4493,7 @@
         "viewport_size": null,
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -4976,16 +4550,10 @@
           "iced": "0.14.0"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -5042,10 +4610,7 @@
         "pixel_ratio": 1,
         "viewport_size": null,
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -5103,15 +4668,9 @@
           "qt": "6.10.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -5167,16 +4726,10 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -5231,16 +4784,10 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -5297,16 +4844,10 @@
           "iced": "0.14.0"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -5363,15 +4904,9 @@
           "iced": "0.14.0"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -5427,16 +4962,10 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -5494,16 +5023,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -5558,15 +5081,9 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -5625,16 +5142,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276.00000000000006,
-            276
-          ]
+          "image": [276.00000000000006, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -5692,16 +5203,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500.00000000000006,
-            500
-          ]
+          "image": [500.00000000000006, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -5758,15 +5263,9 @@
           "qt": "6.10.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -5824,16 +5323,10 @@
           "qt": "6.10.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -5890,16 +5383,10 @@
           "iced": "0.14.0"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -5957,16 +5444,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500.00000000000006,
-            500
-          ]
+          "image": [500.00000000000006, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -6024,16 +5505,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -6090,16 +5565,10 @@
           "iced": "0.14.0"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -6157,10 +5626,7 @@
         "viewport_size": null,
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -6217,15 +5683,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -6284,16 +5744,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -6350,16 +5804,10 @@
           "iced": "0.14.0"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -6417,15 +5865,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -6483,16 +5925,10 @@
           "qt": "6.10.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -6549,15 +5985,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -6615,15 +6045,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -6682,16 +6106,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500.00000000000006,
-            500
-          ]
+          "image": [500.00000000000006, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -6749,10 +6167,7 @@
         "viewport_size": null,
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -6810,16 +6225,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276.00000000000006,
-            276
-          ]
+          "image": [276.00000000000006, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -6877,15 +6286,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -6941,15 +6344,9 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -7007,16 +6404,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -7073,16 +6464,10 @@
           "iced": "0.14.0"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -7140,15 +6525,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -7207,10 +6586,7 @@
         "viewport_size": null,
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -7267,16 +6643,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -7333,15 +6703,9 @@
           "qt": "6.10.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -7399,16 +6763,10 @@
           "iced": "0.14.0"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -7465,10 +6823,7 @@
         "pixel_ratio": 1,
         "viewport_size": null,
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -7527,16 +6882,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500.00000000000006,
-            500
-          ]
+          "image": [500.00000000000006, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -7594,10 +6943,7 @@
         "viewport_size": null,
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -7656,16 +7002,10 @@
           "jfreechart": "1.5.6"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "xwayland",
         "refresh_hz": 60,
@@ -7723,16 +7063,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -7791,16 +7125,10 @@
           "jfreechart": "1.5.6"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "xwayland",
         "refresh_hz": 60,
@@ -7858,16 +7186,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -7926,16 +7248,10 @@
           "jfreechart": "1.5.6"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "xwayland",
         "refresh_hz": 60,
@@ -7993,16 +7309,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -8060,16 +7370,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -8127,15 +7431,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -8191,16 +7489,10 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -8257,15 +7549,9 @@
           "qt": "6.10.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -8325,15 +7611,9 @@
           "jfreechart": "1.5.6"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "xwayland",
@@ -8393,16 +7673,10 @@
           "jfreechart": "1.5.6"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "xwayland",
         "refresh_hz": 60,
@@ -8457,16 +7731,10 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -8523,16 +7791,10 @@
           "qt": "6.10.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -8589,15 +7851,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -8657,15 +7913,9 @@
           "jfreechart": "1.5.6"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "xwayland",
@@ -8725,15 +7975,9 @@
           "jfreechart": "1.5.6"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "xwayland",
@@ -8791,15 +8035,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -8858,16 +8096,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -8924,16 +8156,10 @@
           "qt": "6.10.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -8991,15 +8217,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -9057,16 +8277,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -9121,16 +8335,10 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -9188,16 +8396,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -9254,16 +8456,10 @@
           "qt": "6.10.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -9320,15 +8516,9 @@
           "iced": "0.14.0"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -9388,16 +8578,10 @@
           "jfreechart": "1.5.6"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "xwayland",
         "refresh_hz": 60,
@@ -9454,16 +8638,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -9520,15 +8698,9 @@
           "qt": "6.10.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -9588,15 +8760,9 @@
           "jfreechart": "1.5.6"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "xwayland",
@@ -9656,16 +8822,10 @@
           "jfreechart": "1.5.6"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "xwayland",
         "refresh_hz": 60,
@@ -9720,15 +8880,9 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -9786,10 +8940,7 @@
         "pixel_ratio": 1,
         "viewport_size": null,
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -9845,16 +8996,10 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -9912,16 +9057,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500.00000000000006,
-            500
-          ]
+          "image": [500.00000000000006, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -9978,15 +9117,9 @@
           "iced": "0.14.0"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -10045,16 +9178,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -10112,15 +9239,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -10176,16 +9297,10 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -10243,15 +9358,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -10307,16 +9416,10 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -10371,16 +9474,10 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -10438,15 +9535,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -10502,15 +9593,9 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -10566,16 +9651,10 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -10634,15 +9713,9 @@
           "jfreechart": "1.5.6"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "xwayland",
@@ -10701,16 +9774,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -10767,15 +9834,9 @@
           "qt": "6.10.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -10831,16 +9892,10 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -10898,16 +9953,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -10965,16 +10014,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -11029,15 +10072,9 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -11096,16 +10133,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -11162,10 +10193,7 @@
         "pixel_ratio": 1,
         "viewport_size": null,
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -11223,16 +10251,10 @@
           "iced": "0.14.0"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -11287,15 +10309,9 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -11353,16 +10369,10 @@
           "qt": "6.10.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -11420,15 +10430,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -11487,15 +10491,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -11554,15 +10552,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -11621,16 +10613,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -11687,16 +10673,10 @@
           "qt": "6.10.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -11751,15 +10731,9 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -11815,16 +10789,10 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -11879,16 +10847,10 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -11946,10 +10908,7 @@
         "viewport_size": null,
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -12004,16 +10963,10 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -12070,16 +11023,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -12137,15 +11084,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -12203,16 +11144,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -12267,16 +11202,10 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -12333,16 +11262,10 @@
           "qt": "6.10.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -12400,10 +11323,7 @@
         "viewport_size": null,
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -12460,10 +11380,7 @@
         "pixel_ratio": 1,
         "viewport_size": null,
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -12521,15 +11438,9 @@
           "iced": "0.14.0"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -12587,15 +11498,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -12651,15 +11556,9 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -12719,15 +11618,9 @@
           "jfreechart": "1.5.6"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "xwayland",
@@ -12787,16 +11680,10 @@
           "jfreechart": "1.5.6"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "xwayland",
         "refresh_hz": 60,
@@ -12854,16 +11741,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -12921,15 +11802,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -12988,10 +11863,7 @@
         "viewport_size": null,
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -13046,16 +11918,10 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -13112,16 +11978,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
@@ -13176,15 +12036,9 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -13244,16 +12098,10 @@
           "jfreechart": "1.5.6"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "xwayland",
         "refresh_hz": 60,
@@ -13310,15 +12158,9 @@
           "iced": "0.14.0"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -13374,15 +12216,9 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -13441,15 +12277,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -13508,15 +12338,9 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            418,
-            480
-          ],
+          "waveform": [418, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -13575,10 +12399,7 @@
         "viewport_size": null,
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            500,
-            500
-          ]
+          "image": [500, 500]
         },
         "display_protocol": "wayland",
         "refresh_hz": null,
@@ -13633,15 +12454,9 @@
           "go": "go1.27.0-X:simd"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "wayland",
@@ -13701,15 +12516,9 @@
           "jfreechart": "1.5.6"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
-          "waveform": [
-            952,
-            480
-          ],
+          "waveform": [952, 480],
           "image": null
         },
         "display_protocol": "xwayland",
@@ -13767,16 +12576,10 @@
           "qt": "6.11.2"
         },
         "pixel_ratio": 1,
-        "viewport_size": [
-          1100,
-          820
-        ],
+        "viewport_size": [1100, 820],
         "plot_viewports": {
           "waveform": null,
-          "image": [
-            276,
-            276
-          ]
+          "image": [276, 276]
         },
         "display_protocol": "wayland",
         "refresh_hz": 60.00899887084961,
