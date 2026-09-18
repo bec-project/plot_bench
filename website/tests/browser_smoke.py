@@ -586,10 +586,10 @@ def test_grouped_campaign_weights_drilldown_dates_pagination_winners_and_overall
             await expect(rail.get_by_role("link", name="1 Waveform")).to_have_attribute(
                 "aria-current", "page"
             )
-            # Near-equal rates use memory, then CPU, and the tolerance survives reloads
+            # Near-equal rates use triangle area, and the tolerance survives reloads
             # together with the section.
             for run in fixtures[1]["runs"]:
-                run["metrics"].update(rss_peak_mib=300, cpu_mean_percent=1)
+                run["metrics"].update(rss_peak_mib=300, cpu_mean_percent=40)
             for run in fixtures[2]["runs"]:
                 run["metrics"].update(
                     submitted_hz=59, rss_peak_mib=100, cpu_mean_percent=40
@@ -620,6 +620,28 @@ def test_grouped_campaign_weights_drilldown_dates_pagination_winners_and_overall
             await expect(board.get_by_role("heading", level=3)).to_have_text(
                 "matplotlib"
             )
+            # Lower CPU can outweigh higher RAM within the same rate band.
+            for run in fixtures[1]["runs"]:
+                run["metrics"]["cpu_mean_percent"] = 1
+            await page.reload()
+            await expect(board.get_by_role("heading", level=3)).to_have_text("pyqtgraph")
+            await expect(board.locator(".profile-area")).to_have_text("Triangle area: 55.56%")
+            await expect(board.locator(".profile-active-name")).to_contain_text("band 1")
+            await board.locator(".profile-legend").get_by_role(
+                "button", name="matplotlib", exact=True
+            ).hover()
+            await expect(board.locator(".profile-area")).to_have_text("Triangle area: 34.43%")
+            await board.get_by_role("heading", level=3).hover()
+            screenshots = os.environ.get("PLOTBENCH_QA_SCREENSHOTS")
+            if screenshots:
+                await board.screenshot(path=str(Path(screenshots) / "area-ranking-desktop.png"))
+            await page.set_viewport_size({"width": 390, "height": 844})
+            assert await page.evaluate(NO_OVERFLOW), await page.evaluate(OVERFLOWING)
+            if screenshots:
+                await board.screenshot(path=str(Path(screenshots) / "area-ranking-mobile.png"))
+            await page.set_viewport_size({"width": 1440, "height": 1080})
+            for run in fixtures[1]["runs"]:
+                run["metrics"]["cpu_mean_percent"] = 40
             for run in fixtures[2]["runs"]:
                 run["metrics"]["rss_peak_mib"] = 300
             await page.reload()
@@ -675,16 +697,21 @@ def test_grouped_campaign_weights_drilldown_dates_pagination_winners_and_overall
             rows = page.locator(".overall-table tbody tr")
             await expect(rows).to_have_count(2)
             await expect(rows.nth(0)).to_contain_text("#1")
-            await expect(rows.nth(0)).to_contain_text("matplotlib")
+            await expect(rows.nth(0)).to_contain_text("pyqtgraph")
             await expect(rows.nth(0).locator(".overall-total")).to_have_text("7")
             await expect(rows.nth(0).locator(".placement-win")).to_have_count(7)
             await expect(rows.nth(1)).to_contain_text("#2")
-            await expect(rows.nth(1)).to_contain_text("pyqtgraph")
+            await expect(rows.nth(1)).to_contain_text("matplotlib")
             await expect(rows.nth(1).locator(".overall-total")).to_have_text("14")
             incomplete = page.locator(".incomplete-list")
             await expect(incomplete).to_contain_text("qtgraphs")
             await expect(incomplete).to_contain_text("Large scalar image")
             await expect(incomplete).to_contain_text("6 of 7 sections")
+            # With equal CPU, lower RAM wins by area until a strict rate band separates them.
+            for run in fixtures[0]["runs"]:
+                run["metrics"]["cpu_mean_percent"] = 40
+            await page.reload()
+            await expect(rows.nth(0)).to_contain_text("matplotlib")
             await page.get_by_label("Close update rates").select_option("0")
             await expect(rows.nth(0)).to_contain_text("pyqtgraph")
             await page.reload()

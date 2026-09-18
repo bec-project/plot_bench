@@ -40,12 +40,12 @@ Each section board pairs its facts with a bar chart drawn from the same records
 as the ranking: one horizontal bar per frontend record at its campaign-weighted
 median submitted updates/s, a whisker for the observed range of the valid
 repetition rates behind that record, and a dashed line at the paced target. A
-record that merges equally ranked groups (same rate band, tied resources) spans
+record that merges equally ranked groups (same rate band, tied area) spans
 its lowest to highest group median, the same range its record row prints. The
 chart adds no statistic and shows submitted updates, not displayed FPS.
 
 The Winners page keeps one board per baseline section, in suite order. A board
-ranks configurations by throughput first, then memory and CPU when update rates
+ranks configurations by throughput bands first, then triangle area when update rates
 are close, and keeps the best record per frontend across all submitted hosts. It
 uses campaign-weighted medians, not the fastest individual repetition.
 
@@ -70,36 +70,47 @@ closeness: at 2%, 100 and 98 updates/s share a band, while 96 remains in the nex
 band even though it is close to 98. Earlier bands always rank ahead of later ones.
 At 0%, only identical unrounded rates share a band.
 
-Within a band, lower **median peak RSS** wins, followed by lower **median mean CPU**.
+Within a band, the largest **triangle area** wins. The three axes are normalized
+so outward is better:
+
+- `T = min(1, median updates/s / target updates/s)`;
+- `R = minimum median peak RSS in the band / this configuration's median peak RSS`;
+- `C = minimum median mean CPU in the band / this configuration's median mean CPU`.
+
+The area fraction is `(T × R + R × C + C × T) / 3`; the full outer triangle is
+100%. Resource minima include **all eligible configurations in that band**, before
+choosing each frontend's best configuration. Each frontend keeps its largest-area
+configuration in its earliest band. Slower bands cannot win through low resource
+use, and their resource values do not change the faster bands' scales. Area
+percentages compare only within the same section and band. Filters and new
+submissions can change normalization as well as ranking.
+
 Resource medians use the same successful repetitions with valid rates as throughput:
 first a median of per-run `rss_peak_mib` or `cpu_mean_percent` in each campaign,
 then a median of campaign medians with equal campaign weights. Median peak RSS is
 not the maximum memory observed across the group. CPU 100% is one logical CPU,
 following the process-tree measurement contract. Failed repetitions and campaigns
-without valid rates contribute no resource values.
+without valid rates contribute no resource values. Every rate-contributing
+repetition must report finite, positive RSS and CPU. A configuration with partial,
+zero or invalid resource coverage is excluded from ranking and normalization;
+its observations remain available on Results.
 
-Every rate-contributing repetition must have the metric for its group resource
-summary to be available. Partial coverage becomes unavailable, not an artificially
-favorable median of the remaining samples. Within a throughput band, recorded
-memory ranks before unavailable memory. If memory is tied and known, recorded CPU
-ranks before unavailable CPU. If memory is unavailable for both configurations,
-CPU does not bypass that missing higher-priority measurement; they remain tied.
-Memory and CPU compare at 0.1 MiB and 0.1 percentage-point precision respectively.
+Rates and resource medians enter the formula at full precision. Area comparisons
+use 12 decimal places to suppress floating-point noise, independently of displayed
+rounding. Equal-area configurations in the same band share a rank and remain in
+the evidence. Competition ranks follow 1, 1, 3 after a first-place tie. The profile
+and headline metrics use one actual tied configuration, chosen by higher unrounded
+rate and then a stable configuration key. Its entry is marked **Shown in profile**;
+other tied configurations retain their own metrics and the displayed rate range
+covers them all. The radar uses the ranking's exact normalized axes, and its faint
+shape shows the worst displayed axis values within the highlighted band.
 
-All configurations tied on the band's memory/CPU criteria are retained; their
-actual update-rate range is shown rather than implying equal throughput. Competition
-ranks follow 1, 1, 3 after a first-place tie. Original measurements remain available
-in the evidence and downloads. This tolerance is a user-selectable ranking preference,
-not a statistical equivalence or significance test. Paced runs that reach their
-60 Hz target cannot establish maximum rendering capacity; on such a board the
-placings are decided by memory and CPU within the tolerance. Sections with only
-one eligible frontend are explicitly marked as having one entrant.
-
-Only benchmark-classified campaigns are published, so no smoke or diagnostic
-campaign ever competes. Incomplete-context and no-valid-rate groups cannot win;
-their excluded count is shown, and the Results page retains their observations.
-The Iced adapter currently reports no library version strings, so its records
-are excluded from every board until its adapter reports them. Source-limited
+This tolerance and area formula are ranking preferences, not statistical
+equivalence or significance tests. Paced runs that reach their 60 Hz target cannot
+establish maximum rendering capacity. Sections with only one eligible frontend
+are explicitly marked as having one entrant. Only benchmark-classified campaigns
+are published. Incomplete-context, unknown-scale, no-valid-rate and
+incomplete-resource groups cannot win; their excluded count is shown. Source-limited
 groups with valid observations remain eligible with visible flags and
 attempted/successful counts, including any failed repetitions.
 
@@ -122,9 +133,9 @@ incomplete with the sections they are missing. They keep their places on the
 section boards, so a complete frontend ranked below them on a board carries that
 lower placement into its total.
 
-This adds placements, never measurements: no update rate, memory or CPU value
-is averaged or summed across sections or hosts. A placement on a paced section
-that every entrant sustains at 60 Hz is decided by memory, then CPU, within the
+This adds placements, never measurements: no update rate, memory, CPU value or area
+score is averaged or summed across sections or hosts. A placement on a paced section
+that every entrant sustains at 60 Hz is decided by triangle area within the
 tolerance, and counts the same as a placement on a section where throughput
 separates the entrants. The records behind one frontend's total may come from
 different hosts, source revisions and display scales; the frontend cell shows how

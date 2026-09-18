@@ -124,7 +124,7 @@ test('a frontend without every section is listed as incomplete and keeps its sec
   ]);
 });
 
-test('paced sections are decided by memory, then CPU, inside the close-rate band', () => {
+test('paced sections use area, including ties between different resource tradeoffs', () => {
   const overall = collectOverall(
     observations([
       campaign('a', 'alpha', 'host-a', { rate: 60, memory: 300, cpu: 10 }),
@@ -133,9 +133,9 @@ test('paced sections are decided by memory, then CPU, inside the close-rate band
     ]),
   );
   assert.deepEqual(ranks(overall), [
+    ['alpha', 1, 7, 7],
     ['gamma', 1, 7, 7],
-    ['beta', 2, 14, 0],
-    ['alpha', 3, 21, 0],
+    ['beta', 3, 21, 0],
   ]);
 });
 
@@ -231,7 +231,7 @@ test('the close-rate tolerance passes through to the boards and unsupported valu
   assert.throws(() => collectOverall(input, 3), /threshold/);
 });
 
-test('two source revisions of one frontend share each section board and count as revisions', () => {
+test('source revisions stay separate and only equal-area configurations share a record', () => {
   const overall = collectOverall(
     observations([
       campaign('a1', 'alpha', 'host-a', { rate: 60, commit: 'a'.repeat(40) }),
@@ -243,9 +243,9 @@ test('two source revisions of one frontend share each section board and count as
     ['alpha', 1, 7, 7],
     ['beta', 2, 14, 0],
   ]);
-  assert.equal(overall.entries[0].revisions, 2);
+  assert.equal(overall.entries[0].revisions, 1);
   assert.equal(overall.entries[1].revisions, 1);
   assert.equal(overall.entries[0].placements.length, 7);
   assert.ok(overall.boards.every((b) => b.revisions === 2 && b.evaluatedGroups === 3));
-  assert.ok(overall.entries[0].placements.every((p) => p.record.groups.length === 2));
+  assert.ok(overall.entries[0].placements.every((p) => p.record.groups.length === 1));
 });

@@ -6,18 +6,29 @@ export interface FrontendRecord {
   frontend: string;
   score: number;
   minimumScore: number;
-  memoryMib: number | null;
-  cpuPercent: number | null;
+  memoryMib: number;
+  cpuPercent: number;
   rateBand: number;
   rank: number;
   groups: WinnerGroup[];
+  /** One actual tied configuration supplies the headline metrics and radar. */
+  representativeGroup: WinnerGroup;
+  profile: PerformanceProfile;
+}
+export interface PerformanceProfile {
+  /** Normalized axes in [0, 1], all outward = better. */
+  throughput: number;
+  rss: number;
+  cpu: number;
+  /** Fraction of the outer triangle, compared only within one throughput band. */
+  area: number;
 }
 export interface ResourceUsage {
   memoryMib: number | null;
   cpuPercent: number | null;
 }
 export interface WinnerGroup extends ResultGroup {
-  resources: ResourceUsage;
+  resources: { memoryMib: number; cpuPercent: number };
 }
 export interface WinnerBoard {
   key: string;
@@ -38,7 +49,7 @@ export interface WinnerCollection {
   excludedBySection: Record<string, number>;
 }
 
-// Display precision for rates and tie-breaking precision for resource summaries.
+// Display precision only; area ranking uses unrounded rates and resource medians.
 export const recordScore = (rate: number) => Math.round(rate * 10) / 10;
 export const CLOSE_RATE_PERCENTAGES = [0, 1, 2, 5] as const;
 export const DEFAULT_CLOSE_RATE_PERCENT = 2;
@@ -59,7 +70,7 @@ export function resourceUsage(group: ResultGroup): ResourceUsage {
       const values = valid.map((o) => o.run.metrics[key]);
       // Compare the same repetitions as throughput. Partial coverage cannot
       // produce an artificially favorable resource score.
-      if (values.some((v) => v === null || !Number.isFinite(v) || v < 0)) return null;
+      if (values.some((v) => v === null || !Number.isFinite(v) || v <= 0)) return null;
       medians.push(summarizeRates(values as number[]).median!);
     }
     return summarizeRates(medians).median;
@@ -67,17 +78,19 @@ export function resourceUsage(group: ResultGroup): ResourceUsage {
   return { memoryMib: metric('rss_peak_mib'), cpuPercent: metric('cpu_mean_percent') };
 }
 
-const rounded = (value: number | null) => (value === null ? null : recordScore(value));
-function compareAvailable(a: number | null, b: number | null): number {
-  if (a === b) return 0;
-  if (a === null) return 1;
-  if (b === null) return -1;
-  return a - b;
-}
-function compareResources(a: ResourceUsage, b: ResourceUsage): number {
-  const memory = compareAvailable(rounded(a.memoryMib), rounded(b.memoryMib));
-  if (memory || a.memoryMib === null || b.memoryMib === null) return memory;
-  return compareAvailable(rounded(a.cpuPercent), rounded(b.cpuPercent));
+// A transitive tie key removes floating-point noise without rounding the input
+// measurements to their display precision. One unit is 1e-12 of the outer area.
+const areaKey = (profile: PerformanceProfile) => Math.round(profile.area * 1e12);
+function performanceProfile(
+  group: WinnerGroup,
+  minRss: number,
+  minCpu: number,
+): PerformanceProfile {
+  const target = group.representative.run.config.hz;
+  const throughput = Math.min(1, Math.max(0, group.rates.median! / target));
+  const rss = minRss / group.resources.memoryMib;
+  const cpu = minCpu / group.resources.cpuPercent;
+  return { throughput, rss, cpu, area: (throughput * rss + rss * cpu + cpu * throughput) / 3 };
 }
 
 // One board per baseline section. Source revisions and display contexts stay separate
@@ -104,11 +117,14 @@ export function collectWinners(
   let excludedGroups = 0;
   const excludedBySection: Record<string, number> = {};
   for (const group of groupObservations(observations)) {
+    const resources = resourceUsage(group);
     // Unknown display scale leaves the rasterised area of image sections unknowable.
     if (
       group.incompleteContext ||
       group.rates.median === null ||
-      group.representative.run.context.pixel_ratio === null
+      group.representative.run.context.pixel_ratio === null ||
+      resources.memoryMib === null ||
+      resources.cpuPercent === null
     ) {
       excludedGroups++;
       const config = group.representative.run.config;
@@ -118,7 +134,10 @@ export function collectWinners(
     }
     const key = winnerKey(group.representative),
       groups = cases.get(key) ?? [];
-    groups.push({ ...group, resources: resourceUsage(group) });
+    groups.push({
+      ...group,
+      resources: { memoryMib: resources.memoryMib, cpuPercent: resources.cpuPercent },
+    });
     cases.set(key, groups);
   }
   const boards: WinnerBoard[] = [];
@@ -137,8 +156,21 @@ export function collectWinners(
       const band: WinnerGroup[] = [];
       while (cursor < ordered.length && ordered[cursor].rates.median! >= threshold)
         band.push(ordered[cursor++]);
-      band.sort((a, b) => compareResources(a.resources, b.resources) || a.key.localeCompare(b.key));
-      for (const group of band) {
+      // Scale every eligible configuration before choosing one per frontend;
+      // otherwise a memory-first choice could hide its better balanced record.
+      const minRss = Math.min(...band.map((g) => g.resources.memoryMib));
+      const minCpu = Math.min(...band.map((g) => g.resources.cpuPercent));
+      const scored = band.map((group) => ({
+        group,
+        profile: performanceProfile(group, minRss, minCpu),
+      }));
+      scored.sort(
+        (a, b) =>
+          areaKey(b.profile) - areaKey(a.profile) ||
+          b.group.rates.median! - a.group.rates.median! ||
+          a.group.key.localeCompare(b.group.key),
+      );
+      for (const { group, profile } of scored) {
         const frontend = group.representative.run.frontend;
         const score = recordScore(group.rates.median!);
         const current = frontends.get(frontend);
@@ -150,16 +182,13 @@ export function collectWinners(
             rank: 0,
             rateBand,
             groups: [group],
-            memoryMib: rounded(group.resources.memoryMib),
-            cpuPercent:
-              group.resources.memoryMib === null ? null : rounded(group.resources.cpuPercent),
+            representativeGroup: group,
+            profile,
+            memoryMib: group.resources.memoryMib,
+            cpuPercent: group.resources.cpuPercent,
           });
-        else if (
-          current.rateBand === rateBand &&
-          compareResources(current.groups[0].resources, group.resources) === 0
-        ) {
+        else if (current.rateBand === rateBand && areaKey(current.profile) === areaKey(profile)) {
           current.groups.push(group);
-          current.score = Math.max(current.score, score);
           current.minimumScore = Math.min(current.minimumScore, score);
         }
       }
@@ -167,13 +196,15 @@ export function collectWinners(
     }
     const records = [...frontends.values()].sort(
       (a, b) =>
-        a.rateBand - b.rateBand || compareResources(a, b) || a.frontend.localeCompare(b.frontend),
+        a.rateBand - b.rateBand ||
+        areaKey(b.profile) - areaKey(a.profile) ||
+        a.frontend.localeCompare(b.frontend),
     );
     records.forEach((record, index) => {
       record.rank =
         index > 0 &&
         record.rateBand === records[index - 1].rateBand &&
-        compareResources(record, records[index - 1]) === 0
+        areaKey(record.profile) === areaKey(records[index - 1].profile)
           ? records[index - 1].rank
           : index + 1;
       record.groups.sort(

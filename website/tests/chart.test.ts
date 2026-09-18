@@ -54,12 +54,12 @@ test('a record merged from equally ranked groups spans its lowest to highest med
     return c;
   };
   const { boards } = collectWinners(
-    observations([on('h1', 'host-1', [59.9, 60, 60.1]), on('h2', 'host-2', [59.7, 59.8, 59.9])]),
+    observations([on('h1', 'host-1', [59.9, 60, 60.1]), on('h2', 'host-2', [60, 60.1, 60.2])]),
   );
   assert.equal(boards.length, 1);
   assert.equal(boards[0].records[0].groups.length, 2);
   const [bar] = boardChart(boards[0]).bars;
-  assert.deepEqual([bar.minimum, bar.median, bar.low, bar.high], [59.8, 60, 59.7, 60.1]);
+  assert.deepEqual([bar.minimum, bar.median, bar.low, bar.high], [60, 60.1, 59.9, 60.2]);
 });
 
 test('an empty board still yields a chart scaled to the target', () => {
@@ -151,7 +151,7 @@ test('the CPU one-core guide appears only when the axis reaches 100 percent', ()
   assert.equal(cpuChart(board).reference, 100);
 });
 
-test('an incomplete record shows no bar, and a board with no metric marks no data', () => {
+test('incomplete resources exclude a configuration from both resource charts', () => {
   const board = collectWinners(
     observations([
       resourced('a', 'alpha', 'host-a', [60, 60, 60], [100, 110, 120], [20, 22, 24]),
@@ -161,17 +161,20 @@ test('an incomplete record shows no bar, and a board with no metric marks no dat
   ).boards[0];
   const memory = memoryChart(board);
   assert.equal(memory.hasData, true);
-  const beta = memory.bars.find((b) => b.frontend === 'beta')!;
-  assert.deepEqual([beta.value, beta.low, beta.high, beta.samples], [null, null, null, 0]);
-  // Memory unknown suppresses the record's CPU too, so beta's CPU bar is blank.
-  assert.equal(cpuChart(board).bars.find((b) => b.frontend === 'beta')!.value, null);
+  assert.deepEqual(
+    memory.bars.map((b) => b.frontend),
+    ['alpha'],
+  );
+  assert.deepEqual(
+    cpuChart(board).bars.map((b) => b.frontend),
+    ['alpha'],
+  );
 
   const none = collectWinners(
     observations([resourced('c', 'gamma', 'host-c', [60, 60, 60], [null], [null])]),
-  ).boards[0];
-  const empty = memoryChart(none);
-  assert.equal(empty.hasData, false);
-  assert.equal(empty.bars[0].value, null);
+  );
+  assert.deepEqual(none.boards, []);
+  assert.equal(none.excludedGroups, 1);
 });
 
 test('an empty board yields resource charts with no bars and no data', () => {

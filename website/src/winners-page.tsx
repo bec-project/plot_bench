@@ -154,24 +154,24 @@ export function WinnersPage({
       <div className="notice">
         <p>
           <strong>Best observed records per section, across all hosts.</strong> Ranking starts with
-          campaign-weighted median submitted updates/s, then prefers lower memory and CPU for close
-          rates. Hardware, frontend versions, source revisions and display settings may differ
-          between records; this is not a hardware-independent library ranking, not a controlled
-          comparison and not displayed FPS. Rates are paced by the 60 Hz target; reaching it does
-          not establish maximum rendering capacity.
+          campaign-weighted median submitted updates/s, then uses triangle area to balance
+          throughput, memory and CPU for close rates. Hardware, frontend versions, source revisions
+          and display settings may differ between records; this is not a hardware-independent
+          library ranking, not a controlled comparison and not displayed FPS. Rates are paced by the
+          60 Hz target; reaching it does not establish maximum rendering capacity.
         </p>
       </div>
       <p className="muted small aggregation-note">
         One best record per frontend and section, drawn from any host. Within {tolerance}% of the
-        fastest remaining configuration rates form a band; within a band lower median peak RSS ranks
-        first, then lower median mean CPU, compared at 0.1 MiB / 0.1 percentage-point precision.
-        Missing resource coverage ranks after recorded values; CPU cannot break a tie when memory is
-        missing. Records at different source revisions or display scales stay separate groups and
-        compete in the same section.{' '}
+        fastest remaining configuration rates form a band. Earlier bands rank first; within each
+        band, the largest triangle area wins. Its axes are rate / target (capped at 1), lowest RSS /
+        RSS and lowest CPU / CPU, using all eligible configurations in that band. Area is
+        (throughput × RAM + RAM × CPU + CPU × throughput) / 3. Records at different source revisions
+        or display scales stay separate groups and compete in the same section.{' '}
         {section ? (collection.excludedBySection[section.slug] ?? 0) : collection.excludedGroups}{' '}
         groups are excluded {section ? 'from this section' : 'across all sections'} for missing
-        rates, unknown display scale or incomplete context. This is a ranking preference, not a
-        statistical significance test.
+        rates, unknown display scale, incomplete context or incomplete/non-positive resource
+        measurements. This is a ranking preference, not a statistical significance test.
       </p>
       {boards.length ? (
         <div className="winner-boards">
@@ -184,8 +184,8 @@ export function WinnersPage({
           <h2>No eligible benchmark results</h2>
           <p>
             {section
-              ? `No published campaign has a complete-context record for ${section.title} in this date range and display scale.`
-              : 'Published baseline campaigns with complete context populate the winners page.'}
+              ? `No published campaign has an eligible record for ${section.title} in this date range and display scale.`
+              : 'Published baseline campaigns with complete context and positive CPU and memory measurements populate the winners page.'}
           </p>
           <div className="actions">
             {section && (
@@ -277,8 +277,8 @@ function Board({ board, select }: { board: WinnerBoard; select: (o: Observation)
             host
             {board.hosts === 1 ? '' : 's'} · {board.evaluatedGroups} eligible group
             {board.evaluatedGroups === 1 ? '' : 's'}. Priority: throughput bands (
-            {board.closeRatePercent}%) → peak RSS → mean CPU. Resource values use equal campaign
-            weights; CPU 100% means one logical CPU.
+            {board.closeRatePercent}%) → triangle area. Resource values use equal campaign weights;
+            CPU 100% means one logical CPU.
           </p>
           {image && (
             <p className="muted">
@@ -338,6 +338,10 @@ function Record({
   const [open, setOpen] = useState(false),
     [limit, setLimit] = useState(10);
   const contexts = record.groups.map((g) => g.representative.run.context);
+  const displayedGroups = [
+    record.representativeGroup,
+    ...record.groups.filter((g) => g !== record.representativeGroup),
+  ];
   const commits = [...new Set(contexts.map((x) => shortCommit(x.commit)))],
     scales = [...new Set(contexts.map((x) => scaleLabel(x.pixel_ratio)))],
     refreshes = [...new Set(contexts.map((x) => refreshLabel(x.refresh_hz)))],
@@ -351,25 +355,25 @@ function Record({
         <span>{rateRange(record.minimumScore, record.score)} updates/s</span>
       </div>
       <p className="record-resources">
-        Rate band {record.rateBand + 1} · Median peak RSS:{' '}
-        {record.memoryMib === null ? 'incomplete' : `${format(record.memoryMib)} MiB`} · Median mean
-        CPU:{' '}
-        {record.memoryMib === null
-          ? 'not used without memory'
-          : record.cpuPercent === null
-            ? 'incomplete'
-            : `${format(record.cpuPercent)}%`}
+        Rate band {record.rateBand + 1} · Triangle area: {(record.profile.area * 100).toFixed(2)}% ·
+        Median peak RSS: {format(record.memoryMib)} MiB · Median mean CPU:{' '}
+        {format(record.cpuPercent)}%
+        {record.groups.length > 1 &&
+          ' · Profile values describe the marked tied configuration below.'}
       </p>
       <p className="record-context muted small">
         commit {commits.join(' / ')} · {scales.join(' / ')} · {refreshes.join(' / ')} ·{' '}
         {protocols.join(' / ')}
       </p>
       <ul className="winning-hosts">
-        {record.groups.slice(0, limit).map((g) => {
+        {displayedGroups.slice(0, limit).map((g) => {
           const { campaign: c, run: r } = g.representative;
           const slug = sectionOf(r.config)?.slug;
           return (
             <li key={g.key}>
+              {record.groups.length > 1 && g === record.representativeGroup && (
+                <strong>Shown in profile</strong>
+              )}
               <a
                 href={
                   '#results?host=' +

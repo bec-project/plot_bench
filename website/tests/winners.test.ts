@@ -65,10 +65,10 @@ test('campaign medians keep equal weight before record selection', () => {
   assert.equal(boards[0].records[1].score, 45);
 });
 
-test('close-rate resource ties retain all frontend and host records with shared ranks', () => {
+test('equal-area ties retain all frontend and host records with shared ranks', () => {
   const { boards } = collectWinners(
     observations([
-      campaign('a', 'alpha', 'host-a', [59.96]),
+      campaign('a', 'alpha', 'host-a', [60.1]),
       campaign('b', 'alpha', 'host-b', [60.04]),
       campaign('c', 'beta', 'host-c', [60]),
       campaign('d', 'gamma', 'host-d', [40]),
@@ -79,7 +79,7 @@ test('close-rate resource ties retain all frontend and host records with shared 
     [1, 1, 3],
   );
   assert.equal(boards[0].records[0].groups.length, 2);
-  assert.equal(boards[0].records[0].score, 60);
+  assert.equal(boards[0].records[0].score, 60.1);
 });
 
 function withResources(
@@ -103,25 +103,27 @@ function system(
   return withResources(campaign(id, frontend, id, [rate]), [memory], [cpu]);
 }
 
-test('close throughput favors memory first, then CPU; materially slower rates stay behind', () => {
+test('area balances CPU and memory while materially slower rates stay behind', () => {
   const input = observations([
-    system('fast', 100, 500, 1),
-    system('efficient', 99, 100, 80),
-    system('cpu-efficient', 99.5, 100, 20),
-    system('slow', 90, 1, 0),
+    system('fast', 60, 300, 1),
+    system('efficient', 59, 100, 40),
+    system('cpu-efficient', 59.5, 100, 20),
+    system('slow', 30, 1, 0.1),
   ]);
   const records = collectWinners(input).boards[0].records;
   assert.deepEqual(
     records.map((r) => r.frontend),
-    ['cpu-efficient', 'efficient', 'fast', 'slow'],
+    ['fast', 'cpu-efficient', 'efficient', 'slow'],
   );
-  assert.equal(records[0].score, 99.5);
-  assert.equal(records[0].memoryMib, 100);
-  assert.equal(records[0].cpuPercent, 20);
+  assert.equal(records[0].score, 60);
+  assert.equal(records[0].memoryMib, 300);
+  assert.equal(records[0].cpuPercent, 1);
+  assert.ok(records[3].profile.area > records[0].profile.area);
+  assert.equal(records[3].rateBand, 1);
   assert.equal(collectWinners(input, 0).boards[0].records[0].frontend, 'fast');
 });
 
-test('resource ranking also chooses the efficient configuration of a single frontend', () => {
+test('area selects a balanced configuration and includes discarded candidates in normalization', () => {
   const records = collectWinners(
     observations([
       system('fast-host', 60, 500, 1, 'alpha'),
@@ -130,8 +132,12 @@ test('resource ranking also chooses the efficient configuration of a single fron
     ]),
   ).boards[0].records;
   assert.equal(records[0].frontend, 'alpha');
-  assert.equal(records[0].groups[0].representative.campaign.host.id, 'efficient-host');
-  assert.equal(records[0].score, 59);
+  assert.equal(records[0].representativeGroup.representative.campaign.host.id, 'fast-host');
+  assert.equal(records[0].score, 60);
+  // The discarded 100 MiB configuration, not the selected rival at 200 MiB,
+  // sets the memory reference. Both resources influence configuration selection.
+  assert.equal(records[0].profile.rss, 0.2);
+  assert.equal(records[0].profile.cpu, 1);
 });
 
 test('fastest-anchored bands avoid chained closeness and remain input-order independent', () => {
@@ -152,7 +158,7 @@ test('fastest-anchored bands avoid chained closeness and remain input-order inde
     );
   }
   const boundary = collectWinners(
-    observations([system('a', 100, 500, 1), system('b', 97.99, 1, 0)]),
+    observations([system('a', 100, 500, 1), system('b', 97.99, 1, 0.1)]),
   ).boards[0];
   assert.equal(boundary.records[0].frontend, 'a');
 });
@@ -165,8 +171,9 @@ test('global throughput bands are formed before choosing a frontend configuratio
       system('b', 102, 300, 20, 'beta'),
     ]),
   ).boards[0].records;
-  assert.equal(records[0].frontend, 'beta');
-  assert.equal(records[1].groups[0].representative.campaign.host.id, 'a-fast');
+  assert.equal(records[0].frontend, 'alpha');
+  assert.equal(records[0].representativeGroup.representative.campaign.host.id, 'a-fast');
+  assert.equal(records[1].frontend, 'beta');
 });
 
 test('resource medians retain equal campaign weights and ignore failed repetitions', () => {
@@ -182,52 +189,57 @@ test('resource medians retain equal campaign weights and ignore failed repetitio
   assert.equal(record.groups[0].attempted, 104);
   assert.equal(record.groups[0].successful, 103);
   b.runs[0].metrics.rss_peak_mib = null;
-  const partial = collectWinners(observations([a, b])).boards[0].records[0];
-  assert.equal(partial.memoryMib, null);
-  assert.equal(partial.cpuPercent, null);
-  assert.equal(partial.groups[0].resources.cpuPercent, 50);
+  const partial = collectWinners(observations([a, b]));
+  assert.deepEqual(partial.boards, []);
+  assert.equal(partial.excludedGroups, 1);
 });
 
-test('missing resource coverage is not zero and CPU cannot bypass unknown memory', () => {
-  const records = collectWinners(
-    observations([
-      system('unknown', 60, null, 0),
-      system('known', 60, 100, 50),
-      system('zero', 60, 0, 0),
-      system('missing-cpu', 60, 100, null),
-    ]),
-  ).boards[0].records;
-  assert.deepEqual(
-    records.map((r) => r.frontend),
-    ['zero', 'known', 'missing-cpu', 'unknown'],
-  );
-  const unknowns = collectWinners(
-    observations([system('a', 60, null, 20), system('b', 59, null, 0)]),
-  ).boards[0].records;
-  assert.deepEqual(
-    unknowns.map((r) => r.rank),
-    [1, 1],
-  );
-  assert.ok(unknowns.every((r) => r.cpuPercent === null));
-  const incomplete = withResources(campaign('p', 'partial', 'p', [60, 60]), [100], [10, null]);
-  assert.equal(collectWinners(observations([incomplete])).boards[0].records[0].cpuPercent, null);
+test('invalid resource samples exclude groups before bands and normalization', () => {
+  for (const value of [null, 0, -1, NaN, Infinity]) {
+    for (const metric of ['rss_peak_mib', 'cpu_mean_percent'] as const) {
+      const invalid = system('invalid', 100, 1, 0.1);
+      invalid.runs[0].metrics[metric] = value;
+      const result = collectWinners(observations([invalid, system('known', 60, 100, 50)]));
+      assert.equal(result.excludedGroups, 1);
+      assert.deepEqual(result.excludedBySection, { waveform: 1 });
+      const [record] = result.boards[0].records;
+      assert.equal(result.boards[0].records.length, 1);
+      assert.equal(record.frontend, 'known');
+      assert.equal(record.rateBand, 0);
+      assert.equal(record.profile.area, 1);
+    }
+  }
+  // One missing/zero repetition invalidates coverage even if its median is positive.
+  for (const value of [null, 0]) {
+    const incomplete = withResources(
+      campaign('p', 'partial', 'p', [60, 60, 60]),
+      [100],
+      [10, value, 10],
+    );
+    assert.deepEqual(collectWinners(observations([incomplete])).boards, []);
+  }
 });
 
-test('resources tie at displayed precision and close-rate ties show their rate range', () => {
+test('ranking retains full precision when displayed metrics would tie', () => {
   const records = collectWinners(
-    observations([
-      system('a', 60, 100.03, 20.02, 'alpha'),
-      system('b', 59, 100.04, 20.04, 'alpha'),
-      system('c', 59.5, 100, 20, 'beta'),
-    ]),
+    observations([system('a', 60, 100.03, 20.02, 'alpha'), system('b', 60, 100.04, 20.04, 'beta')]),
   ).boards[0].records;
   assert.deepEqual(
     records.map((r) => r.rank),
-    [1, 1],
+    [1, 2],
   );
   assert.equal(records[0].score, 60);
-  assert.equal(records[0].minimumScore, 59);
-  assert.equal(records[0].groups.length, 2);
+  assert.equal(records[0].memoryMib, 100.03);
+  assert.equal(records[0].cpuPercent, 20.02);
+  assert.ok(records[0].profile.area > records[1].profile.area);
+});
+
+test('resource scales in a slower band cannot affect the faster band', () => {
+  const input = observations([system('a', 60, 100, 20), system('b', 59, 200, 10)]);
+  const before = collectWinners(input).boards[0].records;
+  const after = collectWinners([...input, ...observations([system('slow', 30, 1, 0.1)])]).boards[0]
+    .records;
+  assert.deepEqual(after.slice(0, 2), before);
 });
 
 test('close-rate thresholds are explicit and invalid URL choices use the default', () => {
